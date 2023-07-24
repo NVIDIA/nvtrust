@@ -1,5 +1,4 @@
 # nvTrust: NVIDIA Confidential Computing Ancillary Software
-[![GitHub license](https://img.shields.io/github/license/NVIDIA/nvtrust?style=flat-square)](https://raw.githubusercontent.com/NVIDIA/nvtrust/main/LICENSE)
 
 nvTrust is a repository which contains much of the utilities & tools, open-source code, and SDKs leveraged when using NVIDIA solutions in trusted environements, such as Confidential Computing.
 
