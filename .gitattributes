@@ -1,0 +1,6 @@
+infrastructure/kvm/ovmf/ovmf_source/BaseTools/Source/C/BrotliCompress/brotli/js/test_data.js filter=lfs diff=lfs merge=lfs -text
+infrastructure/kvm/ovmf/ovmf_source/MdeModulePkg/Library/BrotliCustomDecompressLib/brotli/tests/testdata/bb.binast filter=lfs diff=lfs merge=lfs -text
+infrastructure/kvm/ovmf/ovmf_source/BaseTools/Source/C/BrotliCompress/brotli/tests/testdata/bb.binast filter=lfs diff=lfs merge=lfs -text
+infrastructure/kvm/ovmf/ovmf_source/BaseTools/Source/C/bin/BrotliCompress filter=lfs diff=lfs merge=lfs -text
+infrastructure/kvm/ovmf/ovmf_source/CryptoPkg/Library/OpensslLib/openssl/test/drbg_cavs_data.c filter=lfs diff=lfs merge=lfs -text
+infrastructure/kvm/ovmf/ovmf_source/MdeModulePkg/Library/BrotliCustomDecompressLib/brotli/js/test_data.js filter=lfs diff=lfs merge=lfs -text

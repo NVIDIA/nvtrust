@@ -1,0 +1,297 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+#
+
+from enum import IntFlag
+from enum import IntEnum
+from datetime import datetime
+from nv_attestation_sdk.gpu import attest_gpu
+import secrets
+import jwt
+import json
+
+class Devices(IntFlag):
+    CPU = 1
+    GPU = 2
+    NIC = 4
+    OS = 8
+    DPU = 16
+
+
+class Environment(IntEnum):
+    TEST = 1
+    LOCAL = 2
+    AZURE = 3
+    GCP = 4
+
+class VerifierFields(IntEnum):
+    NAME = 0
+    DEVICE= 1
+    ENVIRONMENT = 2
+    URL = 3
+    POLICY = 4
+    JWT_TOKEN = 5
+
+class Attestation(object):
+    _instance = None
+
+    def __new__(cls, name=None):
+        if cls._instance is None:
+            cls._instance = super(Attestation, cls).__new__(cls)
+            if isinstance(name,str): 
+                cls._name = name
+            else: 
+                cls._name = ""
+            cls._nonceServer = ""
+            cls._staticNonce = ""
+            cls._verifiers = []
+            cls._tokens = {}
+        return cls._instance
+
+    @classmethod
+    def set_name(cls, name: str) -> None:
+        cls._name = name
+
+    @classmethod
+    def get_name(cls) -> str:
+        return cls._name
+
+    @classmethod
+    def set_nonce_server(cls, url: str) -> None:
+        cls._nonceServer = url
+
+    @classmethod
+    def get_nonce_server(cls) -> str:
+        return cls._nonceServer
+
+    @classmethod
+    def add_verifier(cls, dev: Devices, env: Environment, url: str, evidence: str) -> None:
+        """
+        Add a new verifier to SDK configuration.
+        This will be used during attest and validate_token methods.
+        """
+        if (dev == Devices.GPU and env == Environment.LOCAL) :
+            name = "LOCAL_GPU_CLAIMS"
+        elif (dev == Devices.CPU and env == Environment.TEST) :
+            name = "TEST_CPU_CLAIMS"
+        else :
+            name = "UNKNOWN_CLAIMS"
+
+        lst = [name, dev, env, url, evidence, ""]
+        cls._verifiers.append(lst)
+
+    @classmethod
+    def get_verifiers(cls) -> list:
+        """
+        Get the list of configured verifiers.
+        """
+        return cls._verifiers
+
+    @classmethod
+    def attest(cls) -> bool:
+        """
+         Attest the client as per the configured verifiers and evidence policy
+        """
+        # this should consist of doing the following things
+        # Nonce _generateNonce()
+        # Evidence generateEvidence(nonce)
+        #   Retrieve quote from vTPM (locally)
+        # Token verifyEvidence(evidence)
+        #   Evidence -> verifier, validated against policy, returns token
+        # Status provideEvidence(token)
+        #   Token -> relying party, returns Status
+        # cls.token = ""
+        for verifier in cls._verifiers:
+            attest_result = True
+
+            if verifier[VerifierFields.DEVICE] == Devices.GPU and verifier[VerifierFields.ENVIRONMENT] == Environment.LOCAL:
+                this_result, jwt_token = attest_gpu.attest_gpu_local()
+
+                # save the token with the verifier
+                verifier[VerifierFields.JWT_TOKEN] = jwt_token
+                attest_result = attest_result and this_result
+
+            elif verifier[VerifierFields.DEVICE] == Devices.CPU and verifier[VerifierFields.ENVIRONMENT] == Environment.TEST:
+                report = {}
+                report["rand"] = secrets.token_hex(16)
+                report["hash"] = str(hash(report["rand"]))
+
+                jwt_token = jwt.encode(report, "notasecret", algorithm="HS256")
+
+                # save the token with the verifier
+                verifier[VerifierFields.JWT_TOKEN] = jwt_token
+                attest_result = attest_result and True
+            else:
+                # probably should throw an exception here
+                print("unknown verifier - assuming all is good - device is " + str(verifier[VerifierFields.DEVICE]) + " env is "+str(verifier[VerifierFields.ENVIRONMENT]))
+
+        # NOTE: no verifiers means attestation will be true.  weird but makes some sense
+        # NOTE: THIS is where the tokens should be combined in to a single token and then set
+        #print("full attest_result ... ", attest_result) # NOTE: put a try catch here
+
+        eatToken = cls._create_EAT()
+        cls.set_token( cls._name, eatToken)
+        return attest_result
+
+    @classmethod
+    def _create_EAT(cls) -> str:
+        #
+        # What is an EAT
+        #
+        # An EAT is a list with two elements let's call them A and B
+        # element A is a list where the first element is "JWT" and the second element is a JWT Token
+        # element B is a dictionary of claims where each element is indexed by a name and the value
+        #           is a JWT Token of the claims attested for said name
+        # or at least that is what the spec suggests
+        # JWT has a very different idea and wants just a dictionarey object.
+        #
+        # Therefore a JSON-encoded Detached EAT bundle is defined as
+        # {
+        #   "JWT" : JWT of main claims
+        # zero or more of the following
+        #   "verifier name" : JWT of this verifier
+        # }
+        issuer = "NV-Attestation-SDK"
+
+        curr_dt = datetime.now() 
+        timestamp = int(round(curr_dt.timestamp()))
+
+        payload = { "iss" : issuer, "iat" : timestamp, "exp": None  }
+        encoded_jwt = jwt.encode ( payload, "notasecret", algorithm="HS256")
+
+        eat = []
+        eat_inner = ["JWT",encoded_jwt]
+        verifier_claims = {}
+
+        for verifier in cls._verifiers:
+            if verifier[VerifierFields.JWT_TOKEN] != "":
+                verifier_claims[ verifier[VerifierFields.NAME] ] = verifier[VerifierFields.JWT_TOKEN]
+
+        eat.append (eat_inner)
+        eat.append (verifier_claims)
+        return json.dumps(eat)
+
+
+    @classmethod
+    def set_token(cls, name: str, eat_token: str) -> None:
+        entry = {name: eat_token}
+        cls._tokens.update(entry)
+
+    @classmethod
+    def get_token(cls, x=None) -> str:
+        name = ""
+        if x == None:
+            name = cls.get_name()
+        elif isinstance(x, str):
+            name = x
+
+        if name == "":
+            return ""
+
+        if name in cls._tokens.keys():
+            return cls._tokens[name]
+        else:
+            return ""
+
+
+    @classmethod
+    def _validate_token_internal(cls, policy:str, eat_token: str) -> bool:
+        attest_result = True
+
+        if eat_token == "":
+            return False
+        else:
+
+            try:
+                eat = json.loads(eat_token)
+            except json.decoder.JSONDecodeError:
+                return False
+
+            eat_jwt = eat[0]
+            eat_claims = eat[1]
+
+            for verifier_name in eat_claims:
+                jwt_token = eat_claims[verifier_name]
+
+                if verifier_name == "LOCAL_GPU_CLAIMS":
+                    this_result = attest_gpu.validate_gpu_token(jwt_token, policy)
+
+                elif verifier_name == "TEST_CPU_CLAIMS":
+                    claims = jwt.decode( jwt_token, "notasecret", algorithms="HS256")
+
+                    randStr = claims["rand"]
+                    hashStr = claims["hash"]
+
+                    if hashStr == str(hash(randStr)):
+                        this_result = True
+                    else:
+                        this_result = False
+
+                else:
+                    #Unknown verifier - assume it's OK
+                    this_result = True
+
+                attest_result = this_result and attest_result
+           
+        return attest_result
+
+    @classmethod
+    def validate_token(cls, policy:str , x=None) :
+
+        if x == None: 
+            name = cls.get_name()
+            if name == "":
+                return False
+            else:
+                if name in cls._tokens.keys():
+                    token = cls._tokens[name]
+                else:
+                    return False
+
+                return cls._validate_token_internal(policy, token)
+
+        elif isinstance(x,str):
+            if  x == "":
+                return False
+            else:
+                return cls._validate_token_internal(policy, x)
+
+        elif isinstance(x,list):
+            return False
+
+        # this part could use some bullet proofing
+        elif isinstance(x,dict):
+            retdict = {}
+            for name in x:
+                if (name != ""):
+                    token = x[name]
+                    if (token != ""):
+                        retdict[name] = cls._validate_token_internal(token)
+                    else:
+                        retdict[name] = False
+            return retdict
+        else:
+            return False
+
+    @classmethod
+    def _generate_nonce(cls) -> str:
+        # Check for the nonce server AND the name.  If one is missing, generate a local nonce
+        if cls._nonceServer != "" and cls._name != "" :
+            # probably should only do this if name and url are non-null
+            # make call to url to get nonce
+            return "0xdeadbeefdeadbeefdeadbeefdeadbeef"
+        else:
+            # create nonce locally - 256 bits total
+            nonceStr = "0x" + secrets.token_hex(16)
+            return nonceStr
+
+    @classmethod
+    def get_nonce(cls) -> str:
+        return cls._staticNonce
+
+    @classmethod
+    def set_nonce(cls, nonce:str) :
+        cls._staticNonce = nonce
+
