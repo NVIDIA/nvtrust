@@ -15,6 +15,8 @@ Code and data will be confidential up to the limits of the NIST SP800-38D AES-GC
 **NVIDIA recommends users invoke good practices while utilizing the early-access by testing only with synthetic data and non-proprietary AI models.**
 
 ## Release Notes
+- Hopper Confidential Compute early access features are supported on NVIDIA Driver Version `535.86` and later only
+- Release Notes may be found [here](https://docs.nvidia.com/confidential-computing/#release-notes).
 
 ## License
 The license for this repository is Apache v2 except where otherwise noted.
