@@ -65,7 +65,7 @@ class BaseSettings:
     # The Timeout duration in seconds.
     MAX_NVML_TIME_DELAY = 5
     MAX_OCSP_TIME_DELAY = 10
-    OCSP_URL = 'http://ocsp.ndis.nvidia.com/'
+    OCSP_URL = 'https://ocsp.ndis.nvidia.com/'
     OCSP_HASH_FUNCTION = sha384
     Certificate_Chain_Verification_Mode = Enum("CERT CHAIN VERIFICATION MODE", ['GPU_ATTESTATION', 'OCSP_RESPONSE', 'DRIVER_RIM_CERT', 'VBIOS_RIM_CERT'])
     NVDEC_STATUS = Enum("NVDEC0 status", [("ENABLED", 0xAA), ("DISABLED", 0x55)])
