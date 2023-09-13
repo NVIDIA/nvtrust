@@ -1,68 +1,96 @@
 # NVIDIA Attestation SDK
 
-The Attestation SDK provides developers with a easy to use APIs for implementing attestation capabilities into their Python applications. With this SDK, you can easily integrate secure and reliable attestation services into your software, ensuring the authenticity, integrity, and trustworthiness of your system.
+The Attestation SDK offers developers easy-to-use APIs for implementing attestation capabilities into their Python applications. With this SDK, you can seamlessly integrate secure and reliable attestation services into your software, thereby ensuring the authenticity, integrity, and trustworthiness of your system.
+
+- [NVIDIA Attestation SDK](#nvidia-attestation-sdk)
+  - [Features](#features)
+  - [Install Attestation SDK](#install-attestation-sdk)
+    - [From Wheel file](#from-wheel-file)
+    - [From Source](#from-source)
+  - [GPU Attestation](#gpu-attestation)
+    - [Pre-requisites](#pre-requisites)
+    - [Local GPU Attestation](#local-gpu-attestation)
+      - [Policy File](#policy-file)
+      - [How to do Perform Attestation](#how-to-do-perform-attestation)
+    - [Remote GPU Attestation](#remote-gpu-attestation)
+      - [Pre-Requisites](#pre-requisites-1)
+      - [Policy File](#policy-file-1)
+      - [How to do Perform Attestation](#how-to-do-perform-attestation-1)
+  - [Building Attestation SDK](#building-attestation-sdk)
+  - [APIs](#apis)
+  - [Version Info](#version-info)
+  - [Future Roadmap](#future-roadmap)
+
 
 ## Features
 
-Local GPU Attestation (using NVIDIA NVML based Python libraries)
-Note: SDK v1.0 is still in Early Access Release (beta) and APIs are subject to change until the GA release.
+- Local GPU Attestation (using NVIDIA NVML based Python libraries)
+- Remote GPU Attestation (using NVIDIA Remote Attestation Service)”
+
+Note: SDK v1.1.0 is still in Early Access Release (beta), and the APIs may undergo changes until the GA release.
 
 ## Install Attestation SDK
 
-### Pre-requisites
+### From Wheel file
 
-1. Create a Confidential Virtual Machine with the following specifications:
-   - NVIDIA Hopper H100 GPU
-   - r535 version of the Driver installed.
-   - Make sure the SKU is supported for Confidential Computing.
-2. Follow the nvTrust/guest_tools/local_gpu_verifier/README.md to install the NVIDIA GPU Local Verifier Python SDK.
-3. Run the following command and ensure that you have the 'verifier' Python module installed.
-    ```
-    pip list | grep verifier
-    verifier               1.0.0
-    ```
+- Download the latest Wheel file from the [this directory](dist/).
 
-### Install the Attestation SDK using the Wheel file
-
-- Download the latest Wheel file from the attestation_sdk/dist directory.
-
-- Install SDK in a python virtual environment. Please make sure that you are using the same virtual environment that you used in Step 2 for the NVIDIA Local GPU verifier scripts.
+- Install the SDK in a Python virtual environment. Please make sure that you are using the same virtual environment that you used in Step 2 for the NVIDIA Local GPU verifier scripts.
 
         pip3 install ./nv_attestation_sdk-<-version->-py3-none-any.whl
 
-### Install the Attestation SDK using the source code
+### From Source
 
 If you choose to install the Attestation SDK from the source code instead of a Wheel file, use the following commands:
 
     cd attestation_sdk
     pip3 install .
 
-## Usage
+## GPU Attestation
 
-    from nv_attestation_sdk import attestation
+### Pre-requisites
 
-    # Create a Attestation object
-    client = attestation.Attestation("test_node")
-    
-    # Add the type of verifier that you would like to use
-    client.add_verifier(attestation.Devices.GPU, attestation.Environment.LOCAL, "", "")
-    
-    # Set the Attestation Policy that you want to validate your token against.
-    #for pull policy details, please see tests/NVGPUPolicyExample.json
-    attestation_results_policy = '{"version":"1.0","authorization-rules":{"x-nv-gpu-available":true,' \
-                             '"x-nv-gpu-attestation-report-available":true}}'
-    
-    # Run Attest    
-    print(client.attest())
-    
-    # Call validate_token to validate the results against the Appraisal policy for Attestation Results
-    print(client.validate_token(attestation_results_policy))
+1. Create a Confidential Virtual Machine with the following specifications:
+- NVIDIA Hopper H100 GPU
+- Driver version r535 installed.
+- Ensure that the SKU is supported for Confidential Computing.
 
-## Running the tests
+2. Follow the instructions in nvTrust/guest_tools/local_gpu_verifier/README.md to install the NVIDIA GPU Local Verifier Python SDK.
+   
+3. Run the following command and ensure that you have the 'verifier' Python module installed.
+    ```
+    pip list | grep verifier
+    verifier               1.1.0
+    ```
 
-    python3 ./tests/SmallGPUTest.py
+### Local GPU Attestation
 
-## Build
+#### Policy File
+
+You can find a sample Attestation Result policy file for Local GPU Attestation [here](tests/NVGPULocalPolicyExample.json)
+Please note that the Schema/EAT claim information is subject to change in future releases.
+
+#### How to do Perform Attestation
+
+Please refer to the [sample implementation](tests/LocalGPUTest.py)
+
+### Remote GPU Attestation
+
+#### Pre-Requisites
+
+[NVIDIA Remote Attestation Service (NRAS)](https://nras.attestation.nvidia.com) must be accessible from the machine.
+
+#### Policy File
+
+You can find a sample Attestation Result policy file for Remote GPU Attestation [here](tests/NVGPURemotePolicyExample.json)
+
+Please note that the Schema/EAT claim information is subject to change in future releases.
+
+#### How to do Perform Attestation
+
+Please refer to the [sample implementation](tests/RemoteGPUTest.py)
+
+## Building Attestation SDK
 
     python3 -m pip install --upgrade build
     python3 -m build
@@ -79,12 +107,15 @@ If you choose to install the Attestation SDK from the source code instead of a W
 
 ## Version Info
 
-SDK latest version - 1.0.0
+SDK latest version - 1.1.0
 
 ## Future Roadmap
 
-The following are some exciting features and improvements that we plan to implement in upcoming releases of Attestation SDK. Please note that these roadmap items are subject to change based on user feedback and evolving priorities. We are committed to continuously improving our project to meet the needs of our users.
+The following are some exciting features and improvements that we plan to implement in upcoming releases of the Attestation SDK. Please note that these roadmap items are subject to change based on user feedback and evolving priorities. We are committed to continuously improving our project to meet the needs of our users.
 
-1. NVIDIA Remote Attestation Service integration.
-2. More flexible Attestation result policies.
-3. Other Attestation types like CPU, DPU etc.
+- Integration of NVIDIA Remote Attestation Service.
+- Enhanced flexibility in Attestation result policies.
+- Support for additional Attestation types such as CPU and DPU, among others.
+
+
+

@@ -40,17 +40,8 @@ from pynvml import (
 )
 
 from verifier.exceptions import (
-    SignatureVerificationError,
     NonceMismatchError,
-    DriverVersionMismatchError,
-    AttestationReportFetchError,
-    CertChainFetchError,
-    RIMSignatureVerificationError,
-    RIMVerificationFailureError,
-    MeasurementMismatchError,
-    RIMSchemaValidationError,
-    InvalidMeasurementIndexError,
-    VBIOSVersionMismatchError,
+    TimeoutError,
 )
 
 def is_non_fatal_issue(error):
@@ -72,38 +63,7 @@ def is_non_fatal_issue(error):
        isinstance(error, type(NVMLError(NVML_ERROR_NO_DATA))) or \
        isinstance(error, type(NVMLError(NVML_ERROR_INSUFFICIENT_RESOURCES))) or \
        isinstance(error, NonceMismatchError) or \
-       isinstance(error, MeasurementMismatchError):
+       isinstance(error, TimeoutError):
        return True
-    
-    return False
 
-def need_to_change_gpu_state(error):
-    """ The function to check if there is a need to set the GPU Ready state to
-    not ready. 
-
-    Args:
-        error (Exception): any exception that may be raised.
-    Returns:
-        [bool]: returns True if there is a need to change the GPU ready state,
-                otherwise returns False.
-    """
-    
-    if isinstance(error, type(NVMLError(NVML_ERROR_UNINITIALIZED))) or \
-       isinstance(error, type(NVMLError(NVML_ERROR_TIMEOUT))) or \
-       isinstance(error, type(NVMLError(NVML_ERROR_RESET_REQUIRED))) or \
-       isinstance(error, type(NVMLError(NVML_ERROR_IN_USE))) or \
-       isinstance(error, type(NVMLError(NVML_ERROR_MEMORY))) or \
-       isinstance(error, type(NVMLError(NVML_ERROR_NO_DATA))) or \
-       isinstance(error, type(NVMLError(NVML_ERROR_INSUFFICIENT_RESOURCES))) or \
-       isinstance(error, AttestationReportFetchError) or \
-       isinstance(error, SignatureVerificationError) or \
-       isinstance(error, DriverVersionMismatchError) or \
-       isinstance(error, VBIOSVersionMismatchError) or \
-       isinstance(error, CertChainFetchError) or \
-       isinstance(error, RIMSchemaValidationError) or \
-       isinstance(error, RIMVerificationFailureError) or \
-       isinstance(error, RIMSignatureVerificationError) or \
-       isinstance(error, InvalidMeasurementIndexError):
-       return True
-    
     return False

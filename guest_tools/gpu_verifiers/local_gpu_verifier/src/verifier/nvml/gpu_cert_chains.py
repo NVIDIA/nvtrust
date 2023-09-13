@@ -30,10 +30,8 @@
 
 from OpenSSL import crypto
 import re
-
-
+import base64
 from pynvml import nvmlDeviceGetConfComputeGpuCertificate
-
 from verifier.config import (
     BaseSettings,
     info_log,
@@ -42,9 +40,11 @@ from verifier.config import (
 from verifier.exceptions import (
     CertExtractionError,
     CertChainFetchError,
+    TimeoutError,
 )
 from .test_handle import TestHandle
 from verifier.utils import function_wrapper_with_timeout
+from verifier.cc_admin_utils import CcAdminUtils
 
 class GpuCertificateChains:
     """ A class to handle the fetching and processing of the GPU attestation certificate chain.
@@ -79,6 +79,8 @@ class GpuCertificateChains:
             bin_attestation_cert_data = bytes(attestation_cert_data)
 
             return bin_attestation_cert_data
+        except TimeoutError as err:
+            raise TimeoutError("\tThe call to fetch GPU Cert chain timed out.")
         except Exception as err:
             info_log.error(err)
             err_msg = "\tSomething went wrong while fetching the certificate chains from the gpu."
@@ -103,9 +105,6 @@ class GpuCertificateChains:
             start_index = 0
             end_index = None
 
-            # length of \n is 1
-            length_of_new_line = 1
-            
             str_data = bin_cert_chain_data.decode()
             cert_obj_list = list()
 
@@ -114,7 +113,7 @@ class GpuCertificateChains:
                 cert_obj_list.append(crypto.load_certificate(crypto.FILETYPE_PEM, \
                                     str_data[start_index : end_index + len(PEM_CERT_END_DELIMITER)]))
 
-                start_index = end_index + len(PEM_CERT_END_DELIMITER) + length_of_new_line
+                start_index = end_index + len(PEM_CERT_END_DELIMITER) + len('\n')
 
                 if len(str_data) < start_index:
                     break
@@ -126,13 +125,40 @@ class GpuCertificateChains:
             event_log.error(err_msg)
             raise CertExtractionError(err_msg)
 
+    @staticmethod
+    def extract_gpu_cert_chain_base64(gpu_attestation_cert_chain):
+        """ Method to extract GPU Certificate Chain and convert that to base64 encoded string
+
+        Args:
+            gpu_attestation_cert_chain: GPU Certificate Chain from the Attestation Report
+
+        Returns:
+            base64 encoded GPU Certificate Chain
+        """
+        cert_chain_data = ""
+        for certificate in gpu_attestation_cert_chain:
+            cert = certificate.to_cryptography()
+            pyopenSSLCert = CcAdminUtils.convert_cert_from_cryptography_to_pyopenssl(cert)
+            cert_chain_data += crypto.dump_certificate(crypto.FILETYPE_PEM, pyopenSSLCert).decode()
+        cert_chain_bytes = cert_chain_data.encode("ascii")
+        encoded_cert_chain = base64.b64encode(cert_chain_bytes)
+        encoded_cert_chain = encoded_cert_chain.decode('utf-8')
+        return encoded_cert_chain
+
     def __init__(self, handle):
         """ Constructor method for the GpuCertificateChains class.
 
         Args:
             handle (pynvml.LP_struct_c_nvmlDevice_t): the GPU device handle.
         """
+        # Removing the last certificate from the certificate as it is the root certificate for the GPU device certificate chain.
+        # The verifier_device_root.pem cert in certs directory is used as the root cert for the GPU device certificate chain.
         if isinstance(handle, TestHandle):
-            self.GpuAttestationCertificateChain = self.extract_cert_chain(handle.get_test_gpu_certificate_chain())
-        else:    
-            self.GpuAttestationCertificateChain = self.extract_cert_chain(self.get_gpu_certificate_chains(handle))
+            self.GpuAttestationCertificateChain = self.extract_cert_chain(handle.get_test_gpu_certificate_chain())[:-1]
+        else:
+            self.GpuAttestationCertificateChain = self.extract_cert_chain(self.get_gpu_certificate_chains(handle))[:-1]
+        
+        with open(BaseSettings.DEVICE_ROOT_CERT, 'r') as f:
+            print("using the new pinned root cert")
+            data = f.read()
+            self.GpuAttestationCertificateChain.append(crypto.load_certificate(type= crypto.FILETYPE_PEM, buffer= data))
