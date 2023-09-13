@@ -9,7 +9,7 @@ DU-11462-001
 
 ## Using This Guide
 
-This guide is the most distilled set of instructions required to configure a system for Confidential Computing (CC) with the NVIDIA®Hopper™ H100 GPU. Explanations as to the value of a particular step, or the details of what is going on behind the scenes are covered in several of our other collateral, such as our whitepaper, GTC talks, and YouTube videos.  
+This guide is the most distilled set of instructions required to configure a system for Confidential Computing (CC) with the NVIDIA®Hopper™ H100 GPU. Explanations as to the value of a particular step, or the details of what is going on behind the scenes are covered in several of our other collateral, such as our whitepaper, GTC talks, and YouTube videos. 
 
 
 This guide is intended to provide instructions that are targeted to various personas who want to use Hopper Confidential Compute (HCC). These personas are rough definitions of individuals who might have different responsibilities in the overall confidential system. The overall flow of using one is illustrated in Figure 1. 
@@ -29,10 +29,10 @@ The following personas have been defined:
 - **Virtual Machine User** 
 - **Container User**
 
-You can read the entire documentation or jump directly to the section that  most accurately describes your persona use case. This guide is organized in a linear manner, so  reading all sections in order will make logical sense to a developer who considers themselves all the above personas. 
+You can read the entire documentation or jump directly to the section that most accurately describes your persona use case. This guide is organized in a linear manner, so reading all sections in order will make logical sense to a developer who considers themselves all the above personas. 
 
 ## Document Structure
-In this document, for code,  if there is no prefix that is an output from a command.
+In this document, for code, if there is no prefix that is an output from a command.
 ```
 $ shell-command to execute
 # (optional) NVIDIA-commentary
@@ -55,7 +55,7 @@ Output might occur after either of these commands, however, the output is not im
 The Hardware IT Administrator persona is at the beginning of the CC chain and attention needs to be paid to selecting your CPU and GPU. This persona should contain **System Architects** and **IT Administrators**, selects the correct part numbers, and configures the BIOS/UEFI for the subsequent steps. 
 
 ## Selecting Hardware
-CC requires CPUs and GPUs with specific functionality that  enable the security outlined by the CC Consortium. 
+CC requires CPUs and GPUs with specific functionality that enable the security outlined by the CC Consortium. 
 - CPU Requirements 
   - AMD with SEV-SNP support 
 - GPU Requirements 
@@ -98,14 +98,14 @@ With the above System BIOS configured for SEV-SNP, you are now ready to begin co
 # Host OS Administrator
 **Figure 4.      The Host OS Administrator Persona**
 ![Figure 4.      The Host OS Administrator Persona](img/Figure4.png)
-The Host OS Administrator is the persona that has received a system with its BIOS/UEFI configured so that it is racked and stacked with the CC modes enabled. This persona is responsible for selecting the Operating System (OS) that is installed on the host so that the OS  can provision virtual machines (VMs). The roles are **System Architects**, **Cloud Administrators**, or **Advanced On-Premise Users**. 
+The Host OS Administrator is the persona that has received a system with its BIOS/UEFI configured so that it is racked and stacked with the CC modes enabled. This persona is responsible for selecting the Operating System (OS) that is installed on the host so that the OS can provision virtual machines (VMs). The roles are **System Architects**, **Cloud Administrators**, or **Advanced On-Premise Users**. 
 
-Currently, the supported Host OS  is **Ubuntu 22.04 with Kernel 5.19**.
+Currently, the supported Host OS is **Ubuntu 22.04 with Kernel 5.19**.
 
 ## Setting Up the Host OS
 This section provides information about setting up the Host OS.
 ### Installing the Required Host Prerequisites 
-Install a  supported Host OS by following  their standard installation instructions. It is not important if you were using a different Linux kernel other than what is listed above. After completing these steps you will have the correct kernel installed. 
+Install a supported Host OS by following their standard installation instructions. It is not important if you were using a different Linux kernel other than what is listed above. After completing these steps you will have the correct kernel installed. 
 
 
 **Before** building the Linux, some prerequisite software packages must be installed. 
@@ -116,8 +116,8 @@ To install the prerequisites, run the following commands.:
 # Packages to support the build 
 $ sudo apt update 
  
-$ sudo apt install -y ninja-build iasl nasm  flex bison openssl dkms autoconf zlib1g-dev python3-pip libncurses-dev libssl-dev libelf-dev libudev-dev libpci-dev libiberty-dev libtool libsdl-console libsdl-console-dev libpango1.0-dev libjpeg8-dev libpixman-1-dev libcairo2-dev  libgif-dev libglib2.0-dev git-lfs jq
-   
+$ sudo apt install -y ninja-build iasl nasm flex bison openssl dkms autoconf zlib1g-dev python3-pip libncurses-dev libssl-dev libelf-dev libudev-dev libpci-dev libiberty-dev libtool libsdl-console libsdl-console-dev libpango1.0-dev libjpeg8-dev libpixman-1-dev libcairo2-dev libgif-dev libglib2.0-dev git-lfs jq
+ 
 $ sudo pip3 install numpy flex bison
 ```
 We will now build a 5.19-based kernel with SEV-SNP support. This kernel will be installed on the host and will be the basis for guests that are created. 
@@ -152,7 +152,7 @@ Now, we can run the script that will fetch and build the required components:
 $ ./build.sh --package
 ```
 ### Modifying the Kernel 
-At this point, you have built the unpatched 5.19 from the sev-snp-devel branch  Unfortunately, this code tree could not be patched before the build because the AMD-SNP repository automates many of these steps. 
+At this point, you have built the unpatched 5.19 from the sev-snp-devel branch Unfortunately, this code tree could not be patched before the build because the AMD-SNP repository automates many of these steps. 
 
 1. Now, we can patch the code and build the kernel required for the 
 H100:
@@ -182,7 +182,7 @@ $ sudo cp kvm.conf /etc/modprobe.d/
 $ cd /shared/AMDSEV/snp-release-<DATE> 
 $ sudo ./install.sh 
 #GRUB should automatically use the new linux image. 
-  
+
 #reboot the host: 
 $ sudo reboot 
 ```
@@ -232,8 +232,8 @@ $ sudo dmesg | grep -i -e rmp -e sev
 ```
 
 SEV-SNP support requires a firmware version that is later than version 1.51:1. The latest SEV-SNP firmware is available on https://developer.amd.com/sev and through the linux-firmware project. 
-  
-The following  steps document the firmware upgrade process for the latest SEV-SNP firmware on https://developer.amd.com/sev at the time this was written. A similar procedure can also be used for newer firmware: 
+
+The following steps document the firmware upgrade process for the latest SEV-SNP firmware on https://developer.amd.com/sev at the time this was written. A similar procedure can also be used for newer firmware: 
 
 1. Run the following commands to reboot your system.
    ```
@@ -411,7 +411,7 @@ In the Host OS, to identify an H100 to pass to our new Guest VM.
 
 
 
-- **Note:** This assignment must be done each time the Host reboots.  You can restart Guests multiple times or reassign the GPU(s) without repeating the steps.
+- **Note:** This assignment must be done each time the Host reboots. You can restart Guests multiple times or reassign the GPU(s) without repeating the steps.
 
 
 ## Launching the Guest OS
@@ -472,7 +472,7 @@ There are two workarounds for this issue:
     `sudo update-grub`
 5. Reboot the Host OS.
 
-In Option 2, you do  not need to complete the unbind/bind, but this does prevent the GPU from going into a low-power mode.
+In Option 2, you do not need to complete the unbind/bind, but this does prevent the GPU from going into a low-power mode.
 
 At this point, the Host OS Administrator persona has completed the required work to enable a Confidential VM with a Confidential H100 attached to it. The next steps will be from the persona of a user who has received access to a VM and is ready to develop or deploy a confidential application.
 
@@ -494,7 +494,7 @@ Welcome to Ubuntu 22.04.2 LTS (GNU/Linux 5.19.0-43-generic x86_64)
  * Management:     https://landscape.canonical.com
  * Support:        https://ubuntu.com/advantage
  
-  System information as of Wed Jun  7 10:00:56 PM UTC 2023
+  System information as of Wed Jun 7 10:00:56 PM UTC 2023
  
   System load:              0.080078125
   Usage of /:               5.5% of 982.19GB
@@ -522,7 +522,7 @@ Enable ESM Apps to receive additional future security updates.
 See https://ubuntu.com/esm or run: sudo pro status
  
  
-Last login: Wed Jun  7 21:46:48 2023
+Last login: Wed Jun 7 21:46:48 2023
 guestUser@guestVM:~$
 ```
 
@@ -683,7 +683,7 @@ client.add_verifier(attestation.Devices.GPU, attestation.Environment.LOCAL, "", 
 attestation_results_policy = '{"version":"1.0","authorization-rules":{"x-nv-gpu-available":true,' \
                          '"x-nv-gpu-attestation-report-available":true}}'
 
-# Run Attest    
+# Run Attest
 print(client.attest())
 
 # Call validate_token to validate the results against the Appraisal policy for Attestation Results
@@ -799,7 +799,7 @@ Containers are an often used deployment strategy for various computing workloads
 Kata was created to provide ultra lightweight VMs to bridge the gap between low-overhead, low-isolation containers and the high-isolation benefits of VMs, Microservices provided by confidential containers (CoCo) may run within these lightweight CVMs with the same security benefits as a traditional CVM. 
 
 
-Kata + CoCo, despite being a VM,  has been built to be deployed and orchestrated by traditional Kubernetes (k8s) clusters. As such, it is integrated into NVIDIA’s GPU Operator. 
+Kata + CoCo, despite being a VM, has been built to be deployed and orchestrated by traditional Kubernetes (k8s) clusters. As such, it is integrated into NVIDIA’s GPU Operator. 
 Install Container Runtime and Kubernetes
 The following instructions will provide you the steps to build a single-node k8s pod as a continuation of the flow of this document. It is meant as a representative sample, as building a full k8s cluster is beyond the scope of this document.
 
