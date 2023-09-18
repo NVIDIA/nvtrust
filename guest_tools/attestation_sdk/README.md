@@ -25,7 +25,7 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
 ## Features
 
 - Local GPU Attestation (using NVIDIA NVML based Python libraries)
-- Remote GPU Attestation (using NVIDIA Remote Attestation Service)”
+- Remote GPU Attestation (using NVIDIA Remote Attestation Service)
 
 Note: SDK v1.1.0 is still in Early Access Release (beta), and the APIs may undergo changes until the GA release.
 
