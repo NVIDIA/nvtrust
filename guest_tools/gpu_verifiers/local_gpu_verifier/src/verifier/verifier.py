@@ -61,6 +61,12 @@ class Verifier:
 
         if len(self.golden_measurements) == 0:
             info_log.warning("\t\t\tWarning : no golden measurements from RIMs received.")
+
+        # Make sure that active golden measurement are always less than or equal to run time measurement
+        if len(self.golden_measurements) > len(self.runtime_measurements):
+            info_log.info("\t\t\tWarning : Golden measurement are more than measurements in Attestation report.")
+            return False
+            
         
         list_of_mismatched_indexes = list()
 

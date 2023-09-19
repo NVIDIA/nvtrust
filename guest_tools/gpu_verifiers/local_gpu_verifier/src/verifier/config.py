@@ -55,6 +55,7 @@ event_log.debug("----------STARTING----------")
 
 class BaseSettings:
     SIZE_OF_NONCE_IN_BYTES = 32
+    SIZE_OF_NONCE_IN_HEX_STR = 64
     gpu_availability = False
     attestation_report_availability = False
     TEST_NO_GPU_NUMBER_OF_GPUS = 1
@@ -72,8 +73,10 @@ class BaseSettings:
     INDEX_OF_IK_CERT = 1
     SKU = "PROD"
     claims = {}
-    RIM_ROOT_CERT_DIR = os.path.join(parent_dir,"certs")
-    RIM_ROOT_CERT = os.path.join(RIM_ROOT_CERT_DIR, 'verifier_RIM_root.pem')
+    allow_hold_cert = False
+    ROOT_CERT_DIR = os.path.join(parent_dir,"certs")
+    RIM_ROOT_CERT = os.path.join(ROOT_CERT_DIR, 'verifier_RIM_root.pem')
+    DEVICE_ROOT_CERT = os.path.join(ROOT_CERT_DIR, 'verifier_device_root.pem')
 
     EXECUTION_SEQUENCE_INDEX = {
         'GPU_AVAILABILITY'                       : 0,
@@ -204,8 +207,8 @@ class BaseSettings:
     def check_if_gpu_certificate_ocsp_cert_chain_verified(self):
         return self.gpu_certificate_ocsp_cert_chain_verification
 
-    def mark_gpu_certificate_ocsp_cert_chain_as_verified(self):
-        event_log.debug("mark_gpu_certificate_ocsp_cert_chain_as_verified called")
+    def mark_gpu_certificate_ocsp_cert_chain_as_verified(self, mode):
+        event_log.debug("mark_gpu_certificate_ocsp_cert_chain_as_verified called for " + str(mode))
         self.gpu_certificate_ocsp_cert_chain_verification = True
 
     def check_if_gpu_cert_chain_verified(self):
@@ -407,7 +410,7 @@ class BaseSettings:
         self.claims["x-nv-gpu-vbios-rim-cert-extracted"] = self.check_if_vbios_rim_cert_extracted()
         self.claims["x-nv-gpu-vbios-rim-signature-verified"] = self.check_if_vbios_rim_signature_verified()
         self.claims["x-nv-gpu-vbios-rim-driver-measurements-available"] = self.check_rim_vbios_measurements_availability()
-        self.claims["x-nv-gpu-vbios-index-conflict"] = self.check_if_no_driver_vbios_measurement_index_conflict()
+        self.claims["x-nv-gpu-vbios-index-no-conflict"] = self.check_if_no_driver_vbios_measurement_index_conflict()
         self.claims["x-nv-gpu-measurements-match"] = self.check_if_measurements_are_matching()
         status = False
         for key in self.claims:

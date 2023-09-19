@@ -44,7 +44,10 @@ from verifier.config import (
 
 from .spdm_msrt_resp_msg import SpdmMeasurementResponseMessage
 from .spdm_msrt_req_msg import SpdmMeasurementRequestMessage
-from verifier.exceptions import NoMeasurementsError
+from verifier.exceptions import (
+    NoMeasurementsError,
+    ParsingError,
+)
 
 
 class AttestationReport:
@@ -102,6 +105,10 @@ class AttestationReport:
         assert type(request_data) is bytes
         assert type(response_data) is bytes
         assert type(signature_length) is int
+
+        if not len(response_data) > signature_length:
+            raise ParsingError("The the length of the SPDM GET_MEASUREMENT response message is less than \
+                               or equal to the length of the signature field, which is not correct.")
 
         data = request_data + response_data
         data = data[ : len(data) - signature_length]

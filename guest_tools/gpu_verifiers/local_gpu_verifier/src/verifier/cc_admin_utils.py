@@ -30,6 +30,7 @@
 
 import os
 import secrets
+import string
 from urllib import request, parse
 
 from OpenSSL import crypto
@@ -38,6 +39,7 @@ from cryptography.hazmat.primitives.hashes import SHA384
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.exceptions import InvalidSignature
 from cryptography.x509 import ocsp, OCSPNonce
+from cryptography import x509
 
 from verifier.attestation import AttestationReport
 from verifier.config import (
@@ -58,6 +60,7 @@ from verifier.exceptions import (
     SignatureVerificationError,
     VBIOSVersionMismatchError,
     RIMFetchError,
+    InvalidNonceError
 )
 
 class CcAdminUtils:
@@ -148,7 +151,7 @@ class CcAdminUtils:
                     certificate chain, otherwise False.
         """
         assert isinstance(cert_chain, list)
-
+        revoked_status = False
         start_index = 0
 
         if mode == BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION:
@@ -186,14 +189,14 @@ class CcAdminUtils:
                                                                                         BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
 
             if not ocsp_cert_chain_verification_status:
-                info_log.error(f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i - 1].subject}.")
+                info_log.error(f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
                 return False
-            elif i == end_index -1:
-                settings.mark_gpu_certificate_ocsp_cert_chain_as_verified()
+            elif i == end_index - 1:
+                settings.mark_gpu_certificate_ocsp_cert_chain_as_verified(mode)
 
             # Verifying the signature of the ocsp response message.
             if not CcAdminUtils.verify_ocsp_signature(ocsp_response):
-                info_log.error(f"\t\tThe ocsp response response for certificate {cert_chain[i - 1].subject} failed due to signature verification failure.")
+                info_log.error(f"\t\tThe ocsp response response for certificate {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} failed due to signature verification failure.")
                 return False
             elif i == end_index - 1:
                 settings.mark_gpu_certificate_ocsp_signature_as_verified()
@@ -209,10 +212,20 @@ class CcAdminUtils:
                 return False
 
             if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
-                info_log.error(f"\t\tThe {cert_chain[i - 1].subject} is revoked for reason : {ocsp_response.revocation_reason}")
-                return False
-        
-        info_log.info(f"\t\t\tThe certificate chain revocation status verification successful.")
+                if x509.ReasonFlags.certificate_hold == ocsp_response.revocation_reason and \
+                BaseSettings.allow_hold_cert and \
+                (mode == BaseSettings.Certificate_Chain_Verification_Mode.DRIVER_RIM_CERT or BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT):
+                    info_log.warning(f"\t\t\tWARNING: THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'.")
+                    revoked_status = True
+                else:
+                    info_log.error(f"\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
+                    return False
+
+        if not revoked_status:
+            info_log.info(f"\t\tThe certificate chain revocation status verification successful.")
+        else:
+            info_log.warning(f"\t\tThe certificate chain revocation status verification was not successful but continuing.")
+
         return True
 
     @staticmethod
@@ -263,27 +276,6 @@ class CcAdminUtils:
             info_log.error(error)
             info_log.info(err_msg)
             return False
-
-    # TO DO: Once the path for real RIM for driver is decided, the path will be set accordingly.
-    @staticmethod
-    def get_driver_RIM(driver_version, settings):
-        """ TO DO: Once the path for real RIM for driver is decided, the path will be set accordingly.
-
-        Args:
-            driver_version (str): the driver version for which the driver RIM needs to be fetched.
-            settings (config.HopperSettings): the object containing the various config info.
-
-        Returns:
-            [str]: the path to the appropriate driver RIM file.
-        """
-        assert isinstance(driver_version, str)
-        
-        # raise RIMFetchError(f"\tSomething went worng during fetching the RIM for driver version : {driver_version}")
-        settings.mark_driver_rim_fetched()
-        event_log.debug(f'RIM for the driver version {driver_version} fetched.')
-
-        "TODO : need to raise RIMFetchError in case of failure."
-        return settings.RIM_PATH
     
     @staticmethod
     def get_vbios_rim_path(settings, attestation_report):
@@ -351,6 +343,12 @@ class CcAdminUtils:
 
         # Here the attestation report is the concatenated SPDM GET_MEASUREMENTS request with the SPDM GET_MEASUREMENT response message. 
         request_nonce = attestation_report_obj.get_request_message().get_nonce()
+        
+        if len(nonce) > settings.SIZE_OF_NONCE_IN_BYTES or len(request_nonce) > settings.SIZE_OF_NONCE_IN_BYTES:
+            err_msg = "\t\t Length of Nonce is greater than max nonce size allowed."
+            event_log.error(err_msg)
+            raise InvalidNonceError(err_msg)
+        
         # compare the generated nonce with the nonce of SPDM GET MEASUREMENT request message in the attestation report.
         if request_nonce != nonce:
             err_msg = "\t\tThe nonce in the SPDM GET MEASUREMENT request message is not matching with the generated nonce."
@@ -370,7 +368,7 @@ class CcAdminUtils:
         info_log.info(f'\t\tDriver version fetched from the attestation report : {driver_version_from_attestation_report}')
 
         if driver_version_from_attestation_report != driver_version:
-            err_msg = "\t\tThe driver version in attestation report is not matching with the driver verison fetched from the driver."
+            err_msg = "\t\tThe driver version in attestation report is not matching with the driver version fetched from the driver."
             event_log.error(err_msg)
             raise DriverVersionMismatchError(err_msg)
 
@@ -417,6 +415,21 @@ class CcAdminUtils:
         random_bytes = secrets.token_bytes(size)
         return random_bytes
 
+    @staticmethod
+    def validate_and_extract_nonce(nonce_hex_string):
+        """ Validate and convert Nonce to bytes format
+
+        Args:
+            nonce_hex_string (string): 32 Bytes Nonce represented as Hex String
+
+        Returns:
+            [bytes]: Nonce represented as Bytes
+        """
+        if len(nonce_hex_string) == BaseSettings.SIZE_OF_NONCE_IN_HEX_STR and set(nonce_hex_string).issubset(string.hexdigits):
+            return bytes.fromhex(nonce_hex_string)
+        else :
+            raise InvalidNonceError("Invalid Nonce Size. The nonce should be 32 bytes in length represented as Hex String")
+            
     def __init__(self, number_of_gpus):
         """ It is the constructor for the CcAdminUtils.
 

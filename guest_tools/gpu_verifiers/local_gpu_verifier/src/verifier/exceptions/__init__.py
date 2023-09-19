@@ -239,3 +239,8 @@ class InvalidMeasurementIndexError(VerifierError):
     driver and vbios RIM file.
     """
     pass
+
+class InvalidNonceError(Error):
+    """ It is raised if user specified Nonce is not 32 bytes in length.
+    """
+    pass
