@@ -27,7 +27,11 @@
       "x-nv-gpu-vbios-rim-cert-extracted":true,
       "x-nv-gpu-vbios-rim-signature-verified":true,
       "x-nv-gpu-vbios-rim-driver-measurements-available":true,
-      "x-nv-gpu-vbios-index-conflict":true,
+      "x-nv-gpu-vbios-index-no-conflict":true,
       "x-nv-gpu-measurements-match":true
     }
   }
+
+
+
+

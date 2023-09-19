@@ -8,6 +8,7 @@ from enum import IntFlag
 from enum import IntEnum
 from datetime import datetime
 from nv_attestation_sdk.gpu import attest_gpu
+from nv_attestation_sdk.attestation import *
 import secrets
 import jwt
 import json
@@ -25,6 +26,7 @@ class Environment(IntEnum):
     LOCAL = 2
     AZURE = 3
     GCP = 4
+    REMOTE = 5
 
 class VerifierFields(IntEnum):
     NAME = 0
@@ -74,6 +76,8 @@ class Attestation(object):
         """
         if (dev == Devices.GPU and env == Environment.LOCAL) :
             name = "LOCAL_GPU_CLAIMS"
+        elif (dev == Devices.GPU and env == Environment.REMOTE) :
+            name = "REMOTE_GPU_CLAIMS"
         elif (dev == Devices.CPU and env == Environment.TEST) :
             name = "TEST_CPU_CLAIMS"
         else :
@@ -106,8 +110,20 @@ class Attestation(object):
         for verifier in cls._verifiers:
             attest_result = True
 
+            sdk_nonce_for_attestation = cls.get_nonce()
+
+            #generate nonce if not specified
+            if not sdk_nonce_for_attestation:
+                sdk_nonce_for_attestation = cls._generate_nonce()
+                
             if verifier[VerifierFields.DEVICE] == Devices.GPU and verifier[VerifierFields.ENVIRONMENT] == Environment.LOCAL:
-                this_result, jwt_token = attest_gpu.attest_gpu_local()
+                this_result, jwt_token = attest_gpu.attest_gpu_local(sdk_nonce_for_attestation)
+
+                # save the token with the verifier
+                verifier[VerifierFields.JWT_TOKEN] = jwt_token
+                attest_result = attest_result and this_result
+            elif verifier[VerifierFields.DEVICE] == Devices.GPU and verifier[VerifierFields.ENVIRONMENT] == Environment.REMOTE:
+                this_result, jwt_token = attest_gpu.attest_gpu_remote(sdk_nonce_for_attestation, verifier[VerifierFields.URL])
 
                 # save the token with the verifier
                 verifier[VerifierFields.JWT_TOKEN] = jwt_token
@@ -199,7 +215,7 @@ class Attestation(object):
     @classmethod
     def _validate_token_internal(cls, policy:str, eat_token: str) -> bool:
         attest_result = True
-
+    
         if eat_token == "":
             return False
         else:
@@ -212,12 +228,16 @@ class Attestation(object):
             eat_jwt = eat[0]
             eat_claims = eat[1]
 
+            if len(eat_claims) == 0:
+                return False
+
             for verifier_name in eat_claims:
                 jwt_token = eat_claims[verifier_name]
-
+                verifier = cls.get_verifier_by_name(verifier_name)
                 if verifier_name == "LOCAL_GPU_CLAIMS":
-                    this_result = attest_gpu.validate_gpu_token(jwt_token, policy)
-
+                    this_result = attest_gpu.validate_gpu_token_local(verifier, jwt_token, policy)
+                elif verifier_name == "REMOTE_GPU_CLAIMS":
+                    this_result = attest_gpu.validate_gpu_token_remote(verifier, jwt_token, policy)
                 elif verifier_name == "TEST_CPU_CLAIMS":
                     claims = jwt.decode( jwt_token, "notasecret", algorithms="HS256")
 
@@ -236,6 +256,13 @@ class Attestation(object):
                 attest_result = this_result and attest_result
            
         return attest_result
+    
+    @classmethod
+    def get_verifier_by_name(cls, verifier_name):
+        for verifier in cls._verifiers:
+            if verifier[VerifierFields.NAME] == verifier_name:
+                return verifier
+        return None
 
     @classmethod
     def validate_token(cls, policy:str , x=None) :
@@ -277,15 +304,8 @@ class Attestation(object):
 
     @classmethod
     def _generate_nonce(cls) -> str:
-        # Check for the nonce server AND the name.  If one is missing, generate a local nonce
-        if cls._nonceServer != "" and cls._name != "" :
-            # probably should only do this if name and url are non-null
-            # make call to url to get nonce
-            return "0xdeadbeefdeadbeefdeadbeefdeadbeef"
-        else:
-            # create nonce locally - 256 bits total
-            nonceStr = "0x" + secrets.token_hex(16)
-            return nonceStr
+        random_bytes = secrets.token_bytes(32)
+        return random_bytes.hex()
 
     @classmethod
     def get_nonce(cls) -> str:

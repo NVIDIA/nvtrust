@@ -48,7 +48,7 @@ If you encounter any pip related issues while building the package, please execu
 ## Usage
 To run the cc_admin module, use the following command:
 
-    python3 -m verifier.cc_admin [-h] [-v] [--test_no_gpu] [--driver_rim DRIVER_RIM] [--vbios_rim VBIOS_RIM] [--user_mode]
+    python3 -m verifier.cc_admin [-h] [-v] [--test_no_gpu] [--driver_rim DRIVER_RIM] [--vbios_rim VBIOS_RIM] [--user_mode] [--nonce] [--allow_hold_cert]
 
     options:
       -h, --help            show this help message and exit
@@ -57,9 +57,10 @@ To run the cc_admin module, use the following command:
       --driver_rim DRIVER_RIM
                             The path to the driver RIM. If not provided, it will use the default file : "/usr/share/nvidia/rim/RIM_GH100PROD.swidtag"
       --vbios_rim VBIOS_RIM
-                            The path to the VBIOS RIM. If not provided, it will try to find the appropriate file in verifier_cc/samples/ directory for the VBIOS ROM flashed onto the GPU. 
+                            The path to the VBIOS RIM. If not provided, it will try to find the appropriate file in verifier_cc/samples/ directory for the VBIOS ROM flashed onto the GPU.
       --user_mode           Runs the gpu attestation in user mode.
-
+      --allow_hold_cert     If the user wants to continue the attestation in case of the OCSP revocation status of the certificate in the RIM files is 'certificate_hold'
+      --nonce               Specify a Nonce for Attestation Report
 
 If you need information about any function, use
         

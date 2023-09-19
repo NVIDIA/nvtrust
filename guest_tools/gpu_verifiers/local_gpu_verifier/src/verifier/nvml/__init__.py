@@ -47,14 +47,6 @@ from pynvml import (
     nvmlSystemGetConfComputeState,
     NVML_CC_ACCEPTING_CLIENT_REQUESTS_FALSE,
     NVML_CC_ACCEPTING_CLIENT_REQUESTS_TRUE,
-    NVML_ERROR_UNINITIALIZED,
-    NVML_ERROR_DRIVER_NOT_LOADED,
-    NVML_ERROR_TIMEOUT,
-    NVML_ERROR_RESET_REQUIRED,
-    NVML_ERROR_IN_USE,
-    NVML_ERROR_MEMORY,
-    NVML_ERROR_NO_DATA,
-    NVML_ERROR_INSUFFICIENT_RESOURCES,
 )
 
 from verifier.utils import (
@@ -80,18 +72,6 @@ class NvmlHandler:
     """ Class to handle all the pynvml api calls and fetching the GPU information.
     """
     Handles = None
-
-
-    TEMPORARY_ISSUE = [
-        NVML_ERROR_UNINITIALIZED,
-        NVML_ERROR_DRIVER_NOT_LOADED,
-        NVML_ERROR_TIMEOUT,
-        NVML_ERROR_RESET_REQUIRED,
-        NVML_ERROR_IN_USE,
-        NVML_ERROR_MEMORY,
-        NVML_ERROR_NO_DATA,
-        NVML_ERROR_INSUFFICIENT_RESOURCES,
-    ]
 
     @classmethod
     def get_number_of_gpus(cls): 
@@ -211,7 +191,7 @@ class NvmlHandler:
             return bin_attestation_report_data
 
         except TimeoutError as err:
-            raise AttestationReportFetchError("\tThe call to fetch attestation report timed out.")
+            raise TimeoutError("\tThe call to fetch attestation report timed out.")
         except Exception as err:
             info_log.error(err)
             err_msg = "\tSomething went wrong while fetching the attestation report from the gpu."

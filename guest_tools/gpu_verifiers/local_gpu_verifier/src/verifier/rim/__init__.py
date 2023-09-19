@@ -255,7 +255,7 @@ class RIM:
         try:
             # performs the signature verification of the RIM. We will get the root of the RIM
             # if the signature verification is successful otherwise, it raises InvalidSignature exception.
-            verified_root = XMLVerifier().verify(self.root, ca_pem_file = settings.RIM_ROOT_CERT, ca_path = settings.RIM_ROOT_CERT_DIR).signed_xml
+            verified_root = XMLVerifier().verify(self.root, ca_pem_file = settings.RIM_ROOT_CERT, ca_path = settings.ROOT_CERT_DIR).signed_xml
 
             if verified_root is None:
                 err_msg = "\t\t\tRIM signature verification failed."
@@ -390,7 +390,7 @@ class RIM:
 
             rim_cert_chain = self.extract_certificates()
             # Reading the RIM root certificate.
-            with open(os.path.join(settings.RIM_ROOT_CERT_DIR, settings.RIM_ROOT_CERT), 'r') as root_cert_file:
+            with open(os.path.join(settings.ROOT_CERT_DIR, settings.RIM_ROOT_CERT), 'r') as root_cert_file:
                 root_cert_data = root_cert_file.read()
 
             if self.rim_name == 'driver':
