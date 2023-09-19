@@ -122,7 +122,9 @@ def find_gpus_sysfs(bdf_pattern=None):
         cls = cls[0].strip()
         try:
             if cls == "0x068000":
-                dev = NvSwitch(dev_path=dev_path)
+                # Currently, skip NvSwitch
+                # dev = NvSwitch(dev_path=dev_path)
+				continue
             else:
                 dev = Gpu(dev_path=dev_path)
         except UnknownGpuError as err:
@@ -994,7 +996,9 @@ class PciDevice(Device):
             # Root port
             if pci_dev.pciflags["TYPE"] == 0x4:
                 if pci_dev.vendor == 0x8086:
-                    return IntelRootPort
+                    # Currently, fall back to PciBridge code path
+                    # return IntelRootPort
+					pass
                 return PciBridge
 
             # Upstream port
