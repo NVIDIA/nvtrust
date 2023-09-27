@@ -1,6 +1,0 @@
-config MIPS
-    bool
-
-config MIPS64
-    bool
-    select MIPS

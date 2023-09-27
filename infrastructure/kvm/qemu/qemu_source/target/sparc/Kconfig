@@ -1,5 +1,0 @@
-config SPARC
-    bool
-
-config SPARC64
-    bool

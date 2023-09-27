@@ -1,5 +1,0 @@
-#
-# Generated makefile dependencies follow.
-#
-camellia.so camellia.po $(OUTPRE)camellia.$(OBJEXT): \
-  camellia.c camellia.h
