@@ -1403,6 +1403,25 @@ class NvidiaDevice(PciDevice):
                 raise GpuError("Timed out polling register %s (%s), value %s is not the expected %s. Timeout %f secs" % (name, hex(offset), hex(reg), hex(value), timeout))
             if sleep_interval > 0.0:
                 time.sleep(sleep_interval)
+
+class NvSwitch(NvidiaDevice):
+    def __init__(self, dev_path):
+        self.name = "?"
+        self.bar0_addr = 0
+        super(NvSwitch, self).__init__(dev_path)
+    def is_nvswitch(self):
+        return True
+    def __str__(self):
+        return "NvSwitch %s %s %s BAR0 0x%x" % (self.bdf, self.name, hex(self.device), self.bar0_addr)
+
+class IntelRootPort(PciBridge):
+    def __init__(self, dev_path):
+        super(IntelRootPort, self).__init__(dev_path)
+    def is_intel(self):
+        return True
+    def __str__(self):
+        return "Intel root port %s" % self.bdf
+
 class GpuMemPort(object):
     def __init__(self, name, mem_control_reg, max_size, npu):
         self.name = name
