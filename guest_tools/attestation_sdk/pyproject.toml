@@ -1,6 +1,6 @@
 [project]
 name = "nv-attestation-sdk"
-version = "1.1.0"
+version = "1.2.0"
 authors = [
     {name = "NVIDIA"},
 ]
@@ -14,7 +14,7 @@ classifiers = [
 ]
 dependencies = [
     'pyjwt ~= 2.7.0',
-    'verifier == 1.1.0',
+    'verifier == 1.2.0',
     'requests ~= 2.31.0'
 ]
 keywords = [

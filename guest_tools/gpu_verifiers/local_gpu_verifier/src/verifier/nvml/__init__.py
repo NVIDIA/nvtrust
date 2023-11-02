@@ -130,7 +130,7 @@ class NvmlHandler:
                     returns False.
         """
         state = function_wrapper_with_timeout([nvmlSystemGetConfComputeState,
-                                      "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
+                                              "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
         return state.ccFeature != 0
 
     @staticmethod
@@ -142,7 +142,7 @@ class NvmlHandler:
                     returns False.
         """
         state = function_wrapper_with_timeout([nvmlSystemGetConfComputeState,
-                                      "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
+                                              "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
         return state.devToolsMode != 0
 
     @staticmethod
