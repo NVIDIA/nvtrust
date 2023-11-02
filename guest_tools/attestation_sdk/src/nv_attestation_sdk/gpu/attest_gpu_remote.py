@@ -79,6 +79,7 @@ def generate_evidence(nonce=""):
     return gpu_evidence_list
 
 def verify_evidence(nonce, gpu_evidence_list, verifierUrl="https://nras.attestation.nvidia.com/v1/attest/gpu"):
+    overall_status = False
     attestation_result = False
     jwt_token = ""
     headers = {
@@ -102,9 +103,10 @@ def verify_evidence(nonce, gpu_evidence_list, verifierUrl="https://nras.attestat
                 print("received NRAS response: ", reponse_json)
                 #jwt_token = get_err_eat_token(reponse_json['errorCode'], reponse_json['message'])
             if i == 0:
-                attestation_result = current_gpu_status
+                overall_status = current_gpu_status
             else:
-                attestation_result = overall_status and current_gpu_status
+                overall_status = overall_status and current_gpu_status
+        attestation_result = overall_status
     except Exception as e:
         print("\tException: ", e)
     return attestation_result, jwt_token
