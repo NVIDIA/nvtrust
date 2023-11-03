@@ -145,7 +145,7 @@ class RIM:
         """
         try:
             parser = etree.XMLParser(resolve_entities=False)
-            xml_schema_document = etree.parse(schema_path, parser) 
+            xml_schema_document = etree.parse(schema_path, parser)
 
             xml_schema = etree.XMLSchema(xml_schema_document)
 
@@ -386,7 +386,7 @@ class RIM:
             else:
                 settings.mark_vbios_rim_schema_validated()
 
-            if version != self.colloquialVersion:
+            if version != self.colloquialVersion.lower():
                 info_log.warning(f"\t\t\tThe {self.rim_name} version in the RIM file is not matching with the installed {self.rim_name} version.")
             else:
                 if self.rim_name == 'driver':

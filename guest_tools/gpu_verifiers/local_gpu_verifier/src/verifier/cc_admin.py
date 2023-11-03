@@ -381,7 +381,8 @@ def attest(arguments_as_dictionary):
                     project_sku = attestation_report_obj.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_PROJECT_SKU")
                     chip_sku = attestation_report_obj.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_CHIP_SKU")
                     vbios_version = format_vbios_version(attestation_report_obj.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_VBIOS_VERSION"))
-                    vbios_version = vbios_version.replace(".", "").upper()
+                    vbios_version_for_id = vbios_version.replace(".", "").upper()
+                    vbios_version = vbios_version.lower()
 
                     project = project.decode('ascii').strip().strip('\x00')
                     project = project.upper()
@@ -392,7 +393,7 @@ def attest(arguments_as_dictionary):
                     vbios_rim_file_id = CcAdminUtils.get_vbios_rim_file_id(project,
                                                                            project_sku,
                                                                            chip_sku,
-                                                                           vbios_version)
+                                                                           vbios_version_for_id)
                     
                     vbios_rim_content = function_wrapper_with_timeout([CcAdminUtils.fetch_rim_file,
                                                                        vbios_rim_file_id,
