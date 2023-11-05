@@ -61,6 +61,10 @@ To run the cc_admin module, use the following command:
       --user_mode           Runs the gpu attestation in user mode.
       --allow_hold_cert     If the user wants to continue the attestation in case of the OCSP revocation status of the certificate in the RIM files is 'certificate_hold'
       --nonce               Specify a Nonce for Attestation Report
+      --rim_root_cert RIM_ROOT_CERT 
+                            The absolute path to the root certificate to be used for verifying the certificate chain of the driver and vBIOS RIM certificate chain
+      --rim_service_url RIM_SERVICE_URL 
+                            The URL to be used for fetching driver and vBIOS RIM files. eg: https://rim.nvidia.com/rims/
 
 If you need information about any function, use
         

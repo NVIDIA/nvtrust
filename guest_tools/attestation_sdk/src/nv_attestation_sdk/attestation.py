@@ -7,7 +7,8 @@
 from enum import IntFlag
 from enum import IntEnum
 from datetime import datetime
-from nv_attestation_sdk.gpu import attest_gpu
+from nv_attestation_sdk.gpu import attest_gpu_local
+from nv_attestation_sdk.gpu import attest_gpu_remote
 from nv_attestation_sdk.attestation import *
 import secrets
 import jwt
@@ -93,6 +94,7 @@ class Attestation(object):
         """
         return cls._verifiers
 
+
     @classmethod
     def attest(cls) -> bool:
         """
@@ -117,13 +119,13 @@ class Attestation(object):
                 sdk_nonce_for_attestation = cls._generate_nonce()
                 
             if verifier[VerifierFields.DEVICE] == Devices.GPU and verifier[VerifierFields.ENVIRONMENT] == Environment.LOCAL:
-                this_result, jwt_token = attest_gpu.attest_gpu_local(sdk_nonce_for_attestation)
+                this_result, jwt_token = attest_gpu_local.attest(sdk_nonce_for_attestation)
 
                 # save the token with the verifier
                 verifier[VerifierFields.JWT_TOKEN] = jwt_token
                 attest_result = attest_result and this_result
             elif verifier[VerifierFields.DEVICE] == Devices.GPU and verifier[VerifierFields.ENVIRONMENT] == Environment.REMOTE:
-                this_result, jwt_token = attest_gpu.attest_gpu_remote(sdk_nonce_for_attestation, verifier[VerifierFields.URL])
+                this_result, jwt_token = attest_gpu_remote.attest(sdk_nonce_for_attestation, verifier[VerifierFields.URL])
 
                 # save the token with the verifier
                 verifier[VerifierFields.JWT_TOKEN] = jwt_token
@@ -235,9 +237,9 @@ class Attestation(object):
                 jwt_token = eat_claims[verifier_name]
                 verifier = cls.get_verifier_by_name(verifier_name)
                 if verifier_name == "LOCAL_GPU_CLAIMS":
-                    this_result = attest_gpu.validate_gpu_token_local(verifier, jwt_token, policy)
+                    this_result = attest_gpu_local.validate_gpu_token(verifier, jwt_token, policy)
                 elif verifier_name == "REMOTE_GPU_CLAIMS":
-                    this_result = attest_gpu.validate_gpu_token_remote(verifier, jwt_token, policy)
+                    this_result = attest_gpu_remote.validate_gpu_token(verifier, jwt_token, policy)
                 elif verifier_name == "TEST_CPU_CLAIMS":
                     claims = jwt.decode( jwt_token, "notasecret", algorithms="HS256")
 

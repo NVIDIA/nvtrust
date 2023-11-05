@@ -223,6 +223,11 @@ class InvalidRIMNameError(RIMError):
     """
     pass
 
+class RIMFileNotAvailableError(RIMError):
+    """ It is raise in case the required RIM file is not available in the RIM service.  
+    """
+    pass
+
 class VerifierError(Error):
     """ It is the base class for the exceptions related to the verifier.
     """
