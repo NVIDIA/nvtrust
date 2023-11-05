@@ -159,6 +159,5 @@ class GpuCertificateChains:
             self.GpuAttestationCertificateChain = self.extract_cert_chain(self.get_gpu_certificate_chains(handle))[:-1]
         
         with open(BaseSettings.DEVICE_ROOT_CERT, 'r') as f:
-            print("using the new pinned root cert")
             data = f.read()
             self.GpuAttestationCertificateChain.append(crypto.load_certificate(type= crypto.FILETYPE_PEM, buffer= data))

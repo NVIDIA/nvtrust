@@ -10,40 +10,18 @@ from cryptography.x509 import load_der_x509_certificate
 from cryptography.hazmat.backends import default_backend
 from nv_attestation_sdk import attestation
 from urllib.parse import urlparse
+from nv_attestation_sdk.gpu import gpu_utils
 
-def validate_gpu_token_local(verifier, gpu_token: str, policy: str):
-    if policy == "" or gpu_token == "":
-        return False
-    decoded_token = jwt.decode(gpu_token, algorithms='HS256', verify=False, key="secret")
-    auth_rules = get_auth_rules(policy)
-    return validate_gpu_token_with_policy(decoded_token, auth_rules)
-
-def validate_gpu_token_with_policy(token: str, policy: str):
-    for key in policy:
-        if key in token:
-            if type(policy[key]) is dict:
-                return validate_gpu_token_with_policy(token[key], policy[key])
-            else:
-                if token[key] != policy[key]:
-                    print("\t[ERROR] Invalid token. Authorized claims does not match the appraisal policy: ", key)
-                    return False
-        else:
-            print("\t[ERROR] Invalid token. Authorized claims does not match the appraisal policy: ", key)
-            return False
-    return True
-
-def get_auth_rules(policy: str):
-    if policy == "":
-        return None
-    policy_obj = json.loads(policy)
-    return policy_obj['authorization-rules']
+def attest(nonce, verifierUrl):
+    gpu_evidence_list = generate_evidence(nonce)
+    return verify_evidence(nonce, gpu_evidence_list, verifierUrl)
 
 def create_jwks_url(verifier_url:str):
     parsed_url = urlparse(verifier_url)
     jwks_url = parsed_url.scheme + "://" + parsed_url.netloc + "/" + ".well-known/jwks.json"
     return jwks_url
 
-def validate_gpu_token_remote(verifier, gpu_token: str, policy: str):
+def validate_gpu_token(verifier, gpu_token: str, policy: str):
     verifier_url = verifier[attestation.VerifierFields.URL]
     jwks_url = create_jwks_url(verifier_url)
     print("***** Validating Signature using JWKS endpont " + jwks_url + " ****** ")
@@ -84,8 +62,8 @@ def validate_gpu_token_remote(verifier, gpu_token: str, policy: str):
             json_formatted_str = json.dumps(decoded_token, indent=2)
             print("Decoded Token " , str(json_formatted_str))
             print("***** JWT token signature is valid. *****")
-            auth_rules = get_auth_rules(policy)
-            return validate_gpu_token_with_policy(decoded_token, auth_rules)
+            auth_rules = gpu_utils.get_auth_rules(policy)
+            return gpu_utils.validate_gpu_token_with_policy(decoded_token, auth_rules)
         except jwt.ExpiredSignatureError:
             print("JWT token has expired.")
         except jwt.InvalidTokenError as e:
@@ -94,33 +72,19 @@ def validate_gpu_token_remote(verifier, gpu_token: str, policy: str):
         print("No matching key or x5c key found for the provided kid.")
     return False
 
-def attest_gpu_local(nonce):
-    attestation_result = False
+def generate_evidence(nonce=""):
+    print("generate_evidence")
     from verifier import cc_admin
-    jwt_token = ""
-    try:
-        params = {"verbose": True,
-                  "test_no_gpu": False,
-                  "driver_rim": "/usr/share/nvidia/rim/RIM_GH100PROD.swidtag",
-                  "vbios_rim": None,
-                  "user_mode": True,
-                  'nonce': nonce}
-        attestation_result, jwt_token = cc_admin.attest(params)
-    except Exception as e:
-        print("\tException: ", e)
-        jwt_token = get_err_eat_token()
-    return attestation_result, jwt_token
+    gpu_evidence_list = cc_admin.collect_gpu_evidence(nonce)
+    return gpu_evidence_list
 
-def attest_gpu_remote(nonce, verifierUrl):
-    from verifier import cc_admin
+def verify_evidence(nonce, gpu_evidence_list, verifierUrl="https://nras.attestation.nvidia.com/v1/attest/gpu"):
     attestation_result = False
     jwt_token = ""
     headers = {
         'Content-Type': 'application/json'
     }
     try:
-        print("attest_gpu_remote")
-        gpu_evidence_list = cc_admin.collect_gpu_evidence(nonce)
         for i , gpu_evidence in enumerate(gpu_evidence_list):
             gpu_evidence = gpu_evidence_list[i]
             current_gpu_status = False
@@ -135,7 +99,7 @@ def attest_gpu_remote(nonce, verifierUrl):
                 current_gpu_status = True
             else:
                 print("**** Attestation Failed ****")
-                print("received NRAS response code: ", response.status_code)
+                print("received NRAS response: ", reponse_json)
                 #jwt_token = get_err_eat_token(reponse_json['errorCode'], reponse_json['message'])
             if i == 0:
                 attestation_result = current_gpu_status
@@ -144,12 +108,6 @@ def attest_gpu_remote(nonce, verifierUrl):
     except Exception as e:
         print("\tException: ", e)
     return attestation_result, jwt_token
-
-def get_err_eat_token(errCode=1, errMsg="GPU_ATTESTATION_ERR"):
-    errJson = {'x-nv-err-message': errMsg, 'x-nv-err-code': errCode}
-    return jwt.encode(errJson,
-                        'secret',
-                        "HS256")
 
 def build_payload(nonce, evidence, cert_chain):
     data = dict()

@@ -29,3 +29,5 @@ print ("[RemoteGPUTest] token : "+str(client.get_token()))
 
 print ("[RemoteGPUTest] call validate_token() - expecting True")
 print(client.validate_token(remote_att_result_policy))
+
+

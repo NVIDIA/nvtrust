@@ -101,26 +101,34 @@ class RIM:
         return list_of_elements
 
     @staticmethod
-    def read(base_RIM_path):
+    def read(base_RIM_path = None, content = None):
         """ Static method that reads the signed base RIM from the disk.
         
         Argument:
         base_RIM_path (str) : the path to the signed base RIM.
-        
+        content (str) : the content of the RIM file as a string.
         Returns:
         root (lxml.etree._Element) : the root element of the base RIM.
         """
-        try:
-            assert type(base_RIM_path) is str
+        if base_RIM_path is not None and content is None:
+            try:
+                assert type(base_RIM_path) is str
+        
+                with open(base_RIM_path, 'rb') as f:
+                    read_data = f.read()
 
-            with open(base_RIM_path, 'rb') as f:
-                read_data = f.read()
+            except OSError:
+                event_log.error(f'Unable to read {base_RIM_path} \nPlease provide a valid RIM file.')
+                raise RIMFetchError(f'Unable to read {base_RIM_path} \nPlease provide a valid RIM file.')
 
-        except OSError:
-            event_log.error(f'Unable to read {base_RIM_path} \nPlease provide a valid RIM file.')
-            raise RIMFetchError(f'Unable to read {base_RIM_path} \nPlease provide a valid RIM file.')
+            file_stream = io.BytesIO(read_data)
 
-        file_stream = io.BytesIO(read_data)
+        elif base_RIM_path is None and content is not None:
+            file_stream = io.StringIO(content)
+
+        else:
+            raise RIMFetchError("Invalid parameters!!")
+
         parser = etree.XMLParser(resolve_entities=False)
         new_swidtag_tree = etree.parse(file_stream, parser) 
         new_root = new_swidtag_tree.getroot()
@@ -137,7 +145,7 @@ class RIM:
         """
         try:
             parser = etree.XMLParser(resolve_entities=False)
-            xml_schema_document = etree.parse(schema_path, parser) 
+            xml_schema_document = etree.parse(schema_path, parser)
 
             xml_schema = etree.XMLSchema(xml_schema_document)
 
@@ -378,7 +386,7 @@ class RIM:
             else:
                 settings.mark_vbios_rim_schema_validated()
 
-            if version != self.colloquialVersion:
+            if version != self.colloquialVersion.lower():
                 info_log.warning(f"\t\t\tThe {self.rim_name} version in the RIM file is not matching with the installed {self.rim_name} version.")
             else:
                 if self.rim_name == 'driver':
@@ -410,21 +418,21 @@ class RIM:
             rim_cert_chain_ocsp_revocation_status = CcAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain, settings, mode)
 
             if not rim_cert_chain_ocsp_revocation_status:
-                raise RIMCertChainOCSPVerificationError(f"{self.rim_name} RIM cert chain ocsp status verification failed.")
+                raise RIMCertChainOCSPVerificationError(f"\t\t\t{self.rim_name} RIM cert chain ocsp status verification failed.")
             
             return self.verify_signature(settings)
         
         else:            
             raise RIMSchemaValidationError(f"\t\t\tSchema validation of {self.rim_name} RIM failed.")
 
-    def __init__(self, rim_path, rim_name, settings):
+    def __init__(self, rim_name, settings, rim_path = '', content = ''):
         """ The constructor method for the RIM class handling all the RIM file processing.
 
         Args:
-            rim_path (str): the path to the RIM file
             rim_name (str): the name of the RIM, can be either "driver" or "vbios"
             settings (config.HopperSettings): the object containing various config.
-
+            rim_path (str): the path to the RIM file
+            content (str): the content of the RIM file as a string.
         Raises:
             InvalidRIMNameError: it is raised if the rim_path is invalid.
         """
@@ -435,7 +443,10 @@ class RIM:
             raise InvalidRIMNameError(f"Invalid rim name '{rim_name}' provided, valid names can be 'driver'/'vbios'.")
 
         self.rim_name = rim_name
-        self.root = RIM.read(rim_path)
+        if content == '':
+            self.root = RIM.read(base_RIM_path = rim_path)
+        else:
+            self.root = RIM.read(content = content)
 
         if rim_name == 'driver':
             settings.mark_driver_rim_fetched()

@@ -66,8 +66,10 @@ class BaseSettings:
     # The Timeout duration in seconds.
     MAX_NVML_TIME_DELAY = 5
     MAX_OCSP_TIME_DELAY = 10
-    OCSP_URL = 'http://ocsp.ndis.nvidia.com/'
+    MAX_NETWORK_TIME_DELAY = 10
+    OCSP_URL = 'https://ocsp.ndis.nvidia.com/'
     OCSP_HASH_FUNCTION = sha384
+    RIM_SERVICE_BASE_URL = 'https://rim.attestation.nvidia.com/v1/rim/'
     Certificate_Chain_Verification_Mode = Enum("CERT CHAIN VERIFICATION MODE", ['GPU_ATTESTATION', 'OCSP_RESPONSE', 'DRIVER_RIM_CERT', 'VBIOS_RIM_CERT'])
     NVDEC_STATUS = Enum("NVDEC0 status", [("ENABLED", 0xAA), ("DISABLED", 0x55)])
     INDEX_OF_IK_CERT = 1
@@ -110,6 +112,12 @@ class BaseSettings:
         'DRV_VBIOS_MSR_INDEX_CONFLICT'           : 28,
         'MEASUREMENT_MATCH'                      : 29,
     }
+
+    @classmethod
+    def set_rim_service_base_url(cls, url):
+        if not isinstance(url, str):
+            raise ValueError("Incorrect data type for the URL.")
+        cls.RIM_SERVICE_BASE_URL = url
 
     @classmethod
     def get_sku(cls):
@@ -166,6 +174,11 @@ class BaseSettings:
         self.gpu_certificate_ocsp_signature_verification  = False
         self.gpu_certificate_ocsp_cert_chain_verification = False
         self.gpu_cert_check_complete                      = False
+
+
+    @classmethod
+    def set_rim_root_certificate(cls, path):
+        cls.RIM_ROOT_CERT = path
 
     def get_root_cert_availability(self):
         return self.root_cert_availability

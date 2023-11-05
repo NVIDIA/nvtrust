@@ -31,7 +31,11 @@
 import os
 import secrets
 import string
-from urllib import request, parse
+from urllib import request
+from urllib.error import HTTPError
+import json
+import base64
+
 
 from OpenSSL import crypto
 from cryptography.hazmat.primitives import serialization
@@ -49,7 +53,6 @@ from verifier.config import (
 )
 from verifier.utils import (
     format_vbios_version,
-    read_field_as_little_endian,
     function_wrapper_with_timeout,
 )
 from verifier.exceptions import (
@@ -171,9 +174,9 @@ class CcAdminUtils:
             request = request_builder.build()
             # Making the network call in a separate thread.
             ocsp_response = function_wrapper_with_timeout([CcAdminUtils.send_ocsp_request,
-                                                            request.public_bytes(serialization.Encoding.DER),
-                                                            "send_ocsp_request"],
-                                                            BaseSettings.MAX_OCSP_TIME_DELAY)
+                                                           request.public_bytes(serialization.Encoding.DER),
+                                                           "send_ocsp_request"],
+                                                           BaseSettings.MAX_OCSP_TIME_DELAY)
 
             # Verifying the ocsp response certificate chain.
             ocsp_response_leaf_cert = crypto.load_certificate(type=crypto.FILETYPE_ASN1,
@@ -218,13 +221,13 @@ class CcAdminUtils:
                     info_log.warning(f"\t\t\tWARNING: THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'.")
                     revoked_status = True
                 else:
-                    info_log.error(f"\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
+                    info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
                     return False
 
         if not revoked_status:
-            info_log.info(f"\t\tThe certificate chain revocation status verification successful.")
+            info_log.info(f"\t\t\tThe certificate chain revocation status verification successful.")
         else:
-            info_log.warning(f"\t\tThe certificate chain revocation status verification was not successful but continuing.")
+            info_log.warning(f"\t\t\tThe certificate chain revocation status verification was not successful but continuing.")
 
         return True
 
@@ -239,15 +242,15 @@ class CcAdminUtils:
         Returns:
             [cryptography.hazmat.backends.openssl.ocsp._OCSPResponse]: the ocsp response message object.
         """
-        if not BaseSettings.OCSP_URL.lower().startswith('http'):
+        if not BaseSettings.OCSP_URL.lower().startswith('https'):
             # Raising exception in case of url not starting with http, and not FTP, etc. 
             raise ValueError from None
 
-        http_request = request.Request(BaseSettings.OCSP_URL, data)
-        http_request.add_header("Content-Type", "application/ocsp-request")
+        https_request = request.Request(BaseSettings.OCSP_URL, data)
+        https_request.add_header("Content-Type", "application/ocsp-request")
 
-        with request.urlopen(http_request) as http_response:      #nosec taken care of the security issue by checking for the url to start with "http"
-            ocsp_response = ocsp.load_der_ocsp_response(http_response.read())
+        with request.urlopen(https_request) as https_response:      #nosec taken care of the security issue by checking for the url to start with "http"
+            ocsp_response = ocsp.load_der_ocsp_response(https_response.read())
 
         return ocsp_response
 
@@ -276,7 +279,57 @@ class CcAdminUtils:
             info_log.error(error)
             info_log.info(err_msg)
             return False
-    
+
+    @staticmethod
+    def fetch_rim_file(file_id):
+        """ A static method to fetch the RIM file with the given file id from the RIM service.
+
+        Args:
+            file_id (str): the RIM file id which need to be fetched from the RIM service.
+
+        Returns:
+            [str]: the content of the required RIM file as a string.
+        """
+        try:
+            with request.urlopen(BaseSettings.RIM_SERVICE_BASE_URL + file_id) as https_response:
+                data = https_response.read()
+                json_object = json.loads(data)
+                base64_data = json_object['rim']
+                decoded_str = base64.b64decode(base64_data)
+                return decoded_str.decode('utf-8')
+        except HTTPError:
+            raise RIMFetchError("Could not fetch the rim file : " + file_id)        
+
+    @staticmethod
+    def get_vbios_rim_file_id(project, project_sku, chip_sku, vbios_version):
+        """ A static method to generate the required VBIOS RIM file id which needs to be fetched from the RIM service 
+            according to the vbios flashed onto the system. 
+
+        Args:
+            attestation_report (AttestationReport): the object representing the attestation report.
+
+        Returns:
+            [str]: the VBIOS RIM file id.
+        """
+        base_str = 'NV_GPU_VBIOS_'
+
+        return base_str + project + "_" + project_sku + "_" + chip_sku + "_" + vbios_version
+
+    @staticmethod
+    def get_driver_rim_file_id(driver_version):
+        """ A static method to generate the driver RIM file id to be fetched from the RIM service corresponding to 
+            the driver installed onto the system. 
+
+        Args:
+            driver_version (str): the driver version of the installed driver.
+
+        Returns:
+            [str]: the driver RIM file id.
+        """
+        base_str = 'NV_GPU_DRIVER_GH100_'
+        return base_str + driver_version
+
+
     @staticmethod
     def get_vbios_rim_path(settings, attestation_report):
         """ A static method to determine the path of the appropriate VBIOS RIM file.
