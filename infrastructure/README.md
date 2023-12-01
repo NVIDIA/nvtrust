@@ -1,2 +1,5 @@
 # Infrastructure Source Code
- This folder structure contains third party open source code which is utilized in the NVIDIA Confidential Computing Solutions. These files are a fork from public repositories without modification outside of potential present `patches/` directories within the respective subdirectory.
+This folder contains a patch subfolder for code which is considered "infrastructure" in Confidential Computing uses. These may include:
+* The Linux Kernel
+* Hypervisors such as KVM
+* Bootloaders such as OVMF
