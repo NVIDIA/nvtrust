@@ -2245,7 +2245,7 @@ class Gpu(NvidiaDevice):
         bar0_decoupler_val = 0x0
         if mode == "on":
             cc_mode = 0x1
-            bar0_decoupler_val = 0x1
+            bar0_decoupler_val = 0x2
         elif mode == "devtools":
             cc_mode = 0x1
             cc_dev_mode = 0x1
