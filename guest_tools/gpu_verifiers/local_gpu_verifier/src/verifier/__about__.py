@@ -34,7 +34,7 @@ __all__ = [
     "__copyright__",
 ]
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 __author__ = "NVIDIA CORPORATION"
 __copyright__ = f"Copyright (c) 2021-2023 {__author__}"

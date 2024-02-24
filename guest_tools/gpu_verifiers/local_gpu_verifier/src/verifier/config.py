@@ -114,6 +114,12 @@ class BaseSettings:
     }
 
     @classmethod
+    def set_ocsp_url(cls, url):
+        if not isinstance(url, str):
+            raise ValueError("Incorrect data type for the URL.")
+        cls.OCSP_URL = url
+
+    @classmethod
     def set_rim_service_base_url(cls, url):
         if not isinstance(url, str):
             raise ValueError("Incorrect data type for the URL.")
