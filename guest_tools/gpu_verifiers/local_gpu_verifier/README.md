@@ -86,7 +86,7 @@ The RIM (Reference Integrity Manifest) is a manifest containing golden measureme
 
 
 ### attestation
-The Attestation module is capable of extracting the measurements and the measurement signature. It then performs signature verification. DMTF's SPDM 1.1 MEASUREMENT response message is used as the attestation report for APM. You can find the SPDM 1.1 specification at the following link: [SPDM 1.1 Specification](https://www.dmtf.org/sites/default/files/standards/documents/DSP0274_1.1.0.pdf).
+The Attestation module is capable of extracting the measurements and the measurement signature. It then performs signature verification. DMTF's SPDM 1.1 MEASUREMENT response message is used as the attestation report for APM. You can find the SPDM 1.1 specification at the following link: [SPDM 1.1 Specification](https://www.dmtf.org/sites/default/files/standards/documents/DSP0274_1.1.3.pdf).
 
 ### nvmlHandler
 The nvmlHandler module utilizes the NVML API calls to retrieve GPU information, including the driver version, GPU certificates, attestation report, and more.

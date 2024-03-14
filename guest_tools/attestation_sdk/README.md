@@ -18,8 +18,6 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
       - [How to do Perform Attestation](#how-to-do-perform-attestation-1)
   - [Building Attestation SDK](#building-attestation-sdk)
   - [APIs](#apis)
-  - [Version Info](#version-info)
-  - [Future Roadmap](#future-roadmap)
 
 
 ## Features
@@ -27,7 +25,7 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
 - Local GPU Attestation (using NVIDIA NVML based Python libraries)
 - Remote GPU Attestation (using NVIDIA Remote Attestation Service)
 
-Note: SDK v1.2.0 is still in Early Access Release (beta), and the APIs may undergo changes until the GA release.
+Note: Attestation SDK is still in Early Access Release (beta), and the APIs may undergo changes until the GA release.
 
 ## Install Attestation SDK
 
@@ -97,6 +95,7 @@ Please refer to the [sample implementation](tests/RemoteGPUTest.py)
 
 ## APIs
 
+### nv_attestation_sdk import attestation
 | API                                                                                                                             | Description                                                                                                     |
 |---------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
 | Attestation(<-name->)                                                                                                           | Create a new Attestation Object used to call other Attestation methods.                                         |
@@ -105,17 +104,12 @@ Please refer to the [sample implementation](tests/RemoteGPUTest.py)
 | attest()                                                                                                                        | Trigger the Attestation for client object, This uses the Attestation type configured in add_verifier method     |
 | validate_token(<-attestation-results-policy->)                                                                                  | Validate the Attestation Claims against a policy                                                                |
 
-## Version Info
+### nv_attestation_sdk.gpu.attest_gpu_remote
 
-SDK latest version - 1.2.0
-
-## Future Roadmap
-
-The following are some exciting features and improvements that we plan to implement in upcoming releases of the Attestation SDK. Please note that these roadmap items are subject to change based on user feedback and evolving priorities. We are committed to continuously improving our project to meet the needs of our users.
-
-- Integration of NVIDIA Remote Attestation Service.
-- Enhanced flexibility in Attestation result policies.
-- Support for additional Attestation types such as CPU and DPU, among others.
+| API                                                                                                                             | Description                                                                                                     |
+|---------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| generate_evidence(<-nonce->)                                                                                                           | Generate GPU attestation evidence using the Local GPU Verifier Python SDK with a user-provided nonce.                                         |
+| verify_evidence(<-nonce->, <-evidence->,<-nras_url->)                                                                                                              |Verify the evidence with the NVIDIA Remote Attestation Service (NRAS)                                                                       |
 
 
 

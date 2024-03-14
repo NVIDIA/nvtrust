@@ -1,6 +1,6 @@
 [project]
 name = "verifier"
-version = "1.2.0"
+version = "1.3.0"
 description = "A Python-based tool that validates GPU measurements by comparing GPU runtime measurements with authenticated golden measurements"
 authors = [
     {name = "NVIDIA"}

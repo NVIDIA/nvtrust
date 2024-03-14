@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -284,6 +284,8 @@ class OpaqueData:
         17  : 'OPAQUE_FIELD_ID_PROJECT',
         18  : 'OPAQUE_FIELD_ID_PROJECT_SKU',
         19  : 'OPAQUE_FIELD_ID_PROJECT_SKU_MOD',
+        20  : 'OPAQUE_FIELD_ID_FWID',
+        21  : 'OPAQUE_FIELD_ID_PROTECTED_PCIE_STATUS',
         255 : 'OPAQUE_FIELD_ID_INVALID',
     }
     
@@ -304,6 +306,10 @@ class OpaqueData:
             [bytes] : the content of the given field name.
         """
         assert type(field_name) is str
+
+        if field_name == 'OPAQUE_FIELD_ID_FWID' and 'OPAQUE_FIELD_ID_FWID' not in self.OpaqueDataField:
+            return b''
+
         return self.OpaqueDataField[field_name]
     
     def parse_measurement_count(self, data):

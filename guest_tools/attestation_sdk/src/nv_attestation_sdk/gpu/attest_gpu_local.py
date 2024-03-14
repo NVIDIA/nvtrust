@@ -32,6 +32,7 @@ def attest(nonce):
                   'rim_root_cert': None,
                   'rim_service_url': None,
                   'allow_hold_cert': True,
+                  'ocsp_url': None,
                   'nonce': nonce}
         attestation_result, jwt_token = cc_admin.attest(params)
     except Exception as e:

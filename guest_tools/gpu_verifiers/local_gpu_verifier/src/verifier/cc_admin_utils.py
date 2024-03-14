@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -69,6 +69,54 @@ from verifier.exceptions import (
 class CcAdminUtils:
     """ A class to provide the required functionalities for the CC ADMIN to perform the GPU attestation.
     """
+
+    @staticmethod
+    def extract_fwid(cert):
+        """ A static function to extract the FWID data from the given certificate.
+
+        Args:
+            cert (OpenSSL.crypto.X509): The certificate whose FWID data is needed to be fetched. 
+
+        Returns:
+            [str]: the FWID as a hex string extracted from the certificate if 
+                   it is present otherwise returns an empty string.
+        """
+        result = ''
+        # The OID for the FWID extension.
+        TCG_DICE_FWID_OID = '2.23.133.5.4.1'
+        cryptography_cert = cert.to_cryptography()
+
+        for i in range(len(cryptography_cert.extensions)):
+            oid_obj = (vars(cryptography_cert.extensions)['_extensions'][i]).oid
+            if getattr(oid_obj, 'dotted_string') == TCG_DICE_FWID_OID:
+                # The FWID data is the last 48 bytes.
+                result = vars((vars(cryptography_cert.extensions)['_extensions'][i]).value)['_value'][-48:].hex()
+
+        return result
+
+    @staticmethod
+    def verify_gpu_certificate_chain(cert_chain, settings, attestation_report_fwid):
+        """ A static function to perform the GPU device certificate chain verification.
+
+        Args:
+            cert_chain (list): A list containing the certificate objects of the device certificate chain.
+            settings (config.HopperSettings): the object containing the various config info.
+            attestation_report_fwid (str): the hexadecimal string of the FWID in the attestation report.
+
+        Returns:
+            [bool]: True if the verification is successful, otherwise False.
+        """
+        # Skipping the comparision of FWID in the attestation certificate if the Attestation report does not contains the FWID.
+        if attestation_report_fwid != '':
+
+            if attestation_report_fwid != CcAdminUtils.extract_fwid(cert_chain[0]):
+                info_log.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
+                event_log.info(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
+                return False
+
+            info_log.info("\t\tThe firmware ID in the device certificate chain is matching with the one in the attestation report.")
+
+        return CcAdminUtils.verify_certificate_chain(cert_chain, settings, BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION)
 
     @staticmethod
     def verify_certificate_chain(cert_chain, settings, mode):
