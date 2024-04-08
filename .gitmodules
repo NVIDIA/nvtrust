@@ -1,0 +1,3 @@
+[submodule "host_tools/python"]
+	path = host_tools/python
+	url = https://github.com/nvidia/gpu-admin-tools
