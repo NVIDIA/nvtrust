@@ -1,0 +1,23 @@
+name: Publish Python Package
+
+on:
+  push:
+    branches:
+      - feature/enable-github-actions
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        cd nvtrust/guest_tools/gpu_verifier/local_gpu_verifier
+        pip3 install .
+
+    - name: Build the package
+      run: |
+        python3 -m build
