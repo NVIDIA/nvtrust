@@ -21,8 +21,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd nvtrust/guest_tools/gpu_verifier/local_gpu_verifier
+        cd guest_tools/gpu_verifier/local_gpu_verifier
         pip3 install .
+        pip3 install build
+        pip3 install twine
 
     - name: Build the package
       run: |
