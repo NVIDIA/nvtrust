@@ -13,6 +13,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Check current directory
+      run: pwd
+
+    - name: Check folders under current directory
+      run: ls -l
+
     - name: Install dependencies
       run: |
         cd nvtrust/guest_tools/gpu_verifier/local_gpu_verifier
