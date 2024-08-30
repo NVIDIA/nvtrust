@@ -23,7 +23,7 @@ keywords = [
 dependencies = [
     'cryptography == 39.0.1',
     'ecdsa == 0.18.0',
-    'lxml == 4.9.1',
+    'lxml >= 4.9.1',
     'signxml == 3.2.0',
     'xmlschema == 2.2.3',
     'pyOpenSSL == 23.1.1',
