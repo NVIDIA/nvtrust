@@ -55,25 +55,49 @@ class Attestation(object):
 
     @classmethod
     def set_name(cls, name: str) -> None:
+        """Set the name of the Attestation client
+
+        Args:
+            name (str): Attestation client name
+        """
         cls._name = name
 
     @classmethod
     def get_name(cls) -> str:
+        """Get the name of the Attestation client
+
+        Returns:
+            str: Attestation client name
+        """
         return cls._name
 
     @classmethod
     def set_nonce_server(cls, url: str) -> None:
+        """Set nonce server URL (not used yet)
+
+        Args:
+            url (str): URL of the nonce server
+        """
         cls._nonceServer = url
 
     @classmethod
     def get_nonce_server(cls) -> str:
+        """Get the nonce Server URL
+
+        Returns:
+            str: URL of the nonce server
+        """
         return cls._nonceServer
 
     @classmethod
     def add_verifier(cls, dev: Devices, env: Environment, url: str, evidence: str) -> None:
-        """
-        Add a new verifier to SDK configuration.
-        This will be used during attest and validate_token methods.
+        """Add a new verifier for Attestation
+
+        Args:
+            dev (Devices): Type of device to be attestated - GPU, CPU etc.
+            env (Environment): Type of Attestation - local, remote etc.
+            url (str): URL of the Attestation Server for Remote Attestation use cases.
+            evidence (str): Attestation evidence
         """
         if (dev == Devices.GPU and env == Environment.LOCAL) :
             name = "LOCAL_GPU_CLAIMS"
@@ -89,26 +113,21 @@ class Attestation(object):
 
     @classmethod
     def get_verifiers(cls) -> list:
-        """
-        Get the list of configured verifiers.
+        """Get a list of configured verifiers
+
+        Returns:
+            list: List of verifiers
         """
         return cls._verifiers
 
 
     @classmethod
     def attest(cls) -> bool:
+        """Attest the client as per the configured verifiers and evidence policy
+
+        Returns:
+            bool: Attestation Result
         """
-         Attest the client as per the configured verifiers and evidence policy
-        """
-        # this should consist of doing the following things
-        # Nonce _generateNonce()
-        # Evidence generateEvidence(nonce)
-        #   Retrieve quote from vTPM (locally)
-        # Token verifyEvidence(evidence)
-        #   Evidence -> verifier, validated against policy, returns token
-        # Status provideEvidence(token)
-        #   Token -> relying party, returns Status
-        # cls.token = ""
         for verifier in cls._verifiers:
             attest_result = True
 
@@ -147,7 +166,6 @@ class Attestation(object):
 
         # NOTE: no verifiers means attestation will be true.  weird but makes some sense
         # NOTE: THIS is where the tokens should be combined in to a single token and then set
-        #print("full attest_result ... ", attest_result) # NOTE: put a try catch here
 
         eatToken = cls._create_EAT()
         cls.set_token( cls._name, eatToken)
@@ -194,11 +212,25 @@ class Attestation(object):
 
     @classmethod
     def set_token(cls, name: str, eat_token: str) -> None:
+        """Set result EAT token for a client
+
+        Args:
+            name (str): Attestation Client name
+            eat_token (str): EAT token
+        """
         entry = {name: eat_token}
         cls._tokens.update(entry)
 
     @classmethod
     def get_token(cls, x=None) -> str:
+        """Get the Attestation EAT token for a client
+
+        Args:
+            x (_type_, optional): Client name. Defaults to None.
+
+        Returns:
+            str: EAT token in string format
+        """
         name = ""
         if x == None:
             name = cls.get_name()
@@ -216,6 +248,15 @@ class Attestation(object):
 
     @classmethod
     def _validate_token_internal(cls, policy:str, eat_token: str) -> bool:
+        """Validate a EAT token using the policy
+
+        Args:
+            policy (str): Appraisal policy for Attestation results
+            eat_token (str): EAT token
+
+        Returns:
+            bool: result
+        """
         attest_result = True
     
         if eat_token == "":
@@ -268,7 +309,6 @@ class Attestation(object):
 
     @classmethod
     def validate_token(cls, policy:str , x=None) :
-
         if x == None: 
             name = cls.get_name()
             if name == "":

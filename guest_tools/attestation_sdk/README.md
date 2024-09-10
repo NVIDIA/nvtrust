@@ -18,6 +18,7 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
       - [How to do Perform Attestation](#how-to-do-perform-attestation-1)
   - [Building Attestation SDK](#building-attestation-sdk)
   - [APIs](#apis)
+  - [End-User License Agreement](#end-user-license-agreement)
 
 
 ## Features
@@ -53,12 +54,14 @@ If you choose to install the Attestation SDK from the source code instead of a W
 - Driver version r535 installed.
 - Ensure that the SKU is supported for Confidential Computing.
 
-2. Follow the instructions in nvTrust/guest_tools/local_gpu_verifier/README.md to install the NVIDIA GPU Local Verifier Python SDK.
+2. Install Python 3.7 or later.
+
+3. Follow the instructions in nvTrust/guest_tools/local_gpu_verifier/README.md to install the NVIDIA GPU Local Verifier Python SDK.
    
-3. Run the following command and ensure that you have the 'verifier' Python module installed.
+4. Run the following command and ensure that you have the 'verifier' Python module installed.
     ```
-    pip list | grep verifier
-    verifier               1.1.0
+    pip list | grep nv-local-gpu-verifier
+    nv-local-gpu-verifier              1.4.0
     ```
 
 ### Local GPU Attestation
@@ -111,5 +114,6 @@ Please refer to the [sample implementation](tests/RemoteGPUTest.py)
 | generate_evidence(<-nonce->)                                                                                                           | Generate GPU attestation evidence using the Local GPU Verifier Python SDK with a user-provided nonce.                                         |
 | verify_evidence(<-nonce->, <-evidence->,<-nras_url->)                                                                                                              |Verify the evidence with the NVIDIA Remote Attestation Service (NRAS)                                                                       |
 
+# End-user License Agreement
 
-
+By using the Attestation Suite Services, you affirm that you have read the Agreement and agree to its terms. If you do not have the required authority to enter into the Agreement or if you do not accept all Agreement terms and conditions, do not use the Attestation Suite Services. Please see the [End-user License Agreement](https://docs.attestation.nvidia.com/EULA/eula.html) for more information on data collection.
