@@ -75,10 +75,10 @@ class CcAdminUtils:
         """ A static function to extract the FWID data from the given certificate.
 
         Args:
-            cert (OpenSSL.crypto.X509): The certificate whose FWID data is needed to be fetched. 
+            cert (OpenSSL.crypto.X509): The certificate whose FWID data is needed to be fetched.
 
         Returns:
-            [str]: the FWID as a hex string extracted from the certificate if 
+            [str]: the FWID as a hex string extracted from the certificate if
                    it is present otherwise returns an empty string.
         """
         result = ''
@@ -127,7 +127,7 @@ class CcAdminUtils:
                                cert at the end of the list.
             settings (config.HopperSettings): the object containing the various config info.
             mode (<enum 'CERT CHAIN VERIFICATION MODE'>): Used to determine if the certificate chain
-                            verification is for the GPU attestation certificate chain or RIM certificate chain 
+                            verification is for the GPU attestation certificate chain or RIM certificate chain
                             or the ocsp response certificate chain.
 
         Raises:
@@ -194,7 +194,7 @@ class CcAdminUtils:
             cert_chain (list): the list of the input certificates of the certificate chain.
             settings (config.HopperSettings): the object containing the various config info.
             mode (<enum 'CERT CHAIN VERIFICATION MODE'>): Used to determine if the certificate chain
-                            verification is for the GPU attestation certificate chain or RIM certificate chain 
+                            verification is for the GPU attestation certificate chain or RIM certificate chain
                             or the ocsp response certificate chain.
 
         Returns:
@@ -212,7 +212,7 @@ class CcAdminUtils:
 
         for i, cert in enumerate(cert_chain):
             cert_chain[i] = cert.to_cryptography()
-        
+
         for i in range(start_index, end_index):
             request_builder = ocsp.OCSPRequestBuilder()
             request_builder = request_builder.add_certificate(cert_chain[i], cert_chain[i + 1], SHA384())
@@ -231,7 +231,7 @@ class CcAdminUtils:
                                                               buffer = ocsp_response.certificates[0].public_bytes(serialization.Encoding.DER))
 
             ocsp_cert_chain = [ocsp_response_leaf_cert]
-            
+
             for j in range(i, len(cert_chain)):
                 ocsp_cert_chain.append(CcAdminUtils.convert_cert_from_cryptography_to_pyopenssl(cert_chain[j]))
 
@@ -262,12 +262,16 @@ class CcAdminUtils:
                 info_log.error("\t\tCouldn't receive a proper response from the OCSP server.")
                 return False
 
+            #OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
             if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
                 if x509.ReasonFlags.certificate_hold == ocsp_response.revocation_reason and \
                 BaseSettings.allow_hold_cert and \
                 (mode == BaseSettings.Certificate_Chain_Verification_Mode.DRIVER_RIM_CERT or BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT):
                     info_log.warning(f"\t\t\tWARNING: THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'.")
                     revoked_status = True
+                elif ocsp_response.certificate_status == ocsp.OCSPCertStatus.UNKNOWN:
+                    info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate revocation status is UNKNOWN")
+                    return False
                 else:
                     info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
                     return False
@@ -291,7 +295,7 @@ class CcAdminUtils:
             [cryptography.hazmat.backends.openssl.ocsp._OCSPResponse]: the ocsp response message object.
         """
         if not BaseSettings.OCSP_URL.lower().startswith('https'):
-            # Raising exception in case of url not starting with http, and not FTP, etc. 
+            # Raising exception in case of url not starting with http, and not FTP, etc.
             raise ValueError from None
 
         https_request = request.Request(BaseSettings.OCSP_URL, data)
@@ -346,12 +350,12 @@ class CcAdminUtils:
                 decoded_str = base64.b64decode(base64_data)
                 return decoded_str.decode('utf-8')
         except HTTPError:
-            raise RIMFetchError("Could not fetch the rim file : " + file_id)        
+            raise RIMFetchError("Could not fetch the rim file : " + file_id)
 
     @staticmethod
     def get_vbios_rim_file_id(project, project_sku, chip_sku, vbios_version):
-        """ A static method to generate the required VBIOS RIM file id which needs to be fetched from the RIM service 
-            according to the vbios flashed onto the system. 
+        """ A static method to generate the required VBIOS RIM file id which needs to be fetched from the RIM service
+            according to the vbios flashed onto the system.
 
         Args:
             attestation_report (AttestationReport): the object representing the attestation report.
@@ -365,8 +369,8 @@ class CcAdminUtils:
 
     @staticmethod
     def get_driver_rim_file_id(driver_version):
-        """ A static method to generate the driver RIM file id to be fetched from the RIM service corresponding to 
-            the driver installed onto the system. 
+        """ A static method to generate the driver RIM file id to be fetched from the RIM service corresponding to
+            the driver installed onto the system.
 
         Args:
             driver_version (str): the driver version of the installed driver.
@@ -442,14 +446,14 @@ class CcAdminUtils:
         assert isinstance(gpu_leaf_certificate, crypto.X509)
         assert isinstance(nonce, bytes) and len(nonce) == settings.SIZE_OF_NONCE_IN_BYTES
 
-        # Here the attestation report is the concatenated SPDM GET_MEASUREMENTS request with the SPDM GET_MEASUREMENT response message. 
+        # Here the attestation report is the concatenated SPDM GET_MEASUREMENTS request with the SPDM GET_MEASUREMENT response message.
         request_nonce = attestation_report_obj.get_request_message().get_nonce()
-        
+
         if len(nonce) > settings.SIZE_OF_NONCE_IN_BYTES or len(request_nonce) > settings.SIZE_OF_NONCE_IN_BYTES:
             err_msg = "\t\t Length of Nonce is greater than max nonce size allowed."
             event_log.error(err_msg)
             raise InvalidNonceError(err_msg)
-        
+
         # compare the generated nonce with the nonce of SPDM GET MEASUREMENT request message in the attestation report.
         if request_nonce != nonce:
             err_msg = "\t\tThe nonce in the SPDM GET MEASUREMENT request message is not matching with the generated nonce."
@@ -530,7 +534,7 @@ class CcAdminUtils:
             return bytes.fromhex(nonce_hex_string)
         else :
             raise InvalidNonceError("Invalid Nonce Size. The nonce should be 32 bytes in length represented as Hex String")
-            
+
     def __init__(self, number_of_gpus):
         """ It is the constructor for the CcAdminUtils.
 
