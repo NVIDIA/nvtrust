@@ -60,9 +60,10 @@ Please execute the following commands to clean up packages that were not install
 ### Pre-requisites
 
 1. Create a Confidential Virtual Machine with the following specifications:
-      - NVIDIA Hopper H100 (or later) GPU
-      - NVIDIA GPU Driver with CC support.
+      - NVIDIA Hopper H100 (or later) GPU that supports CC
+      - NVIDIA GPU Driver with CC / PPCIE support.
       - GPU SKU that supports Confidential Computing.
+
 2. Install Python 3.8 or later.
 
 3. Follow the instructions in nvTrust/guest_tools/local_gpu_verifier/README.md to install the NVIDIA GPU Local Verifier Python SDK. (Required for source code installation only) 
@@ -88,11 +89,11 @@ Please execute the following commands to clean up packages that were not install
 ### Pre-requisites
 
 1. Create a Confidential Virtual Machine with multiple GPUs connected by nvSwitch with the following specifications:
-      - NVIDIA Hopper H100 (or later) GPU
-      - nvSwitch with CC support.
+      - LS10 Switch supporting PPCIE mode
+      - NvSwitch Driver with PPCIE support.
       - GPU SKU that supports Confidential Computing.
 
-2. Unlike GPU Verifer, Switch Verifier comes pre-installed with Attestation SDK.
+2. Unlike GPU Verifier, Switch Verifier comes pre-installed with Attestation SDK.
 
 ### How to do Attestation
 
@@ -127,7 +128,7 @@ Please note that the Schema/EAT claim information is subject to change in future
 | set_name(<-name->)                                                                                                              | Set a name for the Attestation SDK client                                                                                             |
 | set_nonce(<-nonce->)                                                                                                            | Set a nonce for Attestation                                                                                                           |
 | add_verifier(<-attestation-device-type->, <-local/remote->, <-remote-attestation-service-url->, <-attestation-results-policy->) | Add a specific type of verifier for the client object. The verifier will be invoked during the attest operation                       |
-| get_verifiers()                                                                                                                 | Retrieves the list of verifiers added the client object.                                                                              |
+| get_verifiers()                                                                                                                 | Retrieves the list of verifiers added to the client object.                                                                              |
 | get_evidence()                                                                                                                  | Retrieves the list of evidence based on the attestation device (e.g., GPU, switch) and the type of attestation (e.g., local, remote). |
 | attest()                                                                                                                        | Trigger the Attestation for client object, This uses the Attestation type configured in add_verifier method                           |
 | get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to Attestation result.                                             |

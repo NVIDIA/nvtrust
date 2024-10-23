@@ -40,7 +40,7 @@ provides some suggestions on how to handle or avoid these errors.
 
 | ID  | Claim  | Conditions for the Claim to be Valid | Values |
 |-----|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| 1   | x-nvidia-gpu-driver-rim-schema-validated  | The Driver RIM has been confirmed to be in accordance with the swid schema    |    true / false |
+| 1   | x-nvidia-gpu-driver-rim-schema-validated  | The Driver RIM has been confirmed to be in accordance with the SWID schema    |    true / false |
 | 2   | x-nvidia-gpu-vbios-rim-cert-validated     | This claim indicates if the following checks completed successfully for vBIOS RIM: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked. |   true / false |
 | 3   | x-nvidia-gpu-attestation-report-cert-chain-validated | This claim indicates if the following checks completed successfully for Attestation report certificate chain: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked <br>5. FWID of the certificate matches with the Attestation report | true / false |
 | 4   | x-nvidia-gpu-attestation-report-parsed    | This claim indicates if the Attestation Report has been successfully parsed. |    true / false |

@@ -25,7 +25,7 @@ The Verifier tool is compatible with both single-GPU and multi-GPU systems.
 
 ## System Requirements:
 - NVIDIA Hopper H100 GPU or newer
-- GPU SKU with Confidential Compute(CC) or Protected PCIE(PPCIE) mode enabled
+- GPU SKU with Confidential Compute(CC)
 - NVIDIA GPU driver installed
 
 
