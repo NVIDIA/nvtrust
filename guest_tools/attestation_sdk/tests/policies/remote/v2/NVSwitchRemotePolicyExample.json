@@ -1,0 +1,23 @@
+{
+  "version":"2.0",
+  "authorization-rules":{
+    "type": "JWT",
+    "overall-claims": {
+      "iss": "https://nras.attestation.nvidia.com",
+      "x-nvidia-overall-att-result": true
+    },
+    "detached-claims":{
+      "measres": "comparison-successful",
+      "x-nvidia-switch-vbios-rim-measurements-available": true,
+      "x-nvidia-switch-measurements-match": true,
+      "x-nvidia-switch-attestation-report-signature-verified": true,
+      "x-nvidia-switch-attestation-report-parsed": true,
+      "x-nvidia-switch-nonce-match": true,
+      "x-nvidia-switch-attestation-report-cert-chain-validated": true,
+      "x-nvidia-switch-vbios-rim-schema-validated": true,
+      "x-nvidia-switch-vbios-rim-signature-verified": true,
+      "x-nvidia-switch-vbios-rim-cert-validated": true,
+      "x-nvidia-switch-vbios-rim-schema-fetched": true
+    }
+  }
+}

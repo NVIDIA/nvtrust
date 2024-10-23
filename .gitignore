@@ -5,3 +5,6 @@
 .DS_Store
 *.iso
 *.qcow2
+*.log
+venv
+*.bak

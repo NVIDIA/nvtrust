@@ -30,6 +30,7 @@
 
 """A module to handle all the nvml api calls for the verifier.
 """
+import ctypes
 
 from pynvml import (
     nvmlInit,
@@ -45,6 +46,7 @@ from pynvml import (
     nvmlSystemSetConfComputeGpusReadyState,
     nvmlSystemGetConfComputeGpusReadyState,
     nvmlSystemGetConfComputeState,
+    nvmlSystemGetConfComputeSettings,
     NVML_CC_ACCEPTING_CLIENT_REQUESTS_FALSE,
     NVML_CC_ACCEPTING_CLIENT_REQUESTS_TRUE,
 )
@@ -68,13 +70,16 @@ from verifier.exceptions import (
     TimeoutError,
 )
 
+NVML_SYSTEM_CONF_COMPUTE_VERSION = 0x1000014
+
+
 class NvmlHandler:
     """ Class to handle all the pynvml api calls and fetching the GPU information.
     """
     Handles = None
 
     @classmethod
-    def get_number_of_gpus(cls): 
+    def get_number_of_gpus(cls):
         """ A class method to get the number of available gpus and create a
         list of GPU device handles for the available GPUs.
 
@@ -83,13 +88,13 @@ class NvmlHandler:
         """
         number_of_gpus = function_wrapper_with_timeout([nvmlDeviceGetCount,
                                                         "nvmlDeviceGetCount"],
-                                                        BaseSettings.MAX_NVML_TIME_DELAY)
+                                                       BaseSettings.MAX_NVML_TIME_DELAY)
         cls.Handles = list()
-        
+
         for i in range(number_of_gpus):
             cls.Handles.append(function_wrapper_with_timeout([nvmlDeviceGetHandleByIndex,
-                                                             i,
-                                                             "nvmlDeviceGetHandleByIndex"],
+                                                              i,
+                                                              "nvmlDeviceGetHandleByIndex"],
                                                              BaseSettings.MAX_NVML_TIME_DELAY))
         return number_of_gpus
 
@@ -104,7 +109,7 @@ class NvmlHandler:
         """ Static method to initialize the pynvml library.
         """
         function_wrapper_with_timeout([nvmlInit, "nvmlInit"], BaseSettings.MAX_NVML_TIME_DELAY)
-    
+
     @staticmethod
     def set_gpu_ready_state(state):
         """ Static method to set GPU state as ready if the input is True otherwise set as not ready to accept workload.
@@ -117,8 +122,8 @@ class NvmlHandler:
             ready_state = NVML_CC_ACCEPTING_CLIENT_REQUESTS_FALSE
 
         function_wrapper_with_timeout([nvmlSystemSetConfComputeGpusReadyState,
-                                      ready_state,
-                                      "nvmlSystemSetConfComputeGpusReadyState"],
+                                       ready_state,
+                                       "nvmlSystemSetConfComputeGpusReadyState"],
                                       BaseSettings.MAX_NVML_TIME_DELAY)
 
     @staticmethod
@@ -130,8 +135,21 @@ class NvmlHandler:
                     returns False.
         """
         state = function_wrapper_with_timeout([nvmlSystemGetConfComputeState,
-                                              "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
+                                               "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
         return state.ccFeature != 0
+
+    @staticmethod
+    def is_ppcie_mode_enabled():
+        """ Static method to check if the ppcie mode is enabled or not.
+
+        Returns:
+            [bool]: returns True if the ppcie mode is enabled in driver, otherwise
+                    returns False.
+        """
+        settings = NvmlSystemConfComputeSettings()
+        state = function_wrapper_with_timeout([nvmlSystemGetConfComputeSettings, ctypes.byref(settings),
+                                               "nvmlSystemGetConfComputeSettings"], BaseSettings.MAX_NVML_TIME_DELAY)
+        return settings.multiGpuMode != 0
 
     @staticmethod
     def is_cc_dev_mode():
@@ -142,7 +160,7 @@ class NvmlHandler:
                     returns False.
         """
         state = function_wrapper_with_timeout([nvmlSystemGetConfComputeState,
-                                              "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
+                                               "nvmlSystemGetConfComputeState"], BaseSettings.MAX_NVML_TIME_DELAY)
         return state.devToolsMode != 0
 
     @staticmethod
@@ -153,7 +171,7 @@ class NvmlHandler:
             [int]: returns 0 for not ready 1 for ready state.
         """
         state = function_wrapper_with_timeout([nvmlSystemGetConfComputeGpusReadyState,
-                                              "nvmlSystemGetConfComputeGpusReadyState"],
+                                               "nvmlSystemGetConfComputeGpusReadyState"],
                                               BaseSettings.MAX_NVML_TIME_DELAY)
         return state
 
@@ -171,12 +189,12 @@ class NvmlHandler:
         Returns:
             [bytes]: the raw attestation report data.
         """
-        
+
         try:
             attestation_report_struct = function_wrapper_with_timeout([nvmlDeviceGetConfComputeGpuAttestationReport,
-                                                                      self.Handles[index],
-                                                                      nonce,
-                                                                      "nvmlDeviceGetConfComputeGpuAttestationReport"],
+                                                                       self.Handles[index],
+                                                                       nonce,
+                                                                       "nvmlDeviceGetConfComputeGpuAttestationReport"],
                                                                       BaseSettings.MAX_NVML_TIME_DELAY)
             length_of_attestation_report = attestation_report_struct.attestationReportSize
             attestation_report = attestation_report_struct.attestationReport
@@ -238,7 +256,7 @@ class NvmlHandler:
             [bytes]: the attestation report data.
         """
         return self.AttestationReport
-    
+
     def get_gpu_architecture(self):
         """ Fetches the name of the current GPU.
         architecture.
@@ -252,8 +270,8 @@ class NvmlHandler:
         """ Fetches the GPU handle for the current GPU index value.
         """
         self.Handles[self.Index] = function_wrapper_with_timeout([nvmlDeviceGetHandleByIndex,
-                                                                 self.Index,
-                                                                 "nvmlDeviceGetHandleByIndex"],
+                                                                  self.Index,
+                                                                  "nvmlDeviceGetHandleByIndex"],
                                                                  BaseSettings.MAX_NVML_TIME_DELAY)
 
     def init_driver_version(self):
@@ -261,39 +279,39 @@ class NvmlHandler:
         api.
         """
         self.DriverVersion = function_wrapper_with_timeout([nvmlSystemGetDriverVersion,
-                                                           "nvmlSystemGetDriverVersion"],
+                                                            "nvmlSystemGetDriverVersion"],
                                                            BaseSettings.MAX_NVML_TIME_DELAY)
-    
+
     def init_board_id(self):
         """ Fetches and assigns the BoardId from the driver via pynvml api.
         """
         self.BoardId = function_wrapper_with_timeout([nvmlDeviceGetBoardId,
-                                                     self.Handles[self.Index],
-                                                     "nvmlDeviceGetBoardId"],
+                                                      self.Handles[self.Index],
+                                                      "nvmlDeviceGetBoardId"],
                                                      BaseSettings.MAX_NVML_TIME_DELAY)
 
     def init_uuid(self):
         """ Fetches and assigns the UUID of the GPU to the UUID field.
         """
         self.UUID = function_wrapper_with_timeout([nvmlDeviceGetUUID,
-                                                  self.Handles[self.Index],
-                                                  "nvmlDeviceGetUUID"],
+                                                   self.Handles[self.Index],
+                                                   "nvmlDeviceGetUUID"],
                                                   BaseSettings.MAX_NVML_TIME_DELAY)
 
     def init_gpu_architecture(self):
         """ Fetches and assigns the GPU device architecture field.
         """
         self.GPUArchitecture = function_wrapper_with_timeout([nvmlDeviceGetArchitecture,
-                                                             self.Handles[self.Index],
-                                                             "nvmlDeviceGetArchitecture"],
+                                                              self.Handles[self.Index],
+                                                              "nvmlDeviceGetArchitecture"],
                                                              BaseSettings.MAX_NVML_TIME_DELAY)
 
     def init_vbios_version(self):
         """ Fetches and assigns the VbiosVersion field via pynvml api.
         """
         self.VbiosVersion = function_wrapper_with_timeout([nvmlDeviceGetVbiosVersion,
-                                                          self.Handles[self.Index],
-                                                          "nvmlDeviceGetVbiosVersion"],
+                                                           self.Handles[self.Index],
+                                                           "nvmlDeviceGetVbiosVersion"],
                                                           BaseSettings.MAX_NVML_TIME_DELAY)
 
     def __init__(self, index, nonce, settings):
@@ -307,7 +325,7 @@ class NvmlHandler:
         """
         assert type(index) is int
         assert type(nonce) is bytes and len(nonce) == BaseSettings.SIZE_OF_NONCE_IN_BYTES
-        
+
         self.Index = index
         self.init_handle()
         self.init_driver_version()
@@ -318,3 +336,44 @@ class NvmlHandler:
         self.CertificateChains = GpuCertificateChains(self.Handles[index])
         self.AttestationReport = self.fetch_attestation_report(index, nonce)
         settings.mark_attestation_report_as_available()
+
+
+class NvmlSystemConfComputeSettings(ctypes.Structure):
+    """
+    C-like structure that represents the
+    nvmlSystemConfComputeSettings structure.
+
+    This class is used to retrieve the compute settings of the system.
+
+    Attributes:
+        version (ctypes.c_uint): The version of the device.
+        environment (ctypes.c_uint): The current environment.
+        ccFeature (ctypes.c_uint): The CC feature mode.
+        devToolsMode (ctypes.c_uint): The developer tools mode.
+        multiGpuMode (ctypes.c_uint): The multi-GPU mode.
+    """
+
+    _fields_ = [
+        ("version", ctypes.c_uint),
+        ("environment", ctypes.c_uint),
+        ("ccFeature", ctypes.c_uint),
+        ("devToolsMode", ctypes.c_uint),
+        ("multiGpuMode", ctypes.c_uint),
+    ]
+
+    def __init__(self):
+        super().__init__(version=NVML_SYSTEM_CONF_COMPUTE_VERSION)
+
+    @property
+    def get_cc_feature(self):
+        """
+        A getter method for retrieving the ccFeature property.
+        """
+        return self.ccFeature
+
+    @property
+    def get_multi_gpu_mode(self):
+        """
+        Return the multi-gpu mode of the device.
+        """
+        return self.multiGpuMode

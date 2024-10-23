@@ -1,3 +1,14 @@
+- [Introduction](#introduction)
+- [Claim definitions](#claim-definitions)
+  - [GPU Claims](#gpu-claims)
+    - [Version 2.0](#version-20)
+  - [nvSwitch Claims](#nvswitch-claims)
+    - [Version 2.0](#version-20-1)
+- [Common Error Scenarios](#common-error-scenarios)
+- [Full list of errors from CC\_Admin tool](#full-list-of-errors-from-cc_admin-tool)
+- [NVIDIA Remote Attestation Service – Error codes](#nvidia-remote-attestation-service--error-codes)
+- [Reporting an issue to Nvidia](#reporting-an-issue-to-nvidia)
+
 # Introduction
 
 The attestation verifier tool and SDK are used to verify the
@@ -7,6 +18,96 @@ document describes the possible error scenarios that may occur when
 using the attestation verifier tool and shows the claims and output
 messages that can help you recognize such errors. The document also
 provides some suggestions on how to handle or avoid these errors.
+
+# Claim definitions
+
+## GPU Claims
+
+### Version 2.0
+
+**Overall Claims**
+
+| ID  | Claim  | Conditions for the Claim to be Valid | Values |
+|-----|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| 1   | x-nvidia-ver  | Claims version | String |
+| 2   | iss  | Claims Issuer | String |
+| 3   | x-nvidia-overall-att-result  | This claim indicates if the overall attestation results is successful or failed. | true / false |
+| 4   | sub  | Subject of the claims | String |
+| 5  | eat_nonce     | Nonce used for the Attestation process | String |
+| 6 | submods | Contains the digest of a detached Claims-Set | Object |
+
+**Detached Claims**
+
+| ID  | Claim  | Conditions for the Claim to be Valid | Values |
+|-----|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| 1   | x-nvidia-gpu-driver-rim-schema-validated  | The Driver RIM has been confirmed to be in accordance with the swid schema    |    true / false |
+| 2   | x-nvidia-gpu-vbios-rim-cert-validated     | This claim indicates if the following checks completed successfully for vBIOS RIM: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked. |   true / false |
+| 3   | x-nvidia-gpu-attestation-report-cert-chain-validated | This claim indicates if the following checks completed successfully for Attestation report certificate chain: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked <br>5. FWID of the certificate matches with the Attestation report | true / false |
+| 4   | x-nvidia-gpu-attestation-report-parsed    | This claim indicates if the Attestation Report has been successfully parsed. |    true / false |
+| 5   | x-nvidia-gpu-driver-rim-signature-verified      | For the claim to be valid, the following conditions must be met: <br>1. The driver RIM schema must be as expected. <br>2. The driver RIM certificate chain must be verified. <br>3. OCSP validation must pass for each certificate in the RIM certificate chain. <br>4. The driver RIM signature must be verified, and the driver version must match the version fetched from the GPU information. |  true / false |
+| 6   | x-nvidia-gpu-vbios-rim-signature-verified | For the claim to be valid, the following conditions must be met: <br>1. The VBIOS RIM schema must be as expected. <br>2. The VBIOS RIM certificate chain must be verified. <br>3. OCSP validation must pass for each certificate in the RIM certificate chain. <br>4. The VBIOS RIM signature must be verified, and the VBIOS version must match the version fetched from the GPU information. |  true / false |
+| 7   | x-nvidia-gpu-arch-check | The GPU Architecture in the Attestation report is either AMPERE or HOPPER|    true / false |
+| 8  | x-nvidia-attestation-warning  | The Attestation warning message is populated when the certificate is revoked with reason "CERT_HOLD"  |    true / false |
+| 9  | x-nvidia-gpu-attestation-report-signature-verified | The signature on the Attestation report is verified.    |    true / false |
+| 10  | x-nvidia-gpu-vbios-rim-schema-validated   | The vBIOS RIM has been confirmed to be in accordance with the swid schema|    true / false |
+| 11  | x-nvidia-gpu-driver-rim-cert-validated    | This claim indicates if the following checks completed successfully for Driver RIM: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked. |  true / false |
+| 12  | x-nvidia-gpu-vbios-rim-measurements-available   | The VBIOS Reference Integrity Measurement (RIM) and the measurements within it were successfully interpreted and understood.  |   true / false |
+| 13  | x-nvidia-gpu-driver-rim-measurements-available | The driver Reference Integrity Measurement (RIM) and the measurements within it were successfully interpreted and understood. |    true / false |
+| 14  | x-nvidia-gpu-driver-version | A string representing the GPU Driver Version e.g. 550.90.07. |     String |
+| 15  | x-nvidia-gpu-vbios-version | A string representing the GPU vBIOS Version e.g. 96.00.9F.00.01 |   String |
+| 16  | measres     | The runtime measurements from the Reference Integrity Measurements (RIM) match the runtime measurements in the Attestation report. |  success / fail |
+| 17   | x-nvidia-gpu-attestation-report-nonce-match     | The nonce in the Attestation report matches with the initial input to the GPU while generating the report. | true  / false |
+| 18  | x-nvidia-gpu-driver-rim-fetched     | This field indicates if the verifier can fetch Driver RIM from RIM service. | true / false |
+| 19  | x-nvidia-gpu-vbios-rim-fetched     | This field indicates if the verifier can fetch vBIOS RIM from RIM service. | true / false |
+| 20  | x-nvidia-gpu-vbios-index-no-conflict     | This field indicates if both the driver and vbios RIM file does not have active measurement at the same index. | true / false |
+| 21  | eat_nonce     | Nonce used for the Attestation process | String |
+| 22  | hwmodel     | GPU Hardware Model | String |
+| 23  | ueid     | Universal Entity Id | String |
+| 24  | oemid     | Firmware Manufacture Id | String |
+| 25  | iss     | EAT Token Issuer | String |
+| 26  | secboot  | Indicates is Secure Boot is enabled or disabled | true / false |
+| 27  | dbgstat  |  Indicates is GPU Debug facilities are enabled or disabled | enabled / disabled |
+
+For older version of claims, please [refer to this document](./claims_guide_pre_2.0.md).
+
+## nvSwitch Claims
+
+Both Local and Remote nvSwitch verifier will create the following claims:
+
+### Version 2.0
+
+**Overall Claims**
+
+| ID  | Claim  | Conditions for the Claim to be Valid | Values |
+|-----|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| 1   | x-nvidia-ver  | Claims version | String |
+| 2   | iss  | Claims Issuer | String |
+| 3   | x-nvidia-overall-att-result  | This claim indicates if the overall attestation results is successful or failed. | true / false |
+| 4   | sub  | Subject of the claims | String |
+| 5  | eat_nonce     | Nonce used for the Attestation process | String |
+| 6 | submods | Contains the digest of a detached Claims-Set | Object |
+
+**Detached Claims**
+
+| ID  | Claim  | Conditions for the Claim to be Valid | Values |
+|-----|-------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| 1   | x-nvidia-switch-arch-check | The switch Architecture in the Attestation report e.g. LS10 |    String |
+| 2  | measres     | The runtime measurements from the Reference Integrity Measurements (RIM) match the runtime measurements in the Attestation report. |  success / fail |
+| 3  | x-nvidia-switch-bios-version | A string representing the switch BIOS Version e.g. 96.00.9F.00.01 |   String |
+| 4   | x-nvidia-switch-attestation-report-cert-chain-validated | This claim indicates if the following checks completed successfully for Attestation report certificate chain: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked <br>5. FWID of the certificate matches with the Attestation report | true / false |
+| 5   | x-nvidia-switch-attestation-report-parsed    | This claim indicates if the Attestation Report has been successfully parsed. |    true / false |
+| 6  | x-nvidia-switch-attestation-report-nonce-match     | The nonce in the Attestation report matches with the initial input to the switch while generating the report. | true  / false |
+| 7   | x-nvidia-switch-attestation-report-signature-verified | The signature on the Attestation report is verified.    |    true / false |
+| 8  | x-nvidia-switch-bios-rim-fetched     | This field indicates if the verifier can fetch bios RIM from RIM service. | true / false |
+| 9  | x-nvidia-switch-bios-rim-schema-validated   | The bios RIM has been confirmed to be in accordance with the swid schema|    true / false |
+| 10   | x-nvidia-switch-bios-rim-cert-validated     | This claim indicates if the following checks completed successfully for bios RIM: <br>1. Certificate chain is valid. <br>2. Certificate Chain belongs to NVIDIA PKI <br>3. Certificate is not expired <br>4. Certificate is not revoked. |   true / false |
+| 11   | x-nvidia-switch-bios-rim-signature-verified | For the claim to be valid, the following conditions must be met: <br>1. The bios RIM schema must be as expected. <br>2. The bios RIM certificate chain must be verified. <br>3. OCSP validation must pass for each certificate in the RIM certificate chain. <br>4. The bios RIM signature must be verified, and the bios version must match the version fetched from the switch information. |  true / false |
+| 12  | x-nvidia-switch-bios-rim-measurements-available   | The bios Reference Integrity Measurement (RIM) and the measurements within it were successfully interpreted and understood.  |   true / false |
+| 13  | eat_nonce     | Nonce used for the Attestation process | String |
+| 14  | hwmodel     | switch Hardware Model | String |
+| 15  | ueid     | Universal Entity Id | String |
+| 16  | oemid     | Firmware Manufacture Id | String |
+| 17  | iss     | EAT token issuer | String |
 
 # Common Error Scenarios
 
@@ -402,207 +503,47 @@ Attestation SDK is 32 bytes and retry attestation.</td>
 </tbody>
 </table>
 
-# List of claims returned by NVIDIA Remote Verifier
-
-The NVIDIA Remote Attestation Service (NRAS) will return the following
-claims, which will have a value of either true or false.
-
-<table>
-<colgroup>
-<col style="width: 5%" />
-<col style="width: 36%" />
-<col style="width: 58%" />
-</colgroup>
-<thead>
-<tr class="header">
-<th>ID</th>
-<th>Claim</th>
-<th>Conditions for the Claim to be valid</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>1</td>
-<td>x-nvidia-gpu-driver-rim-schema-validated</td>
-<td>The Driver RIM has been confirmed to be in accordance with the swid
-schema</td>
-</tr>
-<tr class="even">
-<td>2</td>
-<td>x-nvidia-gpu-vbios-rim-cert-validated</td>
-<td><p>This claim indicates if the following checks completed
-successfully for vBIOS RIM.</p>
-<ol type="1">
-<li><p>Certificate chain is valid.</p></li>
-<li><p>Certificate Chain belongs to NVIDIA PKI</p></li>
-<li><p>Certificate is not expired</p></li>
-<li><p>Certificate is not revoked.</p></li>
-</ol></td>
-</tr>
-<tr class="odd">
-<td>3</td>
-<td>x-nvidia-gpu-attestation-report-cert-chain-validated</td>
-<td><p>This claim indicates if the following checks completed
-successfully for Attestation report certificate chain.</p>
-<ol type="1">
-<li><p>Certificate chain is valid.</p></li>
-<li><p>Certificate Chain belongs to NVIDIA PKI</p></li>
-<li><p>Certificate is not expired</p></li>
-<li><p>Certificate is not revoked.</p></li>
-<li><p>FWID of the certificate matches with the Attestation
-report</p></li>
-</ol></td>
-</tr>
-<tr class="even">
-<td>4</td>
-<td>x-nvidia-gpu-driver-rim-schema-fetched</td>
-<td>This claim indicates if the verifier can fetch driver RIM from RIM
-service.</td>
-</tr>
-<tr class="odd">
-<td>5</td>
-<td>x-nvidia-gpu-attestation-report-parsed</td>
-<td>This claim indicates if the Attestation Report has been successfully
-parsed.</td>
-</tr>
-<tr class="even">
-<td>6</td>
-<td>x-nvidia-gpu-nonce-match</td>
-<td>The nonce in the Attestation report matches with the initial input
-to the GPU while generating the report.</td>
-</tr>
-<tr class="odd">
-<td>7</td>
-<td>x-nvidia-gpu-driver-rim-signature-verified</td>
-<td><p>For the claim to be valid, the following conditions must be
-met:</p>
-<ol type="1">
-<li><p>The driver RIM schema must be as expected.</p></li>
-<li><p>The driver RIM certificate chain must be verified.</p></li>
-<li><p>OCSP validation must pass for each certificate in the RIM
-certificate chain.</p></li>
-<li><p>The driver RIM signature must be verified, and the driver version
-must match the version fetched from the GPU information.</p></li>
-</ol></td>
-</tr>
-<tr class="even">
-<td>8</td>
-<td>x-nvidia-gpu-vbios-rim-signature-verified</td>
-<td><p>For the claim to be valid, the following conditions must be
-met:</p>
-<ol type="1">
-<li><p>The VBIOS RIM schema must be as expected.</p></li>
-<li><p>The VBIOS RIM certificate chain must be verified.</p></li>
-<li><p>OCSP validation must pass for each certificate in the RIM
-certificate chain.</p></li>
-<li><p>The VBIOS RIM signature must be verified, and the VBIOS version
-must match the version fetched from the GPU information.</p></li>
-</ol></td>
-</tr>
-<tr class="odd">
-<td>9</td>
-<td>x-nvidia-gpu-arch-check</td>
-<td>The GPU Architecture in the Attestation report is either AMPERE, or
-HOPPER</td>
-</tr>
-<tr class="even">
-<td>10</td>
-<td>x-nvidia-attestation-warning</td>
-<td>The Attestation warning message is populated when the certificate is
-revoked with reason “CERT_HOLD”</td>
-</tr>
-<tr class="odd">
-<td>11</td>
-<td>x-nvidia-gpu-measurements-match</td>
-<td>The runtime measurements from the Reference Integrity Measurements
-(RIM) matches the runtime measurements in the Attestation report.</td>
-</tr>
-<tr class="even">
-<td>12</td>
-<td>x-nvidia-gpu-attestation-report-signature-verified</td>
-<td>The signature on the Attestation report is verified.</td>
-</tr>
-<tr class="odd">
-<td>13</td>
-<td>x-nvidia-gpu-vbios-rim-schema-validated</td>
-<td>The vBIOS RIM has been confirmed to be in accordance with the swid
-schema</td>
-</tr>
-<tr class="even">
-<td>14</td>
-<td>x-nvidia-gpu-driver-rim-cert-validated</td>
-<td><p>This claim indicates if the following checks completed
-successfully for Driver RIM.</p>
-<ol type="1">
-<li><p>Certificate chain is valid.</p></li>
-<li><p>Certificate Chain belongs to NVIDIA PKI</p></li>
-<li><p>Certificate is not expired</p></li>
-<li><p>Certificate is not revoked.</p></li>
-</ol></td>
-</tr>
-<tr class="odd">
-<td>15</td>
-<td>x-nvidia-gpu-vbios-rim-schema-fetched</td>
-<td>This field indicates if the verifier can fetch vBIOS RIM from RIM
-service.</td>
-</tr>
-<tr class="even">
-<td>16</td>
-<td>x-nvidia-gpu-vbios-rim-measurements-available</td>
-<td>The VBIOS Reference Integrity Measurement (RIM) and the measurements
-within it were successfully interpreted and understood.</td>
-</tr>
-<tr class="odd">
-<td>17</td>
-<td>x-nvidia-gpu-driver-rim-driver-measurements-available</td>
-<td>The driver Reference Integrity Measurement (RIM) and the
-measurements within it were successfully interpreted and
-understood.</td>
-</tr>
-</tbody>
-</table>
-
 # NVIDIA Remote Attestation Service – Error codes
 
 Below is a list of all the error codes returned by the Nvidia Remote
 Attestation Service (NRAS). In the event of an error, NRAS returns one
 of these error codes along with an empty claim.
 
-| CODE | ERROR_MESSAGE                          | DESCRIPTION                                                                             |
+| CODE | ERROR_MESSAGE  | DESCRIPTION     |
 |--------|-----------------------------|------------------------------------|
-| 4001 | EMPTY_REQUEST                          | Attestation request is empty.                                                           |
-| 4002 | INVALID_REQUEST                        | Attestation request is invalid because Attestation report length is less than expected. |
-| 4003 | INVALID_NONCE                          | Nonce in the attestation report is either null or of length 0                           |
-| 4004 | INVALID_GPU_ARCH                       | GPU architecture in the attestation report is either null or of length 0                |
-| 4005 | INVALID_EVIDENCE                       | GPU Evidence is either null or of length 0                                              |
-| 4006 | INVALID_EVIDENCE_FORMAT                | Attestation Evidence could not be parsed by NRAS.                                       |
-| 4007 | INVALID_CERTIFICATE_CHAIN              | Certificate chain is invalid, and it does not belong to NVIDIA PKI.                     |
-| 4008 | INVALID_GOLDEN_MEASUREMENT             | RIM file data could not be parsed by NRAS.                                              |
-| 4009 | DRIVER_AND_RIM_MEASUREMENT_SAME_INDEX  | Driver and VBIOS Golden Measurement has measurement at same index                       |
-| 4010 | NONCE_NOT_MATCHING                     | Nonce from request is not matching with evidence nonce                                  |
-| 4011 | EVIDENCE_CERT_EXPIRED                  | Evidence certificate is expired                                                         |
-| 4012 | GPU_ARCHITECTURE_NOT_SUPPORTED         | GPU Architecture is not one of AMPERE or HOPPER                                         |
-| 4013 | INVALID_EVIDENCE_SIGNATURE             | Attestation Report Signature is Invalid                                                 |
-| 4014 | INVALID_ATTESTATION_CERTIFICATE_CHAIN  | Attestation Certificate chain doesn’t belong to Nvidia PKI                              |
-| 4015 | INVALID_RIM_CERTIFICATE_CHAIN          | RIM Certificate chain doesn’t belong to Nvidia PKI                                      |
-| 4016 | FWID_NOT_MATCHING                      | FWID from the Attestation Report does not match the FWID in the Device Certificate.     |
-| 5000 | INTERNAL_SERVER_ERROR                  | Internal Server Error                                                                   |
-| 5001 | ERROR_DURING_OCSP_QUERY                | Error creating OCSP request or communicating with OCSP service.                         |
-| 5002 | CERTIFICATE_STATUS_REVOKED             | OCSP Service returned a “REVOKED” status for the certificate                            |
-| 5003 | CERTIFICATE_STATUS_UNKNOWN             | OCSP Service returned a “UNKNOWN” status for the certificate                            |
-| 5004 | ERROR_VALIDATING_SIGNATURE             | Error during validating evidence signature                                              |
-| 5005 | ATTESTATION_TOKEN_FAILURE              | Fail to generate Attestation Token, please retry                                        |
-| 5006 | GPU_DRIVER_VERSION_NOT_AVAILABLE       | GPU Driver Version not available in evidence                                            |
-| 5007 | GPU_VBIOS_VERSION_NOT_AVAILABLE        | GPU VBIOS Version not available in evidence                                             |
-| 5008 | ERROR_DURING_RIM_DOWNLOAD              | NRAS is not able to download RIM file from RIM Service.                                 |
-| 5009 | RIM_BUNDLE_NOT_FOUND                   | RIM file is not found in the RIM Service.                                               |
-| 5010 | ERROR_PARSING_RIM_CERTIFICATE          | RIM Certificate parsing failed.                                                         |
-| 5011 | INVALID_RIM_CERTIFICATE                | RIM Certificate chain is invalid.                                                       |
-| 5012 | RIM_NOT_SIGNED                         | RIM is not signed.                                                                      |
-| 5013 | INVALID_RIM_SIGNATURE                  | RIM Signature is invalid.                                                               |
-| 5014 | FAIL_TO_VALIDATE_RIM_SIGNATURE         | Parsing error when trying to validate RIM Signature.                                    |
-| 5015 | ERROR_ATTESTING_EVIDENCE               | Error talking to enclave to Attest the evidence.                                        |
-| 5016 | NITRO_ATTESTATION_DOCUMENT_FETCH_ERROR | Fail to download Nitro Attestation Document                                             |
+| 4001 | EMPTY_REQUEST  | Attestation request is empty.     |
+| 4002 | INVALID_REQUEST      | Attestation request is invalid because Attestation report length is less than expected. |
+| 4003 | INVALID_NONCE  | Nonce in the attestation report is either null or of length 0   |
+| 4004 | INVALID_GPU_ARCH     | GPU architecture in the attestation report is either null or of length 0    |
+| 4005 | INVALID_EVIDENCE     | GPU Evidence is either null or of length 0     |
+| 4006 | INVALID_EVIDENCE_FORMAT    | Attestation Evidence could not be parsed by NRAS.    |
+| 4007 | INVALID_CERTIFICATE_CHAIN  | Certificate chain is invalid, and it does not belong to NVIDIA PKI.   |
+| 4008 | INVALID_GOLDEN_MEASUREMENT | RIM file data could not be parsed by NRAS.     |
+| 4009 | DRIVER_AND_RIM_MEASUREMENT_SAME_INDEX  | Driver and VBIOS Golden Measurement has measurement at same index     |
+| 4010 | NONCE_NOT_MATCHING   | Nonce from request is not matching with evidence nonce     |
+| 4011 | EVIDENCE_CERT_EXPIRED      | Evidence certificate is expired   |
+| 4012 | GPU_ARCHITECTURE_NOT_SUPPORTED   | GPU Architecture is not one of AMPERE or HOPPER      |
+| 4013 | INVALID_EVIDENCE_SIGNATURE | Attestation Report Signature is Invalid  |
+| 4014 | INVALID_ATTESTATION_CERTIFICATE_CHAIN  | Attestation Certificate chain doesn’t belong to Nvidia PKI |
+| 4015 | INVALID_RIM_CERTIFICATE_CHAIN    | RIM Certificate chain doesn’t belong to Nvidia PKI   |
+| 4016 | FWID_NOT_MATCHING    | FWID from the Attestation Report does not match the FWID in the Device Certificate.     |
+| 5000 | INTERNAL_SERVER_ERROR      | Internal Server Error |
+| 5001 | ERROR_DURING_OCSP_QUERY    | Error creating OCSP request or communicating with OCSP service. |
+| 5002 | CERTIFICATE_STATUS_REVOKED | OCSP Service returned a “REVOKED” status for the certificate    |
+| 5003 | CERTIFICATE_STATUS_UNKNOWN | OCSP Service returned a “UNKNOWN” status for the certificate    |
+| 5004 | ERROR_VALIDATING_SIGNATURE | Error during validating evidence signature     |
+| 5005 | ATTESTATION_TOKEN_FAILURE  | Fail to generate Attestation Token, please retry     |
+| 5006 | GPU_DRIVER_VERSION_NOT_AVAILABLE | GPU Driver Version not available in evidence   |
+| 5007 | GPU_VBIOS_VERSION_NOT_AVAILABLE  | GPU VBIOS Version not available in evidence    |
+| 5008 | ERROR_DURING_RIM_DOWNLOAD  | NRAS is not able to download RIM file from RIM Service.    |
+| 5009 | RIM_BUNDLE_NOT_FOUND | RIM file is not found in the RIM Service.      |
+| 5010 | ERROR_PARSING_RIM_CERTIFICATE    | RIM Certificate parsing failed.   |
+| 5011 | INVALID_RIM_CERTIFICATE    | RIM Certificate chain is invalid. |
+| 5012 | RIM_NOT_SIGNED | RIM is not signed.    |
+| 5013 | INVALID_RIM_SIGNATURE      | RIM Signature is invalid.   |
+| 5014 | FAIL_TO_VALIDATE_RIM_SIGNATURE   | Parsing error when trying to validate RIM Signature. |
+| 5015 | ERROR_ATTESTING_EVIDENCE   | Error talking to enclave to Attest the evidence.     |
+| 5016 | NITRO_ATTESTATION_DOCUMENT_FETCH_ERROR | Fail to download Nitro Attestation Document    |
 
 # Reporting an issue to Nvidia
 

@@ -101,7 +101,6 @@ class Verifier:
                 else:
                     info_log.info("\t\t\t"+str(index))
             info_log.info("\t\t\t]")
-
             return False
         else:
             info_log.info("\t\t\tThe runtime measurements are matching with the golden measurements.\

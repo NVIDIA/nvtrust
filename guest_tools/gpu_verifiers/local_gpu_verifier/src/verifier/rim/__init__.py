@@ -257,9 +257,9 @@ class RIM:
                 raises RIMSignatureVerificationError.
         """
         if self.rim_name == 'driver':
-            settings.mark_driver_rim_cert_extracted_successfully()
+            event_log.info("Driver rim cert has been extracted successfully")
         else:
-            settings.mark_vbios_rim_cert_extracted_successfully()
+            event_log.info("Vbios rim cert has been extracted successfully")
         try:
             # performs the signature verification of the RIM. We will get the root of the RIM
             # if the signature verification is successful otherwise, it raises InvalidSignature exception.
@@ -283,6 +283,10 @@ class RIM:
 
         info_log.info(f"\t\t\t{self.rim_name} RIM signature verification successful.")
         self.root = verified_root
+        if self.rim_name == 'driver':
+            settings.mark_driver_rim_cert_validated_successfully()
+        else:
+            settings.mark_vbios_rim_cert_validated_successfully()
         return True
     
     def get_measurements(self):
@@ -353,6 +357,21 @@ class RIM:
             settings.mark_rim_driver_measurements_as_available()
         else:
             settings.mark_rim_vbios_measurements_as_available()
+
+    def get_manufacturer_id(self, driver_rim_content):
+        """ Returns the manufacturer id of the RIM.
+
+        Returns:
+            [str]: the manufacturer id of the RIM.
+        """
+        root = etree.fromstring(driver_rim_content)
+
+        ns = {'ns0': 'http://standards.iso.org/iso/19770/-2/2015/schema.xsd',
+              'ns1': 'https://trustedcomputinggroup.org/resource/tcg-reference-integrity-manifest-rim-information-model/'}
+        meta = root.find(".//ns0:Meta", ns)
+        firmware_manufacturer_id = meta.attrib[
+            '{https://trustedcomputinggroup.org/resource/tcg-reference-integrity-manifest-rim-information-model/}FirmwareManufacturerId']
+        return firmware_manufacturer_id
         
 
     def verify(self, version, settings, schema_path = ''): 
@@ -415,12 +434,12 @@ class RIM:
 
             info_log.info(f"\t\t\t{self.rim_name} RIM certificate chain verification successful.")
 
-            rim_cert_chain_ocsp_revocation_status = CcAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain, settings, mode)
+            rim_cert_chain_ocsp_revocation_status, gpu_attestation_warning = CcAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain, settings, mode)
 
             if not rim_cert_chain_ocsp_revocation_status:
                 raise RIMCertChainOCSPVerificationError(f"\t\t\t{self.rim_name} RIM cert chain ocsp status verification failed.")
             
-            return self.verify_signature(settings)
+            return self.verify_signature(settings), gpu_attestation_warning
         
         else:            
             raise RIMSchemaValidationError(f"\t\t\tSchema validation of {self.rim_name} RIM failed.")
