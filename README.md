@@ -6,16 +6,14 @@ For more information, including documentation, whitepapers, and videos regarding
 
 ## Early Access Considerations
 This branch of nvTrust is currently considered 
-`Early Access`. 
+`General Access`. 
 
-This early-access software release features a software stack targeting a single H100 GPU in passthrough mode with a single session key for encryption and authentication and basic use of the Developer Tools. 
+This software release features a software stack targeting a single H100 GPU in passthrough mode with a single session key for encryption and authentication and basic use of the Developer Tools. 
 
 Code and data will be confidential up to the limits of the NIST SP800-38D AES-GCM standard, after which the VM should be restarted, which causes a fresh session key to be created.
 
-**NVIDIA recommends users invoke good practices while utilizing the early-access by testing only with synthetic data and non-proprietary AI models.**
-
 ## Release Notes
-- Hopper Confidential Compute early access features are supported on NVIDIA Driver Version `535.86` and later only
+- Hopper Confidential Compute early access features are supported on NVIDIA Driver Version `550` and later only
 - Release Notes may be found [here](https://docs.nvidia.com/confidential-computing/#release-notes).
 
 ## License
