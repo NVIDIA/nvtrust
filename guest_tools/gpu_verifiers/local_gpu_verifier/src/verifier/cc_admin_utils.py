@@ -204,6 +204,7 @@ class CcAdminUtils:
         assert isinstance(cert_chain, list)
         revoked_status = False
         start_index = 0
+        gpu_attestation_warning = ""
 
         if mode == BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION:
             start_index = 1
@@ -241,47 +242,49 @@ class CcAdminUtils:
 
             if not ocsp_cert_chain_verification_status:
                 info_log.error(f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
-                return False
+                return False, gpu_attestation_warning
             elif i == end_index - 1:
-                settings.mark_gpu_certificate_ocsp_cert_chain_as_verified(mode)
+                info_log.debug("\t\tGPU Certificate OCSP Cert chain is verified")
+
 
             # Verifying the signature of the ocsp response message.
             if not CcAdminUtils.verify_ocsp_signature(ocsp_response):
                 info_log.error(f"\t\tThe ocsp response response for certificate {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} failed due to signature verification failure.")
-                return False
+                return False, gpu_attestation_warning
             elif i == end_index - 1:
-                settings.mark_gpu_certificate_ocsp_signature_as_verified()
+                info_log.debug("\t\tGPU Certificate OCSP Signature is verified")
 
             if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
                 info_log.error("\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
-                return False
+                return False, gpu_attestation_warning
             elif i == end_index - 1:
-                settings.mark_gpu_certificate_ocsp_nonce_as_matching()
+                info_log.debug("\t\tGPU Certificate OCSP Nonce is matching")
 
             if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
                 info_log.error("\t\tCouldn't receive a proper response from the OCSP server.")
-                return False
+                return False, gpu_attestation_warning
 
             #OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
             if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
                 if x509.ReasonFlags.certificate_hold == ocsp_response.revocation_reason and \
                 BaseSettings.allow_hold_cert and \
                 (mode == BaseSettings.Certificate_Chain_Verification_Mode.DRIVER_RIM_CERT or BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT):
-                    info_log.warning(f"\t\t\tWARNING: THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'.")
-                    revoked_status = True
+                    warning = f"THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'."
+                    info_log.warning(f"\t\t\tWARNING: {warning}")
+                    gpu_attestation_warning = warning
                 elif ocsp_response.certificate_status == ocsp.OCSPCertStatus.UNKNOWN:
                     info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate revocation status is UNKNOWN")
-                    return False
+                    return False, gpu_attestation_warning
                 else:
                     info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
-                    return False
+                    return False, gpu_attestation_warning
 
         if not revoked_status:
             info_log.info(f"\t\t\tThe certificate chain revocation status verification successful.")
         else:
             info_log.warning(f"\t\t\tThe certificate chain revocation status verification was not successful but continuing.")
 
-        return True
+        return True, gpu_attestation_warning
 
     @staticmethod
     def send_ocsp_request(data):
@@ -343,6 +346,7 @@ class CcAdminUtils:
             [str]: the content of the required RIM file as a string.
         """
         try:
+            event_log.debug(f"RIM URL is {BaseSettings.RIM_SERVICE_BASE_URL + file_id}")
             with request.urlopen(BaseSettings.RIM_SERVICE_BASE_URL + file_id) as https_response:
                 data = https_response.read()
                 json_object = json.loads(data)
@@ -445,7 +449,6 @@ class CcAdminUtils:
         assert isinstance(attestation_report_obj, AttestationReport)
         assert isinstance(gpu_leaf_certificate, crypto.X509)
         assert isinstance(nonce, bytes) and len(nonce) == settings.SIZE_OF_NONCE_IN_BYTES
-
         # Here the attestation report is the concatenated SPDM GET_MEASUREMENTS request with the SPDM GET_MEASUREMENT response message.
         request_nonce = attestation_report_obj.get_request_message().get_nonce()
 
@@ -453,7 +456,6 @@ class CcAdminUtils:
             err_msg = "\t\t Length of Nonce is greater than max nonce size allowed."
             event_log.error(err_msg)
             raise InvalidNonceError(err_msg)
-
         # compare the generated nonce with the nonce of SPDM GET MEASUREMENT request message in the attestation report.
         if request_nonce != nonce:
             err_msg = "\t\tThe nonce in the SPDM GET MEASUREMENT request message is not matching with the generated nonce."
@@ -499,7 +501,7 @@ class CcAdminUtils:
                                                                                          settings.HashFunction)
         if attestation_report_verification_status:
             info_log.info("\t\tAttestation report signature verification successful.")
-
+            settings.mark_attestation_report_signature_verified()
         else:
             err_msg = "\t\tAttestation report signature verification failed."
             event_log.error(err_msg)

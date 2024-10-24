@@ -1,25 +1,41 @@
-[project]
+[tool.poetry]
 name = "nv-attestation-sdk"
-version = "1.4.0"
-authors = [
-    {name = "NVIDIA"},
-]
-description = "The Attestation SDK provides developers with a easy to use APIs for implementing attestation capabilities into their applications."
+version = "2.0.0"
+description = "The Attestation SDK provides developers with easy to use APIs for implementing attestation capabilities into their applications."
+authors = ["Karthik Jayaraman <kjayaraman@nvidia.com>"]
 readme = "README.md"
-requires-python = ">=3.7"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
-]
-dependencies = [
-    'pyjwt ~= 2.7.0',
-    'nv-local-gpu-verifier >= 1.2.0',
-    'requests ~= 2.31.0'
-]
 keywords = [
     "confidential-computing",
     "local-gpu-verifier",
     "attestation",
     "NVIDIA"
 ]
+
+[tool.poetry.dependencies]
+python = ">=3.7"
+pyjwt = "~2.7.0"
+requests = "~2.31.0"
+cryptography = "==39.0.1"
+ecdsa = "==0.18.0"
+signxml = "==3.2.0"
+xmlschema = "==2.2.3"
+pyOpenSSL = "==23.1.1"
+PyJWT = "==2.7.0"
+nvidia-ml-py = ">=12.535.77"
+nv-local-gpu-verifier = "2.0.0"
+
+[tool.poetry.dev-dependencies]
+# Add development dependencies here if needed, for example:
+# pytest = "^6.2"
+
+include = [
+    "verifiers/nv_switch_verifier/rim/*.xsd",
+    "verifiers/nv_switch_verifier/certs/*.pem"
+]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+# [tool.poetry.package.data]
+# nv_attestation_sdk = ["verifiers/nv_switch_verifier/rim/*.xsd", "verifiers/nv_switch_verifier/certs/*.pem"]
