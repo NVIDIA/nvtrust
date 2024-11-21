@@ -31,6 +31,7 @@
 """A module to handle all the nvml api calls for the verifier.
 """
 import ctypes
+import sys
 
 from pynvml import (
     nvmlInit,

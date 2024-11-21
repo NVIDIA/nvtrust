@@ -78,11 +78,11 @@ Please execute the following commands to clean up packages that were not install
 
 - Local GPU Attestation
 
-  Refer to the [sample implementation](tests/LocalGPUTest.py)
+  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/LocalGPUTest.py)
 
 - Remote GPU Attestation
 
-  Refer to the [sample implementation](tests/RemoteGPUTest_v3.py)
+  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/RemoteGPUTest.py)
 
 ## Switch Attestation
 
@@ -118,6 +118,20 @@ Please note that the Schema/EAT claim information is subject to change in future
 
     python3 -m pip install --upgrade build
     python3 -m build
+
+## Compatibility Matrix 
+
+SDK version     |  NRAS API Version | Claims Version
+--------------- |------------------|----------------
+v1.1.0          | v1               | N/A
+v1.2.0          | v1               | N/A
+v1.3.0          | v1               | N/A
+v1.4.0          | v1               | N/A
+v1.5.0          | v2               | N/A
+v2.0.0          | v3               | 2.0
+v2.1.0          | v3               | 2.0
+
+More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 
 ## Attestation SDK APIs
 

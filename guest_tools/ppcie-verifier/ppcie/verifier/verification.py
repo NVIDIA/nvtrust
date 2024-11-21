@@ -26,6 +26,7 @@ from .src.topology.validate_topology import TopologyValidation
 from .src.nvml.nvml_client import NvmlClient
 from .src.utils.logging import setup_logging, get_logger
 from .src.utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, REMOTE_NVSWITCH_VERIFIER_SERVICE_URL
+
 parser = argparse.ArgumentParser()
 logger = setup_logging()
 
@@ -69,6 +70,14 @@ def verification():
         number_of_gpus = get_number_of_gpus(logger, nvml_client)
         switch_list_uuids = get_number_of_switches(logger, nscq_client)
         number_of_switches = len(switch_list_uuids)
+        if number_of_gpus != 8 and number_of_switches != 4:
+            logger.error("PPCIE: Number of GPUs present are : %d and Switches are %d which do not meet the required "
+                         "configuration. Exiting..", number_of_gpus, number_of_switches)
+            sys.exit()
+        if args["gpu_attestation_mode"] != args["switch_attestation_mode"]:
+            logger.error(
+                "PPCIE: GPU attestation mode and Switch attestation mode should be same. Exiting..")
+            sys.exit()
 
         status = validate_gpu_pre_checks(nvml_client, logger, status)
         if status.gpu_pre_checks is True:
@@ -203,7 +212,7 @@ def perform_gpu_attestation(attestation_mode, logger, status):
             "",
         )
         logger.debug("PPCIE: Collecting evidences for the GPU")
-        evidence_list = client.get_evidence()
+        evidence_list = client.get_evidence(ppcie_mode=False)
         gpu_attestation_report = []
 
         # Appending the gpu attestation report in hex format
@@ -232,7 +241,7 @@ def perform_gpu_attestation(attestation_mode, logger, status):
             status.gpu_attestation = False
         file = "data/NVGPU" + attestation_mode.capitalize() + "Policy.json"
         with open(
-            os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
+                os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
         ) as json_file:
             json_data = json.load(json_file)
             att_result_policy = json.dumps(json_data)
@@ -299,7 +308,7 @@ def perform_switch_attestation(switch_attestaion_mode, logger, status):
             "",
         )
         switch_attestation_report = []
-        evidence_list = switch_attester.get_evidence()
+        evidence_list = switch_attester.get_evidence(ppcie_mode=False)
         for evidence in evidence_list:
             if isinstance(evidence, NVSwitch):
                 # Process nvmlhandler object when LOCAL attestation

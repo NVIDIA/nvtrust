@@ -30,6 +30,7 @@
 
 import os
 import io
+import sys
 
 from signxml import XMLVerifier
 from signxml.exceptions import InvalidSignature
@@ -437,7 +438,8 @@ class RIM:
             rim_cert_chain_ocsp_revocation_status, gpu_attestation_warning = CcAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain, settings, mode)
 
             if not rim_cert_chain_ocsp_revocation_status:
-                raise RIMCertChainOCSPVerificationError(f"\t\t\t{self.rim_name} RIM cert chain ocsp status verification failed.")
+                info_log.error(f"{self.rim_name} RIM cert chain ocsp status verification failed.")
+                sys.exit()
             
             return self.verify_signature(settings), gpu_attestation_warning
         

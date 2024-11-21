@@ -127,9 +127,9 @@ class ClaimsUtils:
             gpu_claims["ueid"] = str(ueid[i])
             gpu_claims["oemid"] = oemid[i]
             gpu_claims["iss"] = "LOCAL_GPU_VERIFIER"
-            if driver_warnings[i] is not "":
+            if len(driver_warnings) > 0 and driver_warnings[i] is not "":
                 warning = driver_warnings[i]
-            if vbios_warnings[i] is not "":
+            if len(vbios_warnings) > 0 and vbios_warnings[i] is not "":
                 warning += " " + vbios_warnings[i]
             if warning is not "":
                 gpu_claims["x-nvidia-attestation-warning"] = warning

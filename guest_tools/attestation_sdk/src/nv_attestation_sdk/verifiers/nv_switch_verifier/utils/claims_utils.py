@@ -91,7 +91,7 @@ class ClaimsUtils:
             switch_claims["hwmodel"] = hwmodel[i]
             switch_claims["ueid"] = str(ueid[i])
             switch_claims["iss"] = "LOCAL_SWITCH_VERIFIER"
-            if attestation_warnings[i] is not "":
+            if len(attestation_warnings) > 0 and attestation_warnings[i] is not "":
                 switch_claims["x-nvidia-attestation-warning"] = attestation_warnings[i]
             switch_claims_json = json.dumps(switch_claims)
             submods_dict[dict_key] = ["DIGEST", ["SHA256", hashlib.sha256(switch_claims_json.encode('utf-8')).hexdigest()]]

@@ -31,6 +31,7 @@
 import os
 import io
 import logging
+import sys
 
 from signxml import XMLVerifier
 from signxml.exceptions import InvalidSignature
@@ -438,8 +439,8 @@ class RIM:
                                                                                                    settings, mode)
 
             if not rim_cert_chain_ocsp_revocation_status:
-                raise RIMCertChainOCSPVerificationError(
-                    f"\t\t\t{self.rim_name} RIM cert chain ocsp status verification failed.")
+                self.info_log.error(f"{self.rim_name} RIM cert chain ocsp status verification failed.")
+                sys.exit()
 
             return self.verify_signature(settings), switch_attestation_warning
 

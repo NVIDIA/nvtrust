@@ -18,7 +18,7 @@ client.add_verifier(attestation.Devices.GPU, attestation.Environment.REMOTE, NRA
 print(client.get_verifiers())
 
 print("[RemoteGPUTest] call get_evidence()")
-evidence_list = client.get_evidence()
+evidence_list = client.get_evidence(ppcie_mode=False)
 
 print("[RemoteGPUTest] call attest() - expecting True")
 print(client.attest(evidence_list))
@@ -45,7 +45,7 @@ client.set_nonce("931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364df
 
 client.add_verifier(attestation.Devices.SWITCH, attestation.Environment.REMOTE, NRAS_SWITCH_URL, "")
 
-evidence_list = client.get_evidence()
+evidence_list = client.get_evidence(ppcie_mode=False)
 
 client.attest(evidence_list)
 print ("[RemoteSwitchTest] token : "+str(client.get_token()))

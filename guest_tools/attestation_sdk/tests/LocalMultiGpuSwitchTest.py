@@ -20,7 +20,7 @@ client.add_verifier(attestation.Devices.GPU, attestation.Environment.LOCAL, "", 
 print(client.get_verifiers())
 
 print ("[LocalGPUTest] call get_evidence()")
-evidence_list = client.get_evidence()
+evidence_list = client.get_evidence(ppcie_mode=False)
 
 print ("[LocalGPUTest] call attest() - expecting True")
 print("[LocalGPUTest] call attest() - result : ", client.attest(evidence_list))
@@ -41,7 +41,7 @@ client.set_nonce("931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364df
 
 client.add_verifier(attestation.Devices.SWITCH, attestation.Environment.LOCAL, "", "")
 
-evidence_list = client.get_evidence()
+evidence_list = client.get_evidence(ppcie_mode=False)
 
 client.attest(evidence_list)
 file = "policies/local/NVSwitchLocalPolicyExample.json"

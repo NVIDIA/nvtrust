@@ -117,6 +117,3 @@ Please execute the following commands to clean up packages that were not install
 
 ## License
 The license for this repository is Apache v2 except where otherwise noted.
-
-## Note
-This attestation verifier tool requires a compatible driver with support for the HGX Protected PCIe feature. Please refer to the driver release notes to verify if 'HGX Protected PCIe' is supported. Using this tool with an incompatible driver version may result in undefined behavior

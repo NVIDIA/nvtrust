@@ -182,7 +182,7 @@ def function_wrapper_with_timeout(args, logger, max_time_delay):
         event = Event()
         args.append(event)
         args = ((args), logger)
-        logger.info(f"{function_name} called.")
+        logger.debug(f"{function_name} called.")
         thread = Thread(target=function_caller, args=args)
         thread.start()
         return_value = q.get(block=True, timeout=max_time_delay)

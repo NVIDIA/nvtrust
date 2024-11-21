@@ -1,0 +1,20 @@
+{
+  "sub": "NVIDIA-PLATFORM-ATTESTATION",
+  "x-nvidia-ver": "2.0",
+  "nbf": 1727387975,
+  "iss": "https://nras.attestation.nvidia.com",
+  "x-nvidia-overall-att-result": true,
+  "submods": {
+    "GPU-0": [
+      "DIGEST",
+      [
+        "SHA-256",
+        "e8fdc07449924e6613626e3498128a2c66ca822d52360d6471196ee693df7e1a"
+      ]
+    ]
+  },
+  "eat_nonce": "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb",
+  "iat": 1727387975,
+  "jti": "dd6a874b-2f9d-4ad3-a913-dbaaaa48fc4b",
+  "exp": 4880995383
+}

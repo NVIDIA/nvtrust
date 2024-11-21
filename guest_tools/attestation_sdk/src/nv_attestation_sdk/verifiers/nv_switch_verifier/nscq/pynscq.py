@@ -37,8 +37,8 @@ import ctypes
 from ctypes.util import find_library
 from warnings import warn
 
+nscq_api_version = [2, 0, 0]
 
-nscq_api_version = [2,0,0]
 
 ################################################################
 #####                                                      #####
@@ -51,6 +51,7 @@ class _Constants(object):
     Helper class to quickly allow for converting a value to it's associated
     attribute.
     """
+
     @classmethod
     def toString(cls, value):
         if isinstance(value, nscq_rc_t):
@@ -63,7 +64,7 @@ class _Constants(object):
                     return key
             except KeyError as e:
                 break
-        raise AttributeError("%s has no match for %d" %(cls.__name__, value))
+        raise AttributeError("%s has no match for %d" % (cls.__name__, value))
 
     def __new__(cls, value):
         return cls.toString(value)
@@ -89,6 +90,7 @@ class _PrintableStructure(ctypes.Structure):
     Exact format of returned str from this class is subject to change in the future.
     """
     _fmt_ = {}
+
     def __str__(self):
         result = []
         for x in self._fields_:
@@ -100,8 +102,10 @@ class _PrintableStructure(ctypes.Structure):
             elif "<default>" in self._fmt_:
                 fmt = self._fmt_["<default>"]
             result.append(("%s: " + fmt) % (key, value))
-        return self.__class__.__name__ + "(" +  ", ".join(result) + ")"
+        return self.__class__.__name__ + "(" + ", ".join(result) + ")"
+
     __repr__ = __str__
+
 
 ################################################################
 #####                                                      #####
@@ -111,42 +115,52 @@ class _PrintableStructure(ctypes.Structure):
 
 
 class nscq_rcs(_Constants):
-    NSCQ_RC_SUCCESS                      = 0
-    NSCQ_RC_WARNING_RDT_INIT_FAILURE     = 1
-    NSCQ_RC_ERROR_NOT_IMPLEMENTED        = -1
-    NSCQ_RC_ERROR_INVALID_UUID           = -2
+    NSCQ_RC_SUCCESS = 0
+    NSCQ_RC_WARNING_RDT_INIT_FAILURE = 1
+    NSCQ_RC_ERROR_NOT_IMPLEMENTED = -1
+    NSCQ_RC_ERROR_INVALID_UUID = -2
     NSCQ_RC_ERROR_RESOURCE_NOT_MOUNTABLE = -3
-    NSCQ_RC_ERROR_OVERFLOW               = -4
-    NSCQ_RC_ERROR_UNEXPECTED_VALUE       = -5
-    NSCQ_RC_ERROR_UNSUPPORTED_DRV        = -6
-    NSCQ_RC_ERROR_DRV                    = -7
-    NSCQ_RC_ERROR_TIMEOUT                = -8
-    NSCQ_RC_ERROR_EXT                    = -127
-    NSCQ_RC_ERROR_UNSPECIFIED            = -128
+    NSCQ_RC_ERROR_OVERFLOW = -4
+    NSCQ_RC_ERROR_UNEXPECTED_VALUE = -5
+    NSCQ_RC_ERROR_UNSUPPORTED_DRV = -6
+    NSCQ_RC_ERROR_DRV = -7
+    NSCQ_RC_ERROR_TIMEOUT = -8
+    NSCQ_RC_ERROR_EXT = -127
+    NSCQ_RC_ERROR_UNSPECIFIED = -128
+
+
 class nscq_rc_t(ctypes.c_int8):
     pass
 
+
 class nscq_device_tnvl_modes(_Constants):
-    NSCQ_DEVICE_TNVL_MODE_UNKNOWN  = -1
+    NSCQ_DEVICE_TNVL_MODE_UNKNOWN = -1
     NSCQ_DEVICE_TNVL_MODE_DISABLED = 0
-    NSCQ_DEVICE_TNVL_MODE_ENABLED  = 1
-    NSCQ_DEVICE_TNVL_MODE_FAILURE  = 2
-    NSCQ_DEVICE_TNVL_MODE_LOCKED   = 3
+    NSCQ_DEVICE_TNVL_MODE_ENABLED = 1
+    NSCQ_DEVICE_TNVL_MODE_FAILURE = 2
+    NSCQ_DEVICE_TNVL_MODE_LOCKED = 3
+
+
 class nscq_tnvl_status_t(ctypes.c_int8):
     pass
 
+
 class nscq_arch_types(_Constants):
-    NSCQ_ARCH_SV10  = 0
-    NSCQ_ARCH_LR10  = 1
-    NSCQ_ARCH_LS10  = 2
+    NSCQ_ARCH_SV10 = 0
+    NSCQ_ARCH_LR10 = 1
+    NSCQ_ARCH_LS10 = 2
+
+
 class nscq_arch_t(ctypes.c_int8):
     pass
+
 
 NSCQ_CERTIFICATE_CERT_CHAIN_MAX_SIZE = 0x1400
 NSCQ_ATTESTATION_REPORT_NONCE_SIZE = 0x20
 NSCQ_ATTESTATION_REPORT_SIZE = 0x2000
 
 NSCQ_SESSION_CREATE_MOUNT_DEVICES = 1
+
 
 ################################################################
 #####                                                      #####
@@ -157,13 +171,16 @@ NSCQ_SESSION_CREATE_MOUNT_DEVICES = 1
 
 class nscq_session_st(_PrintableStructure):
     pass
+
+
 nscq_session_t = ctypes.POINTER(nscq_session_st)
 
 
 class nscq_observer_st(_PrintableStructure):
     pass
-nscq_observer_t = ctypes.POINTER(nscq_observer_st)
 
+
+nscq_observer_t = ctypes.POINTER(nscq_observer_st)
 
 
 ################################################################
@@ -193,6 +210,7 @@ class nscq_label_t(_PrintableStructure):
     def __repr__(self):
         return self.__class__.__name__ + "(" + self.__str__() + ")"
 
+
 class nscq_drv_version_t(_PrintableStructure):
     """Not actually defined in the header file.
     Helps with unpacking the drv version.
@@ -206,16 +224,17 @@ class nscq_drv_version_t(_PrintableStructure):
 
 
 class nscq_attestation_report_t(_PrintableStructure):
-  _fields_ = [
-      ("report_size", ctypes.c_uint32),
-      ("report", ctypes.c_uint8 * NSCQ_ATTESTATION_REPORT_SIZE),
-  ]
+    _fields_ = [
+        ("report_size", ctypes.c_uint32),
+        ("report", ctypes.c_uint8 * NSCQ_ATTESTATION_REPORT_SIZE),
+    ]
+
 
 class nscq_attestation_certificate_t(_PrintableStructure):
-  _fields_ = [
-    ("cert_chain", ctypes.c_uint8 * NSCQ_CERTIFICATE_CERT_CHAIN_MAX_SIZE),
-    ("cert_chain_size", ctypes.c_uint32),
-  ]
+    _fields_ = [
+        ("cert_chain", ctypes.c_uint8 * NSCQ_CERTIFICATE_CERT_CHAIN_MAX_SIZE),
+        ("cert_chain_size", ctypes.c_uint32),
+    ]
 
 
 """
@@ -247,6 +266,8 @@ class nscq_observer_result_t(_PrintableStructure):
 
 
 _nscqlib = None
+
+
 def _loadNscq():
     global _nscqlib
     library = find_library("nvidia-nscq")
@@ -255,9 +276,13 @@ def _loadNscq():
             _nscqlib = ctypes.CDLL(library)
         except OSError as error:
             raise error
+
+
 _loadNscq()
 
 __FCACHE = {}
+
+
 def __nscqFindFunc(name, restype=None):
     global __FCACHE
     if name in __FCACHE:
@@ -320,7 +345,6 @@ def nscq_handle_rc(rc):
         warn(NSCQWarning(value), stacklevel=3)
 
 
-
 ################################################################
 #####                                                      #####
 #####                       Functions                      #####
@@ -376,7 +400,7 @@ def nscq_session_unmount(session: nscq_session_t, uuid: nscq_uuid_t):
 
 
 def nscq_session_path_observe(
-    session: nscq_session_t, path: bytes, callback, user_data=None, flags=0
+        session: nscq_session_t, path: bytes, callback, user_data=None, flags=0
 ):
     """return nscq_rc_t (can be ignored)
 
@@ -408,7 +432,7 @@ def nscq_session_path_observe(
 
 
 def nscq_session_path_register_observer(
-    session: nscq_session_t, path: bytes, callback, user_data, flags=0
+        session: nscq_session_t, path: bytes, callback, user_data, flags=0
 ):
     """return nscq_observer_t
 
@@ -466,6 +490,7 @@ def nscq_session_observe(session: nscq_session_t, flags=0):
     nscq_handle_rc(res)
     return res
 
+
 def nscq_session_set_input(session: nscq_session_t, input_arg, input_size, flags=0):
     """return nscq_rc_t (can be ignored)"""
     if not isinstance(session, nscq_session_t):
@@ -475,6 +500,7 @@ def nscq_session_set_input(session: nscq_session_t, input_arg, input_size, flags
     nscq_handle_rc(res)
     return res
 
+
 ################################################################
 #####                                                      #####
 #####                     Helpers                          #####
@@ -483,6 +509,8 @@ def nscq_session_set_input(session: nscq_session_t, input_arg, input_size, flags
 
 
 user_data_type = ctypes.POINTER(ctypes.py_object)
+
+
 def user_data_unwrap(user_data):
     """returns a python object
 
@@ -539,6 +567,7 @@ class NSCQSession:
     def set_input(self, input_arg, input_size, flags=0):
         return nscq_session_set_input(self.session, input_arg, input_size, flags)
 
+
 __nscqVariables = [var for var in dir() if var.endswith("_t")]
 __nscqCtypes = [
     var.__name__
@@ -554,6 +583,7 @@ __nscqCtypes = [
         ctypes.c_bool,
     ]
 ]
+
 
 def nscqCallback(*callback_arguments, **kwargs):
     """decorator to create callbacks for observers.
@@ -591,4 +621,3 @@ def nscqCallback(*callback_arguments, **kwargs):
             % (callback_arguments[-3])
         )
     return ctypes.CFUNCTYPE(None, *callback_arguments, **kwargs)
-

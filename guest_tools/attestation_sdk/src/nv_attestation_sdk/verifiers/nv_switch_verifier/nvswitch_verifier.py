@@ -33,9 +33,8 @@ from .config import (
 )
 import logging
 from .exceptions import InvalidMeasurementIndexError
-
-console_logger = logging.getLogger("sdk-console")
-file_logger = logging.getLogger("sdk-file")
+from nv_attestation_sdk.utils.logging_config import get_logger
+logger = get_logger()
 
 
 class SwitchVerifier:
@@ -53,17 +52,17 @@ class SwitchVerifier:
             [bool]: returns True if all the valid golden measurements values matches with the
             corresponding runtime measurements. Otherwise, returns False.
         """
-        console_logger.info("\tComparing measurements (runtime vs golden)")
+        logger.info("\tComparing measurements (runtime vs golden)")
 
         if len(self.runtime_measurements) == 0:
-            console_logger.warning("\t\t\tWarning : no measurements from attestation report received.")
+            logger.warning("\t\t\tWarning : no measurements from attestation report received.")
 
         if len(self.golden_measurements) == 0:
-            console_logger.warning("\t\t\tWarning : no golden measurements from RIMs received.")
+            logger.warning("\t\t\tWarning : no golden measurements from RIMs received.")
 
         # Make sure that active golden measurement are always less than or equal to run time measurement
         if len(self.golden_measurements) > len(self.runtime_measurements):
-            console_logger.warning(
+            logger.warning(
                 "\t\t\tWarning : Golden measurement are more than measurements in Attestation report.")
             return False
 
@@ -85,21 +84,21 @@ class SwitchVerifier:
 
         if len(list_of_mismatched_indexes) > 0:
 
-            console_logger.info("""\t\t\tThe runtime measurements are not matching with the
+            logger.info("""\t\t\tThe runtime measurements are not matching with the
                         golden measurements at the following indexes(starting from 0) :\n\t\t\t[""")
 
             list_of_mismatched_indexes.sort()
 
             for i, index in enumerate(list_of_mismatched_indexes):
                 if i != len(list_of_mismatched_indexes) - 1:
-                    console_logger.info(f'\t\t\t{index}, ')
+                    logger.info(f'\t\t\t{index}, ')
                 else:
-                    console_logger.info("\t\t\t" + str(index))
-            console_logger.info("\t\t\t]")
+                    logger.info("\t\t\t" + str(index))
+            logger.info("\t\t\t]")
 
             return False
         else:
-            console_logger.info("\t\t\tThe runtime measurements are matching with the golden measurements.\
+            logger.info("\t\t\tThe runtime measurements are matching with the golden measurements.\
                             \n\t\tSwitch is in expected state.")
             settings.mark_measurements_as_matching()
             return True
