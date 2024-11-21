@@ -48,7 +48,7 @@ If you choose to install the Attestation SDK directly from PyPI, use the followi
 
 ### Troubleshooting Installation Issues
 
-If you encounter warning and installation issues similar to below while installing the package:
+If you encounter warning and installation issues similar to the below while installing the package:
 `WARNING: Ignoring invalid distribution ~v-attestation-sdk <site-package-directory>`
      
 Please execute the following commands to clean up packages that were not installed properly and then re-try the installation:
@@ -144,8 +144,8 @@ More information on claims can be found [here](https://github.com/NVIDIA/nvtrust
 | add_verifier(<-attestation-device-type->, <-local/remote->, <-remote-attestation-service-url->, <-attestation-results-policy->) | Add a specific type of verifier for the client object. The verifier will be invoked during the attest operation                       |
 | get_verifiers()                                                                                                                 | Retrieves the list of verifiers added to the client object.                                                                              |
 | get_evidence()                                                                                                                  | Retrieves the list of evidence based on the attestation device (e.g., GPU, switch) and the type of attestation (e.g., local, remote). |
-| attest()                                                                                                                        | Trigger the Attestation for client object, This uses the Attestation type configured in add_verifier method                           |
-| get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to Attestation result.                                             |
+| attest()                                                                                                                        | Trigger the Attestation for the client object, This uses the Attestation type configured in the add_verifier method                           |
+| get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to the Attestation result.                                             |
 | validate_token(<-attestation-results-policy->)                                                                                  | Validate the Attestation Claims against a policy                                                                                      |
 | decode_token(<-jwt-token->)                                                                                                     | Decodes the JWT token to claims received by the verifier                                                                              |
 

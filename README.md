@@ -1,12 +1,12 @@
 # nvTrust: NVIDIA Confidential Computing Ancillary Software
 
-nvTrust is a repository which contains much of the utilities & tools, open-source code, and SDKs leveraged when using NVIDIA solutions in trusted environements, such as Confidential Computing.
+nvTrust is a repository which contains much of the utilities & tools, open-source code,
+and SDKs leveraged when using NVIDIA solutions in trusted environments, such as Confidential Computing.
 
-For more information, including documentation, whitepapers, and videos regarding the Hopper Confidential Computing story, please visit [docs.nvidia.com/confidential-computing/index.html]()
+For more information, including documentation, white papers, and videos regarding the Hopper Confidential Computing story, please visit [docs.nvidia.com/confidential-computing/index.html]()
 
 ## Early Access Considerations
-This branch of nvTrust is currently considered 
-`General Access`. 
+This branch of nvTrust is currently considered `General Access`. 
 
 This software release features a software stack targeting a single H100 GPU in passthrough mode with a single session key for encryption and authentication and basic use of the Developer Tools. 
 
@@ -18,7 +18,7 @@ Code and data will be confidential up to the limits of the NIST SP800-38D AES-GC
 
 ## License
 The license for this repository is Apache v2 except where otherwise noted.
-## Folder Sructure
+## Folder Structure
 - **docs** - Collateral relating to Confidential Computing with NVIDIA GPUs
     - Release Notes
     - Deployment Guide (Walkthrough)

@@ -12,18 +12,21 @@
 ## Overview 
 In a multi-GPU confidential computing (CC) setup, NVLink interconnects and NVSwitches are used for GPU to GPU data traffic. NVLink interconnects and NVSwitches are outside the trust boundary and thus should not allow access to plain-text data. All data that flows over NVLink must be encrypted prior to transfer and decrypted at the destination GPU. On the GPU encryption and decryption is performed by the GPU copy engine (CE).
 
-Bouncing through a CE adds constraints and latency to the data path which may result in performance drops for some workloads. In order to limit the effect on performance, NVIDIA has created ‘PPCIE’ mode which alters the security model to trust data going across NVLink interconnects and allow plain-text traffic to flow without bouncing through CEs while still maintaining a Confidential Virtual Machine. 
+Bouncing through a CE adds constraints and latency to the data path which may result in performance drops for some workloads. 
+To minimize performance impact, NVIDIA's 'PPCIE' mode adjusts the security model to trust NVLink data, enabling plain-text traffic without CEs while preserving a Confidential Virtual Machine.
 
 **Note**: There are only two supported GPU usage configurations:
 ALL GPUs are in CC mode. Each GPU can be assigned to one Confidential VM. In this scenario, use the CC verifier.
 ALL GPUs are in PPCIe mode. All GPUs must be assigned one Confidential VM. In this scenario, use the PPCIE verifier
 
-## High Level Architecture Diagram
+## High-Level Architecture Diagram
 ![img.png](static/ppcie-verifier.png)
 
-The PPCIE verifier is a tool designed to verify the security of the multi-GPU system by attesting to the integrity of its GPUs and NVSwitches. The attestation SDK is used to gather evidence for each device, with further attestation performed either locally or remotely, as specified by the user when running the PPCIE Verifier tool.
+The PPCIE verifier is a tool designed to verify the security of the multi-GPU system by attesting to the integrity of its GPUs and NVSwitches. 
+The attestation SDK is used to gather evidence for each device, with further attestation performed either locally or remotely, as specified by the user when running the PPCIE Verifier tool.
 
-After collecting attestation results for each device, the PPCIE verifier validates these results against a policy file to confirm that all claims are legitimate. Following the attestation process, the tool conducts a final topology check to verify that the devices are securely connected in the expected configuration. The final attestation results are then presented to the user, detailing the checks performed.
+After collecting attestation results for each device, the PPCIE verifier validates these results against a policy file to confirm that all claims are legitimate. 
+Following the attestation process, the tool conducts a final topology check to verify that the devices are securely connected to the expected configuration. The final attestation results are then presented to the user, detailing the checks performed.
 
 ### Detailed Architecture Flow
 ![img.png](static/ppcie-verifier-detailed.png)
@@ -40,8 +43,8 @@ After collecting attestation results for each device, the PPCIE verifier validat
 10. Once all NvSwitch evidence is collected, attestation is initiated by the PPCIE Verifier.
 11. NvSwitch attestation is performed by the Attestation SDK: the local-switch-verifier is used for local attestation, while NRAS is used for remote attestation.
 12. The Attestation SDK provides NvSwitch attestation results to the PPCIE Verifier.
-13. If the NvSwitch attestation is successful, the PPCIE Verifier performs a topology check to ensure that the devices are securely connected in the expected configuration.
-14. The PPCIE Verifier determines the overall results and updates the status for each check it performed.
+13. If the NvSwitch attestation is successful, the PPCIE Verifier performs a topology check to ensure the devices are securely connected in the expected configuration.
+14. The PPCIE Verifier determines the overall results and updates the status for each check it performs.
 15. The GPU ready state is set.
 16. The final attestation results are presented to the user, detailing the checks performed and the status of each device in the system.
 
@@ -66,7 +69,7 @@ PPCIE Verifier has the following dependencies:
 
 Installation Instructions:
 
-Please elevate to Root User Privileges before installing the packages: (Note: This is needed to set the GPU ready state)
+Please elevate to Root User Privileges before installing the packages: (Note: This is necessary to set the GPU ready state)
          
          sudo -i
          
@@ -96,12 +99,12 @@ Method 2: Using PyPI (Requires python virtual environment creation)
 
 
 ## Troubleshooting
-Below are some of the common issues that has been encountered:
+Below are some of the common issues that have been encountered:
 ### Installation Issues:
 1. `ModuleNotFoundError: No module named 'nv_attestation_sdk'` while installing the packages using the installer script(ppcie-installer.sh)
 
-     **Solution**: Delete the venv created and re-try installing the packages using the script again
-2. If you encounter warning and installation issues similar to below while installing the package:
+     **Solution**: Delete the venv created and try installing the packages using the script again
+2. If you encounter warning and installation issues similar to the below while installing the package:
     `WARNING: Ignoring invalid distribution ~v-attestation-sdk <site-package-directory>`
 Please execute the following commands to clean up packages that were not installed properly and then re-try the installation:
      
@@ -113,7 +116,7 @@ Please execute the following commands to clean up packages that were not install
     **Solution**: This requires re-installing the Nvidia GPU driver and fabric manager 
 2. `NSCQWarning: NSCQ_RC_WARNING_RDT_INIT_FAILURE`
 
-    **Solution**: This requires installing the correct version of Nvidia Switch driver compatible with GPU driver
+    **Solution**: This requires installing the correct version of the Nvidia Switch driver compatible with the GPU driver
 
 ## License
 The license for this repository is Apache v2 except where otherwise noted.
