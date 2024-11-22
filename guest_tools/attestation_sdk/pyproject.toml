@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "nv-attestation-sdk"
-version = "2.0.0"
-description = "The Attestation SDK provides developers with easy to use APIs for implementing attestation capabilities into their applications."
+version = "2.1.0"
+description = "The Attestation SDK provides developers with a easy to use APIs for implementing attestation capabilities into their applications."
 authors = ["Karthik Jayaraman <kjayaraman@nvidia.com>"]
 readme = "README.md"
 keywords = [
@@ -14,23 +14,25 @@ keywords = [
 [tool.poetry.dependencies]
 python = ">=3.7"
 pyjwt = "~2.7.0"
-requests = "~2.31.0"
-cryptography = "==39.0.1"
+requests = "~2.32.3"
+cryptography = "==43.0.1"
 ecdsa = "==0.18.0"
 signxml = "==3.2.0"
 xmlschema = "==2.2.3"
-pyOpenSSL = "==23.1.1"
+pyOpenSSL = "==24.2.1"
 PyJWT = "==2.7.0"
 nvidia-ml-py = ">=12.535.77"
-nv-local-gpu-verifier = "2.0.0"
+nv-local-gpu-verifier = "2.1.0"
+build = ">=0.7.0"
+twine = ">=3.7.1"
+pylint = ">=2.9.6"
+pytest = "==8.1.1"
+pytest-cov = ">=5.0.0"
 
-[tool.poetry.dev-dependencies]
-# Add development dependencies here if needed, for example:
-# pytest = "^6.2"
 
-include = [
-    "verifiers/nv_switch_verifier/rim/*.xsd",
-    "verifiers/nv_switch_verifier/certs/*.pem"
+[tool.pytest.ini_options]
+pythonpath = [
+    "src"
 ]
 
 [build-system]

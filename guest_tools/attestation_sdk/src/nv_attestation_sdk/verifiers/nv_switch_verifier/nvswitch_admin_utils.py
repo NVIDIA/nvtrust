@@ -31,6 +31,7 @@
 import os
 import secrets
 import string
+import sys
 from urllib import request
 from urllib.error import HTTPError
 import json
@@ -61,9 +62,8 @@ from nv_attestation_sdk.verifiers.nv_switch_verifier.exceptions import (
     RIMFetchError,
     InvalidNonceError
 )
-
-console_logger = logging.getLogger("sdk-console")
-debug_logger = logging.getLogger("sdk-file")
+from nv_attestation_sdk.utils.logging_config import get_logger
+logger = get_logger()
 
 
 class NVSwitchAdminUtils:
@@ -109,11 +109,11 @@ class NVSwitchAdminUtils:
         # Skipping the comparision of FWID in the attestation certificate if the Attestation report does not contains the FWID.
         if attestation_report_fwid != '':
             if attestation_report_fwid != NVSwitchAdminUtils.extract_fwid(cert_chain[0]):
-                console_logger.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
-                debug_logger.info(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
+                logger.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
+                logger.debug(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
                 return False
 
-            console_logger.info(
+            logger.info(
                 "\t\tThe firmware ID in the device certificate chain is matching with the one in the attestation report.")
 
         return NVSwitchAdminUtils.verify_certificate_chain(cert_chain, settings,
@@ -144,15 +144,15 @@ class NVSwitchAdminUtils:
         number_of_certificates = len(cert_chain)
         switch_attestation_warning = ""
 
-        debug_logger.debug(f"verify_certificate_chain() called for {str(mode)}")
-        debug_logger.debug(f'Number of certificates : {number_of_certificates}')
+        logger.debug(f"verify_certificate_chain() called for {str(mode)}")
+        logger.debug(f'Number of certificates : {number_of_certificates}')
 
         if number_of_certificates < 1:
-            debug_logger.error("\t\tNo certificates found in certificate chain.")
+            logger.error("\t\tNo certificates found in certificate chain.")
             raise NoCertificateError("\t\tNo certificates found in certificate chain.")
 
         if number_of_certificates != settings.MAX_CERT_CHAIN_LENGTH and mode == BaseSettings.Certificate_Chain_Verification_Mode.SWITCH_ATTESTATION:
-            debug_logger.error("\t\tThe number of certificates fetched from the Switch is unexpected.")
+            logger.error("\t\tThe number of certificates fetched from the Switch is unexpected.")
             raise IncorrectNumberOfCertificatesError(
                 "\t\tThe number of certificates fetched from the Switch is unexpected.")
 
@@ -170,8 +170,8 @@ class NVSwitchAdminUtils:
                     store.add_cert(cert_chain[index])
                     index = index - 1
                 except crypto.X509StoreContextError as e:
-                    debug_logger.info(f'Cert chain verification is failing at index : {index}')
-                    debug_logger.error(e)
+                    logger.debug(f'Cert chain verification is failing at index : {index}')
+                    logger.error(e)
                     return False
         return True
 
@@ -228,7 +228,7 @@ class NVSwitchAdminUtils:
             ocsp_response = function_wrapper_with_timeout([NVSwitchAdminUtils.send_ocsp_request,
                                                            request.public_bytes(serialization.Encoding.DER),
                                                            "send_ocsp_request"],
-                                                          debug_logger,
+                                                          logger,
                                                           BaseSettings.MAX_OCSP_TIME_DELAY)
 
             # Verifying the ocsp response certificate chain.
@@ -246,27 +246,27 @@ class NVSwitchAdminUtils:
                                                                                               BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
 
             if not ocsp_cert_chain_verification_status:
-                console_logger.error(
+                logger.error(
                     f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
                 return False, switch_attestation_warning
             elif i == end_index - 1:
-                console_logger.debug("\t\tSwitch Certificate OCSP Cert chain is verified")
+                logger.debug("\t\tSwitch Certificate OCSP Cert chain is verified")
             # Verifying the signature of the ocsp response message.
             if not NVSwitchAdminUtils.verify_ocsp_signature(ocsp_response):
-                console_logger.error(
+                logger.error(
                     f"\t\tThe ocsp response response for certificate {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} failed due to signature verification failure.")
                 return False, switch_attestation_warning
             elif i == end_index - 1:
-                console_logger.debug("\t\tSwitch Certificate OCSP Signature is verified")
+                logger.debug("\t\tSwitch Certificate OCSP Signature is verified")
             if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
-                console_logger.error(
+                logger.error(
                     "\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
                 return False, switch_attestation_warning
             elif i == end_index - 1:
-                console_logger.debug("\t\tSwitch Certificate OCSP Nonce is matching")
+                logger.debug("\t\tSwitch Certificate OCSP Nonce is matching")
 
             if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
-                console_logger.error("\t\tCouldn't receive a proper response from the OCSP server.")
+                logger.error("\t\tCouldn't receive a proper response from the OCSP server.")
                 return False, switch_attestation_warning
 
             #OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
@@ -277,23 +277,23 @@ class NVSwitchAdminUtils:
                         (
                                 mode == BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT):
                     warning = f"THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'."
-                    console_logger.warning(
+                    logger.warning(
                         f"\t\t\tWARNING: {warning}")
                     switch_attestation_warning = warning
                     revoked_status = True
                 elif ocsp_response.certificate_status == ocsp.OCSPCertStatus.UNKNOWN:
-                    console_logger.error(
+                    logger.error(
                         f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate revocation status is UNKNOWN")
                     return False, switch_attestation_warning
                 else:
-                    console_logger.error(
+                    logger.error(
                         f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
                     return False, switch_attestation_warning
 
         if not revoked_status:
-            console_logger.info(f"\t\t\tThe certificate chain revocation status verification successful.")
+            logger.info(f"\t\t\tThe certificate chain revocation status verification successful.")
         else:
-            console_logger.warning(
+            logger.warning(
                 f"\t\t\tThe certificate chain revocation status verification was not successful but continuing.")
 
         return True, switch_attestation_warning
@@ -344,8 +344,7 @@ class NVSwitchAdminUtils:
 
         except Exception as error:
             err_msg = "Something went wrong during ocsp signature verification."
-            console_logger.error(error)
-            console_logger.info(err_msg)
+            logger.error(error)
             return False
 
     @staticmethod
@@ -366,7 +365,9 @@ class NVSwitchAdminUtils:
                 decoded_str = base64.b64decode(base64_data)
                 return decoded_str.decode('utf-8')
         except HTTPError:
-            raise RIMFetchError("Could not fetch the rim file : " + file_id)
+            logger.error("Could not fetch rim file from RIM service with id : " + file_id)
+            sys.exit()
+
 
     @staticmethod
     def get_vbios_rim_file_id(project, project_sku, chip_sku, vbios_version):
@@ -448,15 +449,15 @@ class NVSwitchAdminUtils:
 
         if len(nonce) > settings.SIZE_OF_NONCE_IN_BYTES or len(request_nonce) > settings.SIZE_OF_NONCE_IN_BYTES:
             err_msg = "\t\t Length of Nonce is greater than max nonce size allowed."
-            debug_logger.error(err_msg)
+            logger.error(err_msg)
             raise InvalidNonceError(err_msg)
         # compare the generated nonce with the nonce of SPDM GET MEASUREMENT request message in the attestation report.
         if request_nonce != nonce:
             err_msg = "\t\tThe nonce in the SPDM GET MEASUREMENT request message is not matching with the generated nonce."
-            debug_logger.error(err_msg)
+            logger.error(err_msg)
             raise NonceMismatchError(err_msg)
         else:
-            console_logger.info(
+            logger.info(
                 "\t\tThe nonce in the SPDM GET MEASUREMENT request message is matching with the generated nonce.")
             settings.mark_nonce_as_matching()
 
@@ -464,17 +465,17 @@ class NVSwitchAdminUtils:
         vbios_version_from_attestation_report = attestation_report_obj.get_response_message().get_opaque_data().get_data(
             "OPAQUE_FIELD_ID_VBIOS_VERSION")
         vbios_version_from_attestation_report = format_vbios_version(vbios_version_from_attestation_report)
-        console_logger.info(
+        logger.info(
             f'\t\tVBIOS version fetched from the attestation report : {vbios_version_from_attestation_report}')
 
         if vbios_version_from_attestation_report != vbios_version:
             err_msg = ("\t\tThe vbios version in attestation report is not matching with the vbios verison fetched "
                        "from the driver. This is expected and will be fixed in the next release.")
-            console_logger.error(err_msg)
+            logger.error(err_msg)
             # TODO: Uncomment this exception once we have nscq API to retrieve vBIOS version
             # raise VBIOSVersionMismatchError(err_msg)
 
-        debug_logger.debug("VBIOS version in attestation report is matching.")
+        logger.info("VBIOS version in attestation report is matching.")
         settings.mark_attestation_report_vbios_version_as_matching()
 
         # Performing the signature verification.
@@ -483,11 +484,11 @@ class NVSwitchAdminUtils:
             settings.signature_length,
             settings.HashFunction)
         if attestation_report_verification_status:
-            console_logger.info("\t\tAttestation report signature verification successful.")
+            logger.info("\t\tAttestation report signature verification successful.")
             settings.mark_attestation_report_signature_verified()
         else:
             err_msg = "\t\tAttestation report signature verification failed."
-            debug_logger.error(err_msg)
+            logger.error(err_msg)
             raise SignatureVerificationError(err_msg)
 
         return attestation_report_verification_status

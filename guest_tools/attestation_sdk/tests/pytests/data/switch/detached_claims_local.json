@@ -1,0 +1,22 @@
+{
+  "measres": "success",
+  "x-nvidia-switch-arch-check": true,
+  "x-nvidia-switch-bios-version": "96.10.69.00.01",
+  "x-nvidia-switch-attestation-report-cert-chain-validated": true,
+  "x-nvidia-switch-attestation-report-parsed": true,
+  "x-nvidia-switch-attestation-report-nonce-match": true,
+  "x-nvidia-switch-attestation-report-signature-verified": true,
+  "x-nvidia-switch-bios-rim-fetched": true,
+  "x-nvidia-switch-bios-rim-schema-validated": true,
+  "x-nvidia-switch-bios-rim-cert-validated": true,
+  "x-nvidia-switch-bios-rim-signature-verified": true,
+  "x-nvidia-switch-bios-rim-measurements-available": true,
+  "eat_nonce": "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb",
+  "hwmodel": "LS_10 A01 FSP BROM",
+  "ueid": "668518100723265016197394327246186845398981110561",
+  "iss": "LOCAL_SWITCH_VERIFIER",
+  "nbf": 1726766276,
+  "exp": 4880995383,
+  "iat": 1726766396,
+  "jti": "4927a1cf-ee1c-42b7-aa7b-9662a7c667a2"
+}

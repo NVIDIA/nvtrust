@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nv-ppcie-verifier"
-version = "1.0.0"
+version = "1.1.0"
 description = "Protected PCIE Verifier"
 authors = ["Shwetha Kalyanaraman <skalyanarama@nvidia.com>"]
 license = "OSI Approved :: Apache Software License"
@@ -12,7 +12,7 @@ python = "^3.8"
 pylint = "3.1.0"
 black = "24.3.0"
 wheel = "0.43.0"
-cryptography = "39.0.1"
+cryptography = "43.0.1"
 dill = "0.3.8"
 typing_extensions = "4.10.0"
 pathspec = "0.12.1"
@@ -26,8 +26,8 @@ build = "1.2.1"
 nvidia-ml-py = "^12.550.52"
 prettytable = "^3.10.0"
 pytest-cov = "^5.0.0"
-nv-local-gpu-verifier = "2.0.0"
-nv-attestation-sdk = "2.0.0"
+nv-local-gpu-verifier = "2.1.0"
+nv-attestation-sdk = "2.1.0"
 
 [build-system]
 requires = ["poetry-core"]

@@ -1,31 +1,40 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 #
-import uuid
-from enum import IntFlag
-from enum import IntEnum
+"""
+This module provides the Attestation class for handling device attestation.
+"""
 from datetime import datetime, timedelta
-from typing import Tuple, List
-
-
-from .gpu import attest_gpu_local, attest_gpu_remote, attest_gpu
-from nv_attestation_sdk.utils.logging_config import setup_logging
-
-from .nvswitch import attest_nvswitch, attest_nvswitch_local, attest_nvswitch_remote
-from .utils import nras_utils, local_utils, claim_utils
-import secrets
-import jwt
+from enum import IntEnum, IntFlag
 import json
 import logging
+import secrets
+import uuid
+
+import jwt
+
+from nv_attestation_sdk.utils.logging_config import setup_logging, get_logger
+from .gpu import attest_gpu_local, attest_gpu_remote
+from .nvswitch import attest_nvswitch_local, attest_nvswitch_remote
+from .utils import claim_utils, local_utils, nras_utils
+from typing import Tuple, List
 
 decorative_logger = setup_logging()
-console_logger = logging.getLogger("sdk-console")
-file_logger = logging.getLogger("sdk-file")
+logger = get_logger()
 
 
 class Devices(IntFlag):
+    """
+    An enumeration representing different types of devices that can be attested.
+
+    Attributes:
+    CPU: Represents a Central Processing Unit.
+    GPU: Represents a Graphics Processing Unit.
+    SWITCH: Represents a Network Switch.
+    OS: Represents an Operating System.
+    DPU: Represents a DPU.
+    """
+
     CPU = 1
     GPU = 2
     SWITCH = 4
@@ -34,6 +43,17 @@ class Devices(IntFlag):
 
 
 class Environment(IntEnum):
+    """
+    An enumeration representing different environments for attestation.
+
+    Attributes:
+    TEST: Represents a testing environment.
+    LOCAL: Represents a local environment.
+    AZURE: Represents an Azure environment.
+    GCP: Represents a Google Cloud Platform environment.
+    REMOTE: Represents a remote environment.
+    """
+
     TEST = 1
     LOCAL = 2
     AZURE = 3
@@ -42,6 +62,18 @@ class Environment(IntEnum):
 
 
 class VerifierFields(IntEnum):
+    """
+    An enumeration representing different fields in a verifier configuration.
+
+    Attributes:
+    NAME: Represents the name of the verifier.
+    DEVICE: Represents the type of device to be attested.
+    ENVIRONMENT: Represents the environment for attestation.
+    URL: Represents the URL of the attestation server for remote attestation.
+    POLICY: Represents the attestation evidence policy.
+    JWT_TOKEN: Represents the JWT token generated during attestation.
+    """
+
     NAME = 0
     DEVICE = 1
     ENVIRONMENT = 2
@@ -50,21 +82,22 @@ class VerifierFields(IntEnum):
     JWT_TOKEN = 5
 
 
-class Attestation(object):
+class Attestation:
+    """
+    Attestation class for handling device attestation.
+    """
+
     _staticNonce = None
     _name = None
     _nonceServer = None
     _tokens = None
-    _verifiers = None
+    _verifiers = []
     _instance = None
 
     def __new__(cls, name=None):
         if cls._instance is None:
             cls._instance = super(Attestation, cls).__new__(cls)
-            if isinstance(name, str):
-                cls._name = name
-            else:
-                cls._name = ""
+            cls._name = name if isinstance(name, str) else ""
             cls._nonceServer = ""
             cls._staticNonce = ""
             cls._verifiers = []
@@ -108,7 +141,9 @@ class Attestation(object):
         return cls._nonceServer
 
     @classmethod
-    def add_verifier(cls, dev: Devices, env: Environment, url: str, evidence: str) -> None:
+    def add_verifier(
+        cls, dev: Devices, env: Environment, url: str, evidence: str
+    ) -> None:
         """Add a new verifier for Attestation
 
         Args:
@@ -117,23 +152,24 @@ class Attestation(object):
             url (str): URL of the Attestation Server for Remote Attestation use cases.
             evidence (str): Attestation evidence
         """
-        if dev == Devices.GPU and env == Environment.LOCAL:
-            name = "LOCAL_GPU_CLAIMS"
-        elif dev == Devices.GPU and env == Environment.REMOTE:
-            name = "REMOTE_GPU_CLAIMS"
-        elif dev == Devices.SWITCH and env == Environment.LOCAL:
-            name = "LOCAL_SWITCH_CLAIMS"
-        elif dev == Devices.SWITCH and env == Environment.REMOTE:
-            name = "REMOTE_SWITCH_CLAIMS"
-        elif dev == Devices.CPU and env == Environment.TEST:
-            name = "TEST_CPU_CLAIMS"
-        else:
-            name = "UNKNOWN_CLAIMS"
+        verifier_name_mapping = {
+            (Devices.GPU, Environment.LOCAL): "LOCAL_GPU_CLAIMS",
+            (Devices.GPU, Environment.REMOTE): "REMOTE_GPU_CLAIMS",
+            (Devices.SWITCH, Environment.LOCAL): "LOCAL_SWITCH_CLAIMS",
+            (Devices.SWITCH, Environment.REMOTE): "REMOTE_SWITCH_CLAIMS",
+            (Devices.CPU, Environment.TEST): "TEST_CPU_CLAIMS",
+        }
+
+        name = verifier_name_mapping.get((dev, env), "UNKNOWN_CLAIMS")
 
         lst = [name, dev, env, url, evidence, ""]
         cls._verifiers.append(lst)
 
+    @classmethod
     def clear_verifiers(cls):
+        """
+        A method to clear the list of verifiers.
+        """
         cls._verifiers.clear()
 
     @classmethod
@@ -146,39 +182,31 @@ class Attestation(object):
         return cls._verifiers
 
     @classmethod
-    def get_evidence(cls) -> Tuple[str, List]:
-        # generate nonce if not specified
+    def get_evidence(cls, ppcie_mode: bool = True) -> Tuple[str, List]:
+        """
+        A class method to get evidence for attestation. Returns evidence for the specified verifier.
+        """
         decorative_logger.info("Attestation SDK: Getting Evidence")
-        nonce = cls.get_nonce()
-        if not cls.get_nonce():
-            nonce = cls._generate_nonce()
-            console_logger.info("Generating nonce .. " + nonce)
+        nonce = cls.get_nonce() or cls._generate_nonce()
+        logger.info("Nonce generated: %s", nonce)
+
+        evidence_mapping = {
+            (Devices.GPU, Environment.LOCAL): attest_gpu_local.get_evidence,
+            (Devices.GPU, Environment.REMOTE): attest_gpu_remote.get_evidence,
+            (Devices.SWITCH, Environment.LOCAL): attest_nvswitch_local.get_evidence,
+            (Devices.SWITCH, Environment.REMOTE): attest_nvswitch_remote.get_evidence,
+        }
 
         for verifier in cls._verifiers:
             device = verifier[VerifierFields.DEVICE]
             environment = verifier[VerifierFields.ENVIRONMENT]
+            evidence_func = evidence_mapping.get(
+                (device, environment), cls._unknown_verifier
+            )
+            return evidence_func(nonce, ppcie_mode)
 
-            if device == Devices.GPU:
-                if environment == Environment.LOCAL:
-                    return attest_gpu_local.get_evidence(nonce)
-                elif environment == Environment.REMOTE:
-                    return attest_gpu_remote.get_evidence(nonce)
-                else:
-                    console_logger.info(
-                        "Unknown verifier - Assuming all is good - device is " + str(device) + " env is " + str(
-                            environment))
-                return attest_gpu.get_evidence(nonce)
-            elif device == Devices.SWITCH:
-                if environment == Environment.LOCAL:
-                    return attest_nvswitch.get_evidence(nonce)
-                elif environment == Environment.REMOTE:
-                    return attest_nvswitch_remote.get_evidence(nonce)
-            else:
-                # Throw an exception or handle the unknown case accordingly
-                console_logger.error(
-                    "Unknown verifier - Assuming all is good - device is " + str(device) + " env is " + str(
-                        environment))
-        return
+        logger.error("Unknown verifier - Assuming all is good")
+        return nonce, []
 
     @classmethod
     def attest(cls, evidence_list) -> bool:
@@ -191,69 +219,56 @@ class Attestation(object):
         nonce = cls.get_nonce()
         attest_result = True
         if len(evidence_list) == 0:
-            console_logger.info("Evidence is empty.. skipping attestation..")
+            logger.info("Evidence is empty.. skipping attestation..")
             return False
+
+        attestation_mapping = {
+            (Devices.GPU, Environment.LOCAL): attest_gpu_local.attest,
+            (Devices.GPU, Environment.REMOTE): attest_gpu_remote.attest,
+            (Devices.SWITCH, Environment.LOCAL): attest_nvswitch_local.attest,
+            (Devices.SWITCH, Environment.REMOTE): attest_nvswitch_remote.attest
+        }
+
         for verifier in cls._verifiers:
             device = verifier[VerifierFields.DEVICE]
             environment = verifier[VerifierFields.ENVIRONMENT]
-            if device == Devices.GPU:
-                if environment == Environment.LOCAL or environment == Environment.REMOTE:
-                    verifier_url = verifier[VerifierFields.URL] if environment == Environment.REMOTE else None
-                    this_result, jwt_token = attest_gpu_remote.attest(nonce, evidence_list,
-                                                                      verifier_url) \
-                        if environment == Environment.REMOTE else attest_gpu_local.attest(nonce, evidence_list)
-                    verifier[VerifierFields.JWT_TOKEN] = jwt_token
-                    attest_result = attest_result and this_result
-                else:
-                    console_logger.info("Unsupported Attestation Type..")
-                    return False
-            elif device == Devices.SWITCH:
-                if environment == Environment.LOCAL or environment == Environment.REMOTE:
-                    verifier_url = verifier[VerifierFields.URL] if environment == Environment.REMOTE else None
-                    this_result, jwt_token = attest_nvswitch_remote.attest(nonce, evidence_list, verifier_url) \
-                        if environment == Environment.REMOTE else attest_nvswitch_local.attest(nonce, evidence_list)
-                    verifier[VerifierFields.JWT_TOKEN] = jwt_token
-                    attest_result = attest_result and this_result
-                else:
-                    console_logger.error("Unsupported Attestation Type..")
-                    return False
-            elif device == Devices.CPU and environment == Environment.TEST:
-                report = {"rand": secrets.token_hex(16)}
-                report["hash"] = str(hash(report["rand"]))
-                jwt_token = jwt.encode(report, "notasecret", algorithm="HS256")
-                verifier[VerifierFields.JWT_TOKEN] = jwt_token
-                attest_result = attest_result and True
+            verifier_url = (
+                verifier[VerifierFields.URL]
+                if environment == Environment.REMOTE
+                else None
+            )
+            attestation_func = attestation_mapping.get(
+                (device, environment), cls._unknown_verifier
+            )
+            if environment == Environment.REMOTE:
+                this_result, jwt_token = attestation_func(
+                    nonce, evidence_list, verifier_url
+                )
             else:
-                # Throw an exception or handle the unknown case accordingly
-                console_logger.error(
-                    "Unknown verifier - Assuming all is good - device is " + str(device) + " env is " + str(
-                        environment))
-        # NOTE: no verifiers means attestation will be true.  weird but makes some sense
-        # NOTE: THIS is where the tokens should be combined in to a single token and then set
-        eatToken = cls._create_EAT()
-        cls.set_token(cls._name, eatToken)
+                this_result, jwt_token = attestation_func(
+                    nonce, evidence_list
+                )
+            verifier[VerifierFields.JWT_TOKEN] = jwt_token
+            attest_result = attest_result and this_result
+
+        eat_token = cls._create_eat()
+        cls.set_token(cls._name, eat_token)
         return attest_result
 
     @classmethod
-    def _create_EAT(cls) -> str:
-        #
-        # What is an EAT
-        #
-        # An EAT is a list with two elements let's call them A and B
-        # element A is a list where the first element is "JWT" and the second element is a JWT Token
-        # element B is a dictionary of claims where each element is indexed by a name and the value
-        #           is a JWT Token of the claims attested for said name
-        # or at least that is what the spec suggests
-        # JWT has a very different idea and wants just a dictionary object.
-        #
-        # Therefore a JSON-encoded Detached EAT bundle is defined as
-        # {
-        #   "JWT" : JWT of main claims
-        # zero or more of the following
-        #   "verifier name" : JWT of this verifier
-        # }
-        issuer = "NV-Attestation-SDK"
+    def _unknown_verifier(cls, arg1, arg2):
+        """
+        Unknown verifier identified. Log the error and return True.
+        """
+        logger.error("Unknown verifier - Assuming all is good")
+        return False, []
 
+    @classmethod
+    def _generate_jwt(cls) -> str:
+        """
+        Generate a JWT token with specific claims and return it as a string.
+        """
+        issuer = "NV-Attestation-SDK"
         nbf = datetime.utcnow() - timedelta(seconds=120)
         exp = datetime.utcnow() + timedelta(hours=1)
         iat = datetime.utcnow()
@@ -261,15 +276,51 @@ class Attestation(object):
 
         payload = {"iss": issuer, "iat": iat, "exp": exp, "nbf": nbf, "jti": jti}
         encoded_jwt = jwt.encode(payload, "notasecret", algorithm="HS256")
+        return encoded_jwt
+
+    @classmethod
+    def _create_verifier_claims(cls) -> dict:
+        """
+        A method to create verifier claims
+        """
+        verifier_claims = {}
+        for verifier in cls._verifiers:
+            if verifier[VerifierFields.JWT_TOKEN] != "":
+                verifier_claims[verifier[VerifierFields.NAME]] = verifier[
+                    VerifierFields.JWT_TOKEN
+                ]
+        return verifier_claims
+
+    @classmethod
+    def _create_eat(cls) -> str:
+        """
+        What is an EAT?
+
+        An EAT (Entity Attestation Token) is a list with two elements, A and B:
+
+        - Element A is a list where the first element is "JWT"
+        and the second element is a JWT Token.
+        - Element B is a dictionary of claims where each element is
+        indexed by a name and the value is a JWT Token of the claims
+        attested for said name.
+
+        This is what the specification suggests. However, JWT has a
+        different idea and wants just a dictionary object.
+
+        Therefore, a JSON-encoded Detached EAT bundle is defined as:
+
+        {
+          "JWT" : JWT of main claims,
+          "verifier name" : JWT of this verifier
+        }
+
+        The "verifier name" is optional and there can be zero or more of them.
+        """
+        encoded_jwt = cls._generate_jwt()
+        verifier_claims = cls._create_verifier_claims()
 
         eat = []
         eat_inner = ["JWT", encoded_jwt]
-        verifier_claims = {}
-
-        for verifier in cls._verifiers:
-            if verifier[VerifierFields.JWT_TOKEN] != "":
-                verifier_claims[verifier[VerifierFields.NAME]] = verifier[VerifierFields.JWT_TOKEN]
-
         eat.append(eat_inner)
         eat.append(verifier_claims)
         return json.dumps(eat)
@@ -295,35 +346,31 @@ class Attestation(object):
         Returns:
             str: EAT token in string format
         """
-        name = ""
-        if x == None:
-            name = cls.get_name()
-        elif isinstance(x, str):
-            name = x
-
-        if name == "":
-            return ""
-
-        if name in cls._tokens.keys():
-            return cls._tokens[name]
-        else:
-            return ""
+        name = cls.get_name() if x is None else x if isinstance(x, str) else ""
+        return "" if name == "" else cls._tokens.get(name, "")
 
     @classmethod
     def decode_token(cls, token):
+        """
+        Decode the EAT token and print the claims
+        """
+        if token == "":
+            logger.info("Token is empty")
+            return
         json_array = json.loads(token)
         if len(json_array) >= 2:
             for key, value in json_array[1].items():
+                logger.debug("Verifier: %s", key)
                 for item in value:
-                    if type(item) is dict:
+                    if isinstance(item, dict):
                         for k, v in item.items():
                             payload = claim_utils.decode_jwt(v)
-                            file_logger.info("Claim Decoded for :" + str(k))
-                            file_logger.info(json.dumps(payload, indent=3))
+                            logger.debug("Claim Decoded for : %s", str(k))
+                            logger.debug(json.dumps(payload, indent=3))
 
     @classmethod
     def _validate_token_internal(cls, policy: str, eat_token: str) -> bool:
-        """Validate a EAT token using the policy
+        """Validate EAT token using the policy
 
         Args:
             policy (str): Appraisal policy for Attestation results
@@ -332,105 +379,111 @@ class Attestation(object):
         Returns:
             bool: result
         """
-        attest_result = True
-
         if eat_token == "":
             return False
-        else:
 
-            try:
-                eat = json.loads(eat_token)
-            except json.decoder.JSONDecodeError:
+        try:
+            eat = json.loads(eat_token)
+        except json.decoder.JSONDecodeError:
+            return False
+
+        eat_claims = eat[1]
+
+        if len(eat_claims) == 0:
+            return False
+
+        validation_mapping = {
+            "LOCAL_GPU_CLAIMS": local_utils.validate_token,
+            "LOCAL_SWITCH_CLAIMS": local_utils.validate_token,
+            "REMOTE_GPU_CLAIMS": nras_utils.validate_gpu_token,
+            "REMOTE_SWITCH_CLAIMS": nras_utils.validate_gpu_token
+        }
+
+        attest_result = True
+        for verifier_name, jwt_token in eat_claims.items():
+            verifier = cls.get_verifier_by_name(verifier_name)
+            if verifier is None:
+                logger.error("Unknown verifier: %s", verifier_name)
                 return False
-
-            eat_jwt = eat[0]
-            eat_claims = eat[1]
-
-            if len(eat_claims) == 0:
-                return False
-
-            for verifier_name in eat_claims:
-                jwt_token = eat_claims[verifier_name]
-                verifier = cls.get_verifier_by_name(verifier_name)
-                if verifier_name == "LOCAL_GPU_CLAIMS" or verifier_name == "LOCAL_SWITCH_CLAIMS":
-                    this_result = local_utils.validate_token(jwt_token, policy)
-                elif verifier_name == "REMOTE_GPU_CLAIMS" or verifier_name == "REMOTE_SWITCH_CLAIMS":
-                    this_result = nras_utils.validate_gpu_token(verifier, jwt_token, policy)
-                elif verifier_name == "TEST_CPU_CLAIMS":
-                    claims = jwt.decode(jwt_token, "notasecret", algorithms="HS256")
-
-                    randStr = claims["rand"]
-                    hashStr = claims["hash"]
-
-                    if hashStr == str(hash(randStr)):
-                        this_result = True
-                    else:
-                        this_result = False
-
-                else:
-                    #Unknown verifier - assume it's OK
-                    console_logger.error("unknown verifier..")
-                    this_result = True
-
-                attest_result = this_result and attest_result
+            validation_func = validation_mapping.get(
+                verifier_name)
+            this_result = validation_func(verifier, jwt_token, policy)
+            attest_result = attest_result and this_result
 
         return attest_result
 
     @classmethod
     def get_verifier_by_name(cls, verifier_name):
-        for verifier in cls._verifiers:
-            if verifier[VerifierFields.NAME] == verifier_name:
-                return verifier
-        return None
+        """
+        Get the verifier by name from the list of verifiers.
+        """
+        return next(
+            (
+                verifier
+                for verifier in cls._verifiers
+                if verifier[VerifierFields.NAME] == verifier_name
+            ),
+            None,
+        )
 
     @classmethod
     def validate_token(cls, policy: str, x=None):
-        decorative_logger.info("Attestation SDK: Validating Evidence using Appraisal Policy")
-        if x == None:
+        """
+        Validates the EAT token using the provided appraisal policy.
+        """
+        decorative_logger.info(
+            "Attestation SDK: Validating Evidence using Appraisal Policy"
+        )
+
+        if isinstance(x, str) and x:
+            return cls._validate_token_internal(policy, x)
+
+        if isinstance(x, dict):
+            return {
+                name: cls._validate_token_internal(policy, token) if token else False
+                for name, token in x.items()
+                if name
+            }
+
+        if x is None:
             name = cls.get_name()
-            if name == "":
-                return False
-            else:
-                if name in cls._tokens.keys():
-                    token = cls._tokens[name]
-                else:
-                    return False
-
-                return cls._validate_token_internal(policy, token)
-
-        elif isinstance(x, str):
-            if x == "":
-                return False
-            else:
-                return cls._validate_token_internal(policy, x)
-
-        elif isinstance(x, list):
-            return False
-
-        # this part could use some bullet proofing
-        elif isinstance(x, dict):
-            ret_dict = {}
-            for name in x:
-                if name != "":
-                    token = x[name]
-                    if token != "":
-                        ret_dict[name] = cls._validate_token_internal(token)
-                    else:
-                        ret_dict[name] = False
-            return ret_dict
-        else:
-            return False
+            token = cls._tokens.get(name, "")
+            return cls._validate_token_internal(policy, token) if token else False
+        return False
 
     @classmethod
     def _generate_nonce(cls) -> str:
+        """
+        Generate a random nonce.
+        """
         random_bytes = secrets.token_bytes(32)
         cls.set_nonce(random_bytes.hex())
         return cls.get_nonce()
 
     @classmethod
     def get_nonce(cls) -> str:
+        """
+        A method to get the nonce value.
+        """
         return cls._staticNonce
 
     @classmethod
     def set_nonce(cls, nonce: str):
+        """
+        Set the nonce for the class.
+
+        Parameters:
+            nonce (str): The nonce to be set.
+
+        Returns:
+            None
+        """
         cls._staticNonce = nonce
+
+
+    @classmethod
+    def reset(cls):
+        cls._nonceServer = ""
+        cls._staticNonce = ""
+        cls._verifiers = []
+        cls._tokens = {}

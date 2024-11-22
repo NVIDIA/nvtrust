@@ -30,13 +30,12 @@
 from hashlib import sha384
 import os
 from enum import Enum
-import logging
+from nv_attestation_sdk.utils.logging_config import get_logger
 
-console_logger = logging.getLogger("sdk-console")
-file_logger = logging.getLogger("sdk-file")
+logger = get_logger()
 parent_dir = os.path.dirname(os.path.abspath(__file__))
 
-file_logger.debug("----------STARTING----------")
+logger.debug("----------STARTING----------")
 
 
 class BaseSettings:
@@ -132,28 +131,28 @@ class BaseSettings:
 
     @classmethod
     def mark_attestation_report_as_available(cls):
-        file_logger.debug("mark_attestation_report_as_available called.")
+        logger.debug("mark_attestation_report_as_available called.")
         cls.attestation_report_availability = True
 
     def check_if_switch_attestation_report_cert_chain_validated(self):
         return self.switch_attestation_report_cert_chain_validated
 
     def mark_switch_attestation_report_cert_chain_as_validated(self):
-        file_logger.debug("mark_switch_attestation_report_cert_chain_as_validated called")
+        logger.debug("mark_switch_attestation_report_cert_chain_as_validated called")
         self.switch_attestation_report_cert_chain_validated = True
 
     def check_if_attestation_report_signature_verified(self):
         return self.attestation_report_signature_verification
 
     def mark_attestation_report_signature_verified(self):
-        file_logger.debug("mark_attestation_report_signature_verified called")
+        logger.debug("mark_attestation_report_signature_verified called")
         self.attestation_report_signature_verification = True
 
     def check_if_bios_rim_fetched(self):
         return self.fetch_bios_rim
 
     def mark_vbios_rim_fetched(self):
-        file_logger.debug("mark_vbios_rim_fetched called.")
+        logger.debug("mark_vbios_rim_fetched called.")
         self.fetch_bios_rim = True
 
     def check_if_bios_rim_signature_verified(self):
@@ -163,28 +162,28 @@ class BaseSettings:
         return self.switch_arch_is_correct
 
     def mark_vbios_rim_signature_verified(self):
-        file_logger.debug("mark_vbios_rim_signature_verified called.")
+        logger.debug("mark_vbios_rim_signature_verified called.")
         self.bios_rim_signature_verification = True
 
     def check_if_bios_rim_schema_validated(self):
         return self.bios_rim_schema_validation
 
     def mark_bios_rim_schema_validated(self):
-        file_logger.debug("mark_bios_rim_schema_validated called.")
+        logger.debug("mark_bios_rim_schema_validated called.")
         self.bios_rim_schema_validation = True
 
     def check_rim_driver_measurements_availability(self):
         return self.rim_driver_measurements_availability
 
     def mark_rim_driver_measurements_as_available(self):
-        file_logger.debug("mark_rim_driver_measurements_as_available called.")
+        logger.debug("mark_rim_driver_measurements_as_available called.")
         self.rim_driver_measurements_availability = True
 
     def check_rim_bios_measurements_availability(self):
         return self.rim_bios_measurements_availability
 
     def mark_rim_vbios_measurements_as_available(self):
-        file_logger.debug("mark_rim_vbios_measurements_as_available called.")
+        logger.debug("mark_rim_vbios_measurements_as_available called.")
         self.rim_bios_measurements_availability = True
 
     def check_if_measurements_are_matching(self):
@@ -194,54 +193,54 @@ class BaseSettings:
             return "fail"
 
     def mark_measurements_as_matching(self):
-        file_logger.debug("mark_measurements_as_matching called.")
+        logger.debug("mark_measurements_as_matching called.")
         self.measurement_comparison = True
 
     def mark_rim_driver_version_as_matching(self):
-        file_logger.debug("mark_rim_driver_version_as_matching called.")
+        logger.debug("mark_rim_driver_version_as_matching called.")
         self.rim_driver_version_match = True
 
     def check_if_rim_bios_version_matches(self):
         return self.rim_bios_version_match
 
     def mark_rim_vbios_version_as_matching(self):
-        file_logger.debug("mark_rim_vbios_version_as_matching called.")
+        logger.debug("mark_rim_vbios_version_as_matching called.")
         self.rim_bios_version_match = True
 
     def check_if_bios_rim_cert_extracted(self):
         return self.bios_rim_certificate_extraction
 
     def mark_vbios_rim_cert_extracted_successfully(self):
-        file_logger.debug("mark_vbios_rim_cert_extracted_successfully called.")
+        logger.debug("mark_vbios_rim_cert_extracted_successfully called.")
         self.bios_rim_certificate_extraction = True
 
     def check_if_bios_rim_cert_validated(self):
         return self.bios_rim_certificate_validated
 
     def mark_bios_rim_cert_validated(self):
-        file_logger.debug("mark_bios_rim_cert_validated called.")
+        logger.debug("mark_bios_rim_cert_validated called.")
         self.bios_rim_certificate_validated = True
 
     def check_if_nonce_are_matching(self):
         return self.nonce_comparison
 
     def mark_nonce_as_matching(self):
-        file_logger.debug("mark_nonce_as_matching called.")
+        logger.debug("mark_nonce_as_matching called.")
         self.nonce_comparison = True
 
     def check_if_attestation_report_parsed_successfully(self):
         return self.parse_attestation_report
 
     def mark_attestation_report_parsed(self):
-        file_logger.debug("mark_attestation_report_parsed called.")
+        logger.debug("mark_attestation_report_parsed called.")
         self.parse_attestation_report = True
 
     def mark_switch_arch_is_correct(self):
-        file_logger.debug("mark_switch_arch_is_correct called.")
+        logger.debug("mark_switch_arch_is_correct called.")
         self.switch_arch_is_correct = True
 
     def mark_bios_version(self, bios_version):
-        file_logger.debug("mark_bios_version called.")
+        logger.debug("mark_bios_version called.")
         self.switch_bios_version = bios_version
 
     def check_bios_version(self):
@@ -254,14 +253,14 @@ class BaseSettings:
         return self.attestation_report_bios_version_match
 
     def mark_attestation_report_vbios_version_as_matching(self):
-        file_logger.debug("mark_attestation_report_vbios_version_as_matching called.")
+        logger.debug("mark_attestation_report_vbios_version_as_matching called.")
         self.attestation_report_bios_version_match = True
 
     def check_if_no_driver_bios_measurement_index_conflict(self):
         return self.no_driver_vbios_measurement_index_conflict
 
     def mark_no_driver_vbios_measurement_index_conflict(self):
-        file_logger.debug("mark_no_driver_vbios_measurement_conflict called.")
+        logger.debug("mark_no_driver_vbios_measurement_conflict called.")
         self.no_driver_vbios_measurement_index_conflict = True
 
     def check_status(self):

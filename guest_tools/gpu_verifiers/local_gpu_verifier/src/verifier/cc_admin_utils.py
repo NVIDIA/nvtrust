@@ -31,6 +31,7 @@
 import os
 import secrets
 import string
+import sys
 from urllib import request
 from urllib.error import HTTPError
 import json
@@ -354,7 +355,8 @@ class CcAdminUtils:
                 decoded_str = base64.b64decode(base64_data)
                 return decoded_str.decode('utf-8')
         except HTTPError:
-            raise RIMFetchError("Could not fetch the rim file : " + file_id)
+            info_log.error("Could not fetch RIM file from RIM service with id : " + file_id)
+            sys.exit()
 
     @staticmethod
     def get_vbios_rim_file_id(project, project_sku, chip_sku, vbios_version):

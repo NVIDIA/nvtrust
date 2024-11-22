@@ -52,6 +52,7 @@ from verifier.exceptions import (
     TimeoutError,
 )
 
+
 def get_gpu_architecture_value(nvml_arch_value):
     """ A function to map the NVML architecture integer value to the
     corresponding architecture name.
@@ -85,7 +86,6 @@ def get_gpu_architecture_value(nvml_arch_value):
         raise UnknownGpuArchitectureError("Unknown GPU architecture.")
 
 
-
 def read_field_as_little_endian(binary_data):
     """ Reads a multi-byte field in little endian form and return the read
     field as a hexadecimal string.
@@ -97,13 +97,14 @@ def read_field_as_little_endian(binary_data):
         [str]: the value of the field as hexadecimal string.
     """
     assert type(binary_data) is bytes
-    x= str()
+    x = str()
 
     for i in range(len(binary_data)):
-        temp = binary_data[i : i + 1]
+        temp = binary_data[i: i + 1]
         x = temp.hex() + x
 
     return x
+
 
 def convert_string_to_blob(inp):
     """ A function to convert the input string of byte values to bytes data type.
@@ -123,11 +124,12 @@ def convert_string_to_blob(inp):
     out = bytes.fromhex(out)
     return out
 
+
 def extract_public_key(certificate):
     """ Reads the leaf certificate of GPU and then extract the public key.
 
     Args:
-        certificate (cryptography.hazmat.backends.openssl.x509._Certificate): 
+        certificate (cryptography.hazmat.backends.openssl.x509._Certificate):
                        the gpu leaf certificate as an cryptography x509 object.
 
     Returns:
@@ -136,8 +138,9 @@ def extract_public_key(certificate):
     assert isinstance(certificate, x509.Certificate)
     public_key = certificate.public_key()
     public_key_in_pem_format = public_key.public_bytes(encoding=serialization.Encoding.PEM,
-                                                    format=serialization.PublicFormat.SubjectPublicKeyInfo)
+                                                       format=serialization.PublicFormat.SubjectPublicKeyInfo)
     return public_key_in_pem_format
+
 
 def is_zeros(x):
     """ This function checks if all the character are zeros of the given input
@@ -150,12 +153,13 @@ def is_zeros(x):
         [bool]: True if all the characters are '0', otherwise False.
     """
     assert type(x) is str
-    
+
     for i in range(len(x)):
         if x[i] != '0':
             return False
-    
+
     return True
+
 
 def format_vbios_version(version):
     """ Converts the input VBIOS version to xx.xx.xx.xx.xx format.
@@ -167,29 +171,29 @@ def format_vbios_version(version):
         [str]: the vbios version in the required format.
     """
     assert type(version) is bytes
-    
+
     value = read_field_as_little_endian(version)
-    temp = value[len(value) // 2:] + value[len(value) // 2 - 2 : len(value) // 2]
-    
+    temp = value[len(value) // 2:] + value[len(value) // 2 - 2: len(value) // 2]
+
     idx = 0
     result = str()
     for i in range(0, len(temp) - 2, 2):
-        result = result + temp[i : i + 2] + "."
+        result = result + temp[i: i + 2] + "."
         idx = i + 2
-    result = result + temp[idx : idx + 2]
+    result = result + temp[idx: idx + 2]
 
     return result
 
 
 def function_caller(inp):
-    """ This function is run in a separate thread by 
+    """ This function is run in a separate thread by
     function_wrapper_with_timeout function so that if the execution of the
     function passed as an argument takes more than the max threshold time limit then
     the thread is killed.
 
     Args:
         inp (tuple): the tuple containing the function to be executed and its
-                     arguments. 
+                     arguments.
     """
     assert type(inp) is list
 
@@ -198,15 +202,15 @@ def function_caller(inp):
     function_name = inp[-3]
     function = inp[0]
     arguments = inp[1:-3]
-    
+
     result = function(*arguments)
-    
+
     if event.is_set():
         event_log.info(f"{function_name} execution timed out, stopping.")
         return
 
     q.put(result)
-    
+
 
 def function_wrapper_with_timeout(args, max_time_delay):
     """ This function spawns a separate thread for the given function in the
@@ -231,9 +235,9 @@ def function_wrapper_with_timeout(args, max_time_delay):
         args.append(event)
         args = ((args),)
         event_log.info(f"{function_name} called.")
-        thread = Thread(target = function_caller, args = args)
+        thread = Thread(target=function_caller, args=args)
         thread.start()
-        return_value = q.get(block=True, timeout= max_time_delay)
+        return_value = q.get(block=True, timeout=max_time_delay)
         event.set()
         return return_value
     except Empty:
