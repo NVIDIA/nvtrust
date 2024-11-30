@@ -133,6 +133,14 @@ def main():
         help="If the user wants to override the OCSP service url and provide their own url, then can do so by passing "
              "it as a command line argument.",
     )
+
+    parser.add_argument(
+        "--extract_public_key",
+        help="Extract and print the GPU's public key used for attestation verification",
+        action="store_true",
+    )
+
+
     args = parser.parse_args()
     arguments_as_dictionary = vars(args)
 
@@ -144,6 +152,22 @@ def main():
         nonce = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES).hex()
 
     evidence_list = collect_gpu_evidence(nonce, arguments_as_dictionary['test_no_gpu'])
+
+    if arguments_as_dictionary["extract_public_key"]:
+        for gpu_info_obj in evidence_list:
+            gpu_attestation_cert_chain = gpu_info_obj.get_attestation_cert_chain()
+            gpu_leaf_cert = gpu_attestation_cert_chain[0]
+
+            from verifier.utils import extract_public_key
+            public_key_pem = extract_public_key(gpu_leaf_cert.to_cryptography())
+            
+            output = {
+                "gpu_uuid": gpu_info_obj.get_uuid(),
+                "public_key": public_key_pem.decode()
+            }
+            print(json.dumps(output, indent=2))
+        return
+
     result, _ = attest(arguments_as_dictionary, nonce, evidence_list)
 
     if not result:
