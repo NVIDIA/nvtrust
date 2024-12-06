@@ -89,11 +89,11 @@ If you want the verifier to set the GPU Ready State based on the Attestation res
 
          rm -rf src/nv_local_gpu_verifier.egg-info 
          rm -rf /build
-  - If you encounter warning and installation issues similar to the below while installing the package:
-      `WARNING: Ignoring invalid distribution ~v-local-gpu-verifier <site-package-directory>`
-    Please execute the following commands to clean up packages that were not installed properly and then re-try the installation:
+- If you encounter warning and installation issues similar to the below while installing the package:
+    `WARNING: Ignoring invalid distribution ~v-local-gpu-verifier <site-package-directory>`
+  Please execute the following commands to clean up packages that were not installed properly and then re-try the installation:
          
-         rm -rf $(ls -l <site-packages-directory> | grep '~' | awk '{print $9}')
+       rm -rf $(ls -l <site-packages-directory> | grep '~' | awk '{print $9}')
 
 
 ## Usage
@@ -151,5 +151,7 @@ v1.4.0          | r550TRD4
 v1.5.0          | r550TRD5
 v2.0.0          | r550TRD6
 v2.1.0          | r550TRD7, r550TRD6, r550TRD5
+v2.1.1          | r550TRD7, r550TRD6, r550TRD5
+
 ## Claims and Troubleshooting information
 For local and remote verifier claims information for NVIDIA GPUs, switches, and related troubleshooting information, please refer to the [Attestation Troubleshooting documentation](../../attestation_troubleshooting_guide.md).

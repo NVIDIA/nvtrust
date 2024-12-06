@@ -91,13 +91,12 @@ Method 2: Using PyPI (Requires python virtual environment creation)
 
 #### Options
   
-| Option                     | Description                           | Value Options                                                            |
-|----------------------------|---------------------------------------|--------------------------------------------------------------------------|
-| `--gpu-attestation-mode`   | Type of GPU Attestation               | LOCAL, REMOTE                                                          |
-| `--switch-attestation-mode`| Type of nvSwitch Attestation          | LOCAL,  REMOTE                                                          |
-| `--log`                    | Configure log level                   | DEBUG, INFO, WARNING, ERROR, TRACE, CRITICAL               |
-
-
+| Option                      | Description                           | Value Options                                                            |
+|-----------------------------|---------------------------------------|--------------------------------------------------------------------------|
+| `--gpu-attestation-mode`    | Type of GPU Attestation               | LOCAL, REMOTE                                                          |
+| `--switch-attestation-mode` | Type of nvSwitch Attestation          | LOCAL,  REMOTE                                                          |
+| `--log`                     | Configure log level                   | DEBUG, INFO, WARNING, ERROR, TRACE, CRITICAL               |
+| `--allow-hold-cert`         | Enable attestation when OCSP status of certificate is cert hold | N/A                                        |
 ## Troubleshooting
 Below are some of the common issues that have been encountered:
 ### Installation Issues:

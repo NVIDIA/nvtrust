@@ -121,15 +121,17 @@ Please note that the Schema/EAT claim information is subject to change in future
 
 ## Compatibility Matrix 
 
-SDK version     |  NRAS API Version | Claims Version
---------------- |------------------|----------------
-v1.1.0          | v1               | N/A
-v1.2.0          | v1               | N/A
-v1.3.0          | v1               | N/A
-v1.4.0          | v1               | N/A
-v1.5.0          | v2               | N/A
-v2.0.0          | v3               | 2.0
-v2.1.0          | v3               | 2.0
+SDK version     | NRAS API Version | Claims Version
+--------------- |-----------------|----------------
+v1.1.0          | v1              | N/A
+v1.2.0          | v1              | N/A
+v1.3.0          | v1              | N/A
+v1.4.0          | v1              | N/A
+v1.5.0          | v2              | N/A
+v2.0.0          | v3              | 2.0
+v2.1.0          | v3              | 2.0
+v2.1.1          | v3              | 2.0
+v2.1.2          | v3              | 2.0
 
 More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 
@@ -148,6 +150,11 @@ More information on claims can be found [here](https://github.com/NVIDIA/nvtrust
 | get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to the Attestation result.                                             |
 | validate_token(<-attestation-results-policy->)                                                                                  | Validate the Attestation Claims against a policy                                                                                      |
 | decode_token(<-jwt-token->)                                                                                                     | Decodes the JWT token to claims received by the verifier                                                                              |
+## Attestation SDK configuration
+The below configuration can be set using environment variables in the console
+Configuration            | Values           |                                   Explanation                                                                                  |
+-------------------------|------------------|---------------------------------------------------------------------------------------------------------------------------------
+NV_ALLOW_HOLD_CERT       | true/false       | Enable attestation if the OCSP revocation status of the certificate in the RIM files is 'certificate_hold'. Defaults to false.'|
 
 ## Note
 Please note that starting from nvTrust v1.5.0, the NRAS v1 API and Relying Party Policy version 1.0 have been deprecated. Additionally, installation via wheel files will no longer be supported from v1.5.0 onward.

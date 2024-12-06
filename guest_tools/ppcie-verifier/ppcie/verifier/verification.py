@@ -59,6 +59,12 @@ def verification():
             choices=["DEBUG", "INFO", "WARNING", "ERROR", "TRACE", "CRITICAL"],
             help="Define log level Example --log=DEBUG",
         )
+        parser.add_argument(
+            "--allow-hold-cert",
+            help="If the user wants to continue the attestation in case of the OCSP revocation status of the certificate "
+                 "is held. The default value is False",
+            action="store_true"
+        )
         args = vars(parser.parse_args())
         logger = get_logger(args["log"])
 
@@ -74,6 +80,8 @@ def verification():
             logger.error("PPCIE: Number of GPUs present are : %d and Switches are %d which do not meet the required "
                          "configuration. Exiting..", number_of_gpus, number_of_switches)
             sys.exit()
+        if args["allow_hold_cert"]:
+            os.environ['NV_ALLOW_HOLD_CERT'] = "true"
         if args["gpu_attestation_mode"] != args["switch_attestation_mode"]:
             logger.error(
                 "PPCIE: GPU attestation mode and Switch attestation mode should be same. Exiting..")

@@ -10,7 +10,7 @@ import json
 import requests
 from nv_attestation_sdk.verifiers.nv_switch_verifier import nvswitch_admin
 from nv_attestation_sdk.utils.logging_config import get_logger
-from ..utils.config import REMOTE_NVSWITCH_VERIFIER_SERVICE_URL
+from ..utils.config import REMOTE_NVSWITCH_VERIFIER_SERVICE_URL, ALLOW_HOLD_CERT
 from ..utils import unified_eat_parser
 from ..utils import nras_utils
 
@@ -54,6 +54,8 @@ def attest(nonce: str, gpu_evidence_list, verifier_url, timeout=30):
     attestation_result = False
     jwt_token = ""
     headers = {"Content-Type": "application/json"}
+    if ALLOW_HOLD_CERT:
+        headers["X-NVIDIA-OCSP-ALLOW-CERT-HOLD"] = "true"
     try:
         payload = build_payload(nonce, gpu_evidence_list)
         logger.debug("NRAS URL for NvSwitch Attestation: %s", verifier_url)

@@ -4,7 +4,7 @@
 import os
 
 RIM_SERVICE_URL = os.getenv("NV_RIM_URL", "https://rim.attestation.nvidia.com/v1/rim/")
-ALLOW_HOLD_CERT = True
+ALLOW_HOLD_CERT = os.getenv("NV_ALLOW_HOLD_CERT") == "true"
 OCSP_SERVICE_URL = os.getenv("NV_OCSP_URL", "https://ocsp.ndis.nvidia.com/")
 REMOTE_GPU_VERIFIER_SERVICE_URL = os.getenv(
     "NV_NRAS_GPU_URL", "https://nras.attestation.nvidia.com/v3/attest/gpu"

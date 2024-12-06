@@ -154,6 +154,8 @@ class TopologyValidation:
                     switch_pdis[i] = read_field_as_little_endian(switch_pdis_in_evidence[i])
 
                 switch_sids_set = set(switch_pdis)
+                # Removing the disabled links
+                switch_sids_set.discard("0000000000000000")
                 logger.debug(
                     "PPCIE: GPU Topology check: Unique switch sids found are %s",
                     switch_sids_set,
