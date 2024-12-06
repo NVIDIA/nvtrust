@@ -12,15 +12,8 @@ from nv_attestation_sdk import attestation
 
 from nv_attestation_sdk.verifiers.nv_switch_verifier.nscq import NSCQHandler
 from verifier.nvml import NvmlHandler
-
+from nv_attestation_sdk.utils.config import set_allow_hold_cert
 from nv_attestation_sdk.verifiers.nv_switch_verifier.models.nvswitch import NVSwitch
-from .src.exceptions.exception import (
-    PpcieVerifierException,
-    GpuPreChecksException,
-    SwitchPreChecksException,
-    GpuAttestationException,
-    SwitchAttestationException,
-)
 from .src.utils.status import Status
 from .src.topology.validate_topology import TopologyValidation
 from .src.nvml.nvml_client import NvmlClient
@@ -81,7 +74,7 @@ def verification():
                          "configuration. Exiting..", number_of_gpus, number_of_switches)
             sys.exit()
         if args["allow_hold_cert"]:
-            os.environ['NV_ALLOW_HOLD_CERT'] = "true"
+            set_allow_hold_cert(True)
         if args["gpu_attestation_mode"] != args["switch_attestation_mode"]:
             logger.error(
                 "PPCIE: GPU attestation mode and Switch attestation mode should be same. Exiting..")
