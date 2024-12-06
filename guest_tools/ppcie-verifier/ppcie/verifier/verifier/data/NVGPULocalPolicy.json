@@ -1,0 +1,30 @@
+{
+  "version":"3.0",
+  "authorization-rules":{
+    "type": "JWT",
+    "overall-claims": {
+      "iss": "LOCAL_GPU_VERIFIER",
+      "x-nvidia-overall-att-result": true,
+      "x-nvidia-ver": "2.0"
+    },
+    "detached-claims":{
+      "measres": "success",
+      "x-nvidia-gpu-arch-check": true,
+      "x-nvidia-gpu-attestation-report-cert-chain-validated": true,
+      "x-nvidia-gpu-attestation-report-parsed": true,
+      "x-nvidia-gpu-attestation-report-nonce-match": true,
+      "x-nvidia-gpu-attestation-report-signature-verified": true,
+      "x-nvidia-gpu-driver-rim-fetched": true,
+      "x-nvidia-gpu-driver-rim-schema-validated": true,
+      "x-nvidia-gpu-driver-rim-cert-validated": true,
+      "x-nvidia-gpu-driver-rim-signature-verified": true,
+      "x-nvidia-gpu-driver-rim-measurements-available": true,
+      "x-nvidia-gpu-vbios-rim-fetched": true,
+      "x-nvidia-gpu-vbios-rim-schema-validated": true,
+      "x-nvidia-gpu-vbios-rim-cert-validated": true,
+      "x-nvidia-gpu-vbios-rim-signature-verified": true,
+      "x-nvidia-gpu-vbios-rim-measurements-available": true,
+      "x-nvidia-gpu-vbios-index-no-conflict": true
+    }
+  }
+}

@@ -11,8 +11,7 @@ from verifier import cc_admin
 from nv_attestation_sdk.utils.logging_config import get_logger
 from ..utils import unified_eat_parser
 from ..utils import nras_utils
-from ..utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, GPU_ARCH
-
+from ..utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, GPU_ARCH, ALLOW_HOLD_CERT
 logger = get_logger()
 
 
@@ -56,6 +55,8 @@ def attest(nonce: str, gpu_evidence_list, verifier_url, ppcie_mode: bool = True,
     attestation_result = False
     jwt_token = ""
     headers = {"Content-Type": "application/json"}
+    if ALLOW_HOLD_CERT:
+        headers["X-NVIDIA-OCSP-ALLOW-CERT-HOLD"] = "true"
     try:
         payload = build_payload(nonce, gpu_evidence_list)
         logger.debug("NRAS URL for GPU Attestation: %s", verifier_url)

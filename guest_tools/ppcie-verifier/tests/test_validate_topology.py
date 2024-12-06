@@ -53,4 +53,21 @@ class TopologyValidationTest(TestCase):
 
         self.assertTrue(result_status.topology_checks)
 
+    @patch("ppcie.verifier.src.topology.validate_topology.GpuAttestationReport")
+    def test_gpu_topology_check_with_disabled_links(self, mock_gpu_attestation_report):
+        topology = TopologyValidation()
+        mock_gpu_attestation_report.return_value.get_response_message.return_value.get_opaque_data.return_value.get_data.return_value = [
+            b'@\xb9\xc6\xb3\xd7H\xfd\x90', b'\xfd\xb5)\xf1G<\xb2%', b'\x10C\xc1N\x83Y\x96c',
+            b'\xd0\xf6\x9d\x02\x8e\x15\n\xaa', b'\x00\x00\x00\x00\x00\x00\x00\x00']
+
+        gpu_attestation_report_list = [mock_gpu_attestation_report] * 8
+        status = Status()
+        result_status = topology.gpu_topology_check(
+            gpu_attestation_report_list, 4, status
+        )
+        # Verify the result
+        self.assertTrue(result_status.topology_checks)
+        self.assertEqual(topology.unique_switches,
+                         {'639659834ec14310', '90fd48d7b3c6b940', 'aa0a158e029df6d0', '25b23c47f129b5fd'})
+
 
