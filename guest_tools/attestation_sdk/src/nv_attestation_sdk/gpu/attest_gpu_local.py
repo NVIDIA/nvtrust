@@ -9,8 +9,8 @@ import jwt
 
 from verifier import cc_admin
 from nv_attestation_sdk.utils.logging_config import get_logger
-from ..utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL, ALLOW_HOLD_CERT
-
+from ..utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL
+from ..utils.config import get_allow_hold_cert
 logger = get_logger()
 
 
@@ -56,7 +56,7 @@ def attest(nonce: str, gpu_evidence_list, ppcie_mode: bool = True):
             "user_mode": True,
             "rim_root_cert": None,
             "rim_service_url": RIM_SERVICE_URL,
-            "allow_hold_cert": ALLOW_HOLD_CERT,
+            "allow_hold_cert": get_allow_hold_cert(),
             "ocsp_url": OCSP_SERVICE_URL,
             "nonce": nonce,
             "ppcie_mode": ppcie_mode,
