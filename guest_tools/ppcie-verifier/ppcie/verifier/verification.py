@@ -14,6 +14,13 @@ from nv_attestation_sdk.verifiers.nv_switch_verifier.nscq import NSCQHandler
 from verifier.nvml import NvmlHandler
 from nv_attestation_sdk.utils.config import set_allow_hold_cert
 from nv_attestation_sdk.verifiers.nv_switch_verifier.models.nvswitch import NVSwitch
+from .src.exceptions.exception import (
+    PpcieVerifierException,
+    GpuPreChecksException,
+    SwitchPreChecksException,
+    GpuAttestationException,
+    SwitchAttestationException,
+)
 from .src.utils.status import Status
 from .src.topology.validate_topology import TopologyValidation
 from .src.nvml.nvml_client import NvmlClient
