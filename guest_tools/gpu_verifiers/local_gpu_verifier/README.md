@@ -113,8 +113,8 @@ To run the cc_admin module, use the following command:
 | `--nonce`                 | Specify a Nonce for Attestation Report                                                                                                                          |
 | `--rim_root_cert RIM_ROOT_CERT` | The absolute path to the root certificate is to be used for verifying the certificate chain of the driver and VBIOS RIM certificate chain                       |
 | `--rim_service_url RIM_SERVICE_URL` | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                                               |
-
-
+| `--extract_public_key`    | Extract and print the GPU's public key used for attestation verification                                                                                      |
+  
 If you need information about any function, use
         
     help(function_name)
