@@ -226,7 +226,7 @@ the issue to Nvidia.</td>
 <tr class="odd">
 <td>5</td>
 <td>Measurement block at index " XX" not following DMTF
-specification </td>
+specification </td>
 </tr>
 <tr class="even">
 <td>6</td>
@@ -244,8 +244,8 @@ Nvidia.</td>
 </tr>
 <tr class="even">
 <td>8</td>
-<td>GPU certificate chain revocation
-validation<strong> </strong>failed.</td>
+<td>GPU certificate chain revocation
+validation<strong> </strong>failed.</td>
 <td>The OCSP validation check for the GPU certificate chain has failed
 because one or more certificates in the chain have been revoked.</td>
 <td>It is recommended that the user stop the use of the current device
@@ -253,7 +253,7 @@ or software and obtain a replacement</td>
 </tr>
 <tr class="odd">
 <td>9</td>
-<td>GPU certificate chain validation failed</td>
+<td>GPU certificate chain validation failed</td>
 <td>The signature validation checks for the GPU certificate chain are
 not successful.</td>
 <td>If the error message indicates that the “verifier_device_root.pem”
@@ -382,7 +382,7 @@ file&gt;</td>
 </tr>
 <tr class="odd">
 <td>25</td>
-<td>Unable to read &lt;path to Driver RIM file&gt;</td>
+<td>Unable to read &lt;path to Driver RIM file&gt;</td>
 </tr>
 <tr class="even">
 <td>26</td>
