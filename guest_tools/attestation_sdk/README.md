@@ -17,7 +17,9 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
   - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
   - [Policy File](#policy-file)
   - [Building Attestation SDK](#building-attestation-sdk)
+  - [Compatibility Matrix](#compatibility-matrix)
   - [Attestation SDK APIs](#attestation-sdk-apis)
+  - [Attestation SDK configuration](#attestation-sdk-configuration)
   - [Note](#note)
 
 ## Features
@@ -132,6 +134,7 @@ v2.0.0          | v3              | 2.0
 v2.1.0          | v3              | 2.0
 v2.1.1          | v3              | 2.0
 v2.1.2          | v3              | 2.0
+v2.1.3          | v3              | 2.0
 
 More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 
