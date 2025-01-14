@@ -3,7 +3,7 @@
 nvTrust is a repository which contains much of the utilities & tools, open-source code,
 and SDKs leveraged when using NVIDIA solutions in trusted environments, such as Confidential Computing.
 
-For more information, including documentation, white papers, and videos regarding the Hopper Confidential Computing story, please visit http://docs.nvidia.com/confidential-computing/index.html.
+For more information, including documentation, white papers, and videos regarding the Hopper Confidential Computing story, please visit https://docs.nvidia.com/confidential-computing/index.html.
 
 ## Early Access Considerations
 This branch of nvTrust is currently considered `General Access`. 
