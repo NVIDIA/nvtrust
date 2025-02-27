@@ -186,6 +186,17 @@ class AttestationTest(TestCase):
         client._generate_nonce()
         self.assertIsNot(client.get_nonce(), None)
 
+    def test_set_ocsp_nonce_disabled_raises_error_on_invalid_datatype(self):
+        client = attestation.Attestation("test-name")
+        with self.assertRaises(ValueError):
+            client.set_ocsp_nonce_disabled("somestring")
+
+    def test_set_ocsp_nonce_disabled(self):
+        client = attestation.Attestation("test-name")
+        client.set_ocsp_nonce_disabled(True)
+        ocsp_nonce_disabled = client.get_ocsp_nonce_disabled()
+        self.assertEqual(ocsp_nonce_disabled, True)
+
     def test_validate_token_internal_when_eat_is_empty(self):
         client = attestation.Attestation("test-name")
         self.assertFalse(client._validate_token_internal("policy", ""))

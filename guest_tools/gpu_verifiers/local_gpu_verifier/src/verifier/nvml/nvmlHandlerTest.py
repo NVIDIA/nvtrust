@@ -1,7 +1,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -53,6 +53,7 @@ from verifier.exceptions import (
     UnsupportedGpuArchitectureError,
 )
 
+
 class NvmlHandlerTest:
 
     @classmethod
@@ -69,14 +70,15 @@ class NvmlHandlerTest:
 
             # length of \n is 1
             length_of_new_line = 1
-            
+
             str_data = bin_cert_chain_data.decode()
             cert_obj_list = list()
 
             for itr in re.finditer(PEM_CERT_END_DELIMITER, str_data):
                 end_index = itr.start()
                 cert_obj_list.append(crypto.load_certificate(crypto.FILETYPE_PEM, \
-                                    str_data[start_index : end_index + len(PEM_CERT_END_DELIMITER)]))
+                                                             str_data[
+                                                             start_index: end_index + len(PEM_CERT_END_DELIMITER)]))
 
                 start_index = end_index + len(PEM_CERT_END_DELIMITER) + length_of_new_line
 
@@ -85,15 +87,16 @@ class NvmlHandlerTest:
 
             return cert_obj_list
         except Exception as err:
-            raise CertExtractionError("\tSomething went wrong while extracting the individual certificates from the certificate chain.\n\tQuitting now.")
-    
+            raise CertExtractionError(
+                "\tSomething went wrong while extracting the individual certificates from the certificate chain.\n\tQuitting now.")
+
     def fetch_attestation_report(self):
 
         if self.GPUArchitecture == NVML_DEVICE_ARCH_HOPPER:
             path = HopperSettings.ATTESTATION_REPORT_PATH
         else:
             raise UnsupportedGpuArchitectureError("Only HOPPER architecture is supported.")
-    
+
         with open(path, 'r') as f:
             data = convert_string_to_blob(f.read())
         return data
@@ -113,7 +116,7 @@ class NvmlHandlerTest:
 
         with open(path, 'rb') as f:
             data = f.read()
-        
+
         return data
 
     def get_attestation_cert_chain(self):
@@ -121,7 +124,7 @@ class NvmlHandlerTest:
 
     def get_attestation_report(self):
         return self.AttestationReport
-    
+
     def get_gpu_architecture(self):
         return get_gpu_architecture_value(self.GPUArchitecture)
 
@@ -133,10 +136,11 @@ class NvmlHandlerTest:
         self.BoardId = 11111
         self.Index = 0
         self.UUID = 'GPU-11111111-2222-3333-4444-555555555555'
-        self.VbiosVersion = "96.00.5e.00.01"
-        self.DriverVersion = "545.00"
+        self.VbiosVersion = "96.00.9f.00.01"
+        self.DriverVersion = "550.90.07"
         self.AttestationReport = self.fetch_attestation_report()
         settings.mark_attestation_report_as_available()
         cert_data = self.get_test_attestation_cert_chain()
         handle = TestHandle(cert_data)
         self.CertificateChains = GpuCertificateChains(handle)
+

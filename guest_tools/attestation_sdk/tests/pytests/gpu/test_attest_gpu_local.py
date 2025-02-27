@@ -32,7 +32,7 @@ class AttestationGPUTestLocal(TestCase):
             {"GPU-0", detached_jwt_token},
         ]
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        result, jwt_token = attest_gpu_local.attest(nonce, gpu_evidence_list)
+        result, jwt_token = attest_gpu_local.attest(nonce, gpu_evidence_list, {})
         self.assertTrue(result)
 
     @patch("verifier.cc_admin.collect_gpu_evidence_local")
@@ -40,7 +40,18 @@ class AttestationGPUTestLocal(TestCase):
         ppcie_mode = True
         cc_admin.return_value = gpu_evidence_list
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_gpu_local.get_evidence(nonce, ppcie_mode)
+        no_gpu_mode = False
+        evidence_list = attest_gpu_local.get_evidence(nonce, options={"ppcie_mode": ppcie_mode, "no_gpu_mode":no_gpu_mode})
+        self.assertEqual(len(evidence_list), 1)
+
+    @patch("verifier.cc_admin.collect_gpu_evidence_local")
+    def test_gpu_local_get_evidence_with_no_gpu_mode(self, cc_admin):
+        ppcie_mode = True
+        cc_admin.return_value = gpu_evidence_list
+        nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
+        no_gpu_mode = True
+        evidence_list = attest_gpu_local.get_evidence(nonce,
+                                                      options={"ppcie_mode": ppcie_mode, "no_gpu_mode": no_gpu_mode})
         self.assertEqual(len(evidence_list), 1)
 
     @patch("verifier.cc_admin.collect_gpu_evidence_local")
@@ -48,14 +59,25 @@ class AttestationGPUTestLocal(TestCase):
         ppcie_mode = True
         cc_admin.side_effect = Exception("Driver installation error")
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_gpu_local.get_evidence(nonce, ppcie_mode)
+        no_gpu_mode = False
+        evidence_list = attest_gpu_local.get_evidence(nonce,
+                                                      options={"ppcie_mode": ppcie_mode, "no_gpu_mode": no_gpu_mode})
+        self.assertEqual(len(evidence_list), 0)
+
+    @patch("verifier.cc_admin.collect_gpu_evidence_local")
+    def test_gpu_local_get_evidence_fails_due_to_driver_error_with_no_gpu_mode_enabled(self, cc_admin):
+        ppcie_mode = True
+        cc_admin.side_effect = Exception("Driver installation error")
+        nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
+        no_gpu_mode = True
+        evidence_list = attest_gpu_local.get_evidence(nonce, options={"ppcie_mode": ppcie_mode, "no_gpu_mode":no_gpu_mode})
         self.assertEqual(len(evidence_list), 0)
 
     @patch("verifier.cc_admin.attest")
     def test_gpu_local_attest_fails(self, cc_admin):
         cc_admin.side_effect = Exception("Error in GPU attestation due to driver error")
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        result, jwt_token = attest_gpu_local.attest(nonce, gpu_evidence_list)
+        result, jwt_token = attest_gpu_local.attest(nonce, gpu_evidence_list, {})
         self.assertFalse(result)
         decoded_jwt_token = jwt.decode(jwt_token, "secret", "HS256")
         self.assertTrue(

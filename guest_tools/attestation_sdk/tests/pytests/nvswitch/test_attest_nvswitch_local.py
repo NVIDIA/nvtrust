@@ -35,27 +35,25 @@ class AttestationTestNvSwitchLocal(TestCase):
             {"SWITCH-0", detached_jwt_token},
         ]
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        result, jwt_token = attest_nvswitch_local.attest(nonce, switch_evidence_list)
+        result, jwt_token = attest_nvswitch_local.attest(nonce, switch_evidence_list, {})
         self.assertTrue(result)
 
     @patch(
         "nv_attestation_sdk.verifiers.nv_switch_verifier.nvswitch_admin.collect_evidence"
     )
     def test_switch_local_get_evidence(self, nvswitch_admin):
-        ppcie_mode = True
         nvswitch_admin.return_value = switch_evidence_list
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_nvswitch_local.get_evidence(nonce, ppcie_mode)
+        evidence_list = attest_nvswitch_local.get_evidence(nonce, { 'ppcie_mode': True })
         self.assertEqual(len(evidence_list), 1)
 
     @patch(
         "nv_attestation_sdk.verifiers.nv_switch_verifier.nvswitch_admin.collect_evidence"
     )
     def test_switch_local_get_evidence_fails_due_to_driver_error(self, nvswitch_admin):
-        ppcie_mode = True
         nvswitch_admin.side_effect = Exception("Driver installation error")
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_nvswitch_local.get_evidence(nonce, ppcie_mode)
+        evidence_list = attest_nvswitch_local.get_evidence(nonce, { 'ppcie_mode': True })
         self.assertEqual(len(evidence_list), 0)
 
     @patch("nv_attestation_sdk.verifiers.nv_switch_verifier.nvswitch_admin.attest")
@@ -64,7 +62,7 @@ class AttestationTestNvSwitchLocal(TestCase):
             "Error in Switch attestation due to driver error"
         )
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        result, jwt_token = attest_nvswitch_local.attest(nonce, switch_evidence_list)
+        result, jwt_token = attest_nvswitch_local.attest(nonce, switch_evidence_list, {})
         self.assertFalse(result)
         decoded_jwt_token = jwt.decode(jwt_token, "secret", "HS256")
         self.assertTrue(

@@ -1,7 +1,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -69,6 +69,7 @@ class BaseSettings:
     MAX_OCSP_TIME_DELAY = 10
     MAX_NETWORK_TIME_DELAY = 10
     OCSP_URL = os.getenv('NV_OCSP_URL', 'https://ocsp.ndis.nvidia.com/')
+    OCSP_NONCE_DISABLED = False
     OCSP_HASH_FUNCTION = sha384
     RIM_SERVICE_BASE_URL = os.getenv('NV_RIM_URL', 'https://rim.attestation.nvidia.com/v1/rim/')
     Certificate_Chain_Verification_Mode = Enum("CERT CHAIN VERIFICATION MODE",
@@ -120,12 +121,20 @@ class BaseSettings:
     def set_ocsp_url(cls, url):
         if not isinstance(url, str):
             raise ValueError("Incorrect data type for the URL.")
+        if not url:
+            raise ValueError("OCSP URL is empty")
+        if not url.endswith('/'):
+            url += '/'
         cls.OCSP_URL = url
 
     @classmethod
     def set_rim_service_base_url(cls, url):
         if not isinstance(url, str):
             raise ValueError("Incorrect data type for the URL.")
+        if not url:
+            raise ValueError("RIM URL is empty")
+        if not url.endswith('/'):
+            url += '/'
         cls.RIM_SERVICE_BASE_URL = url
 
     @classmethod
@@ -433,8 +442,8 @@ class HopperSettings(BaseSettings):
     DRIVER_RIM_PATH = ""
     TEST_NO_GPU_VBIOS_RIM_PATH = os.path.join(RIM_DIRECTORY_PATH, "1010_0200_882_96005E0001_test_no_gpu.swidtag")
     VBIOS_RIM_PATH = ""
-    ATTESTATION_REPORT_PATH = os.path.join(RIM_DIRECTORY_PATH, "attestationReport.txt")
-    GPU_ATTESTATION_CERTIFICATES_PATH = os.path.join(RIM_DIRECTORY_PATH, "gpuAkCertChain.txt")
+    ATTESTATION_REPORT_PATH = os.path.join(RIM_DIRECTORY_PATH, "hopperAttestationReport.txt")
+    GPU_ATTESTATION_CERTIFICATES_PATH = os.path.join(RIM_DIRECTORY_PATH, "hopperCertChain.txt")
 
     @classmethod
     def set_driver_rim_path(cls, path):

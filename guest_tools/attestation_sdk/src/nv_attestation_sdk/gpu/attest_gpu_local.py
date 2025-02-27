@@ -14,7 +14,7 @@ from ..utils.config import get_allow_hold_cert
 logger = get_logger()
 
 
-def get_evidence(nonce, ppcie_mode: bool):
+def get_evidence(nonce, options):
     """
     A function to get evidence for GPU to perform local attestation.
 
@@ -26,7 +26,7 @@ def get_evidence(nonce, ppcie_mode: bool):
     """
     try:
         logger.debug("Fetching evidence for GPU to perform local attestation")
-        gpu_evidence_list = cc_admin.collect_gpu_evidence_local(nonce, ppcie_mode=ppcie_mode)
+        gpu_evidence_list = cc_admin.collect_gpu_evidence_local(nonce, ppcie_mode=options.get("ppcie_mode"), no_gpu_mode=options.get("no_gpu_mode"))
         logger.debug("Evidence list for GPU %s", gpu_evidence_list)
         return gpu_evidence_list
     except Exception as e:
@@ -34,13 +34,13 @@ def get_evidence(nonce, ppcie_mode: bool):
     return []
 
 
-def attest(nonce: str, gpu_evidence_list, ppcie_mode: bool = True):
+def attest(nonce: str, gpu_evidence_list, attestation_options):
     """Attest a device locally
 
     Args:
         nonce (str): Nonce as hex string
         gpu_evidence_list (_type_): GPU evidence list
-        ppcie_mode (bool): Flag to indicate standalone mode for user to run without any other verifier
+        attestation_options (dict): Arguments with which to perform attestation
 
     Returns:
         Attestation result and JWT token
@@ -55,11 +55,12 @@ def attest(nonce: str, gpu_evidence_list, ppcie_mode: bool = True):
             "vbios_rim": None,
             "user_mode": True,
             "rim_root_cert": None,
-            "rim_service_url": RIM_SERVICE_URL,
+            "rim_service_url": attestation_options.get("rim_service_url") or RIM_SERVICE_URL,
             "allow_hold_cert": get_allow_hold_cert(),
-            "ocsp_url": OCSP_SERVICE_URL,
+            "ocsp_url": attestation_options.get("ocsp_url") or OCSP_SERVICE_URL,
             "nonce": nonce,
-            "ppcie_mode": ppcie_mode,
+            "ppcie_mode": attestation_options.get("ppcie_mode") or True,
+            'ocsp_nonce_disabled': attestation_options.get("ocsp_nonce_disabled") or False
         }
         attestation_result, jwt_token = cc_admin.attest(
             params, nonce, gpu_evidence_list

@@ -251,11 +251,11 @@ def init_nvml(ppcie_mode:bool):
             info_log.error(err_msg)
             sys.exit()
 
-        if NvmlHandler.is_ppcie_mode_enabled() and ppcie_mode:
-            err_msg = ("Attestation Failed! Attestation in standalone mode is not supported for PPCIE system. Exiting "
-                       "now.")
-            info_log.error(err_msg)
-            sys.exit()
+        # if NvmlHandler.is_ppcie_mode_enabled() and ppcie_mode:
+        #     err_msg = ("Attestation Failed! Attestation in standalone mode is not supported for PPCIE system. Exiting "
+        #                "now.")
+        #     info_log.error(err_msg)
+        #     sys.exit()
 
         if NvmlHandler.is_cc_dev_mode():
             info_log.info("The system is running in CC DevTools mode !!")

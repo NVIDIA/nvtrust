@@ -14,6 +14,7 @@ import uuid
 import jwt
 
 from nv_attestation_sdk.utils.logging_config import setup_logging, get_logger
+from nv_attestation_sdk.utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL
 from .gpu import attest_gpu_local, attest_gpu_remote
 from .nvswitch import attest_nvswitch_local, attest_nvswitch_remote
 from .utils import claim_utils, local_utils, nras_utils
@@ -80,7 +81,8 @@ class VerifierFields(IntEnum):
     URL = 3
     POLICY = 4
     JWT_TOKEN = 5
-
+    OCSP_URL = 6
+    RIM_URL = 7
 
 class Attestation:
     """
@@ -93,6 +95,8 @@ class Attestation:
     _tokens = None
     _verifiers = []
     _instance = None
+    _ocsp_nonce_disabled = False
+    _no_gpu_mode = False
 
     def __new__(cls, name=None):
         if cls._instance is None:
@@ -141,8 +145,29 @@ class Attestation:
         return cls._nonceServer
 
     @classmethod
+    def set_ocsp_nonce_disabled(cls, ocsp_nonce_disabled: bool) -> None:
+        """Flag which indicates whether to include a nonce when calling OCSP.  False by default
+
+        Args:
+            ocsp_nonce_disabled (bool): Flag which indicates whether to include a nonce when calling OCSP
+        """
+        if not isinstance(ocsp_nonce_disabled, bool):
+            raise ValueError("Incorrect data type for ocsp_nonce_disabled.")
+        cls._ocsp_nonce_disabled = ocsp_nonce_disabled
+
+    @classmethod
+    def get_ocsp_nonce_disabled(cls) -> bool:
+        """Get the flag which indicates whether a nonce is included when calling OCSP.
+
+        Returns:
+            bool: Flag which indicates whether a nonce is included when calling OCSP
+        """
+        return cls._ocsp_nonce_disabled
+
+
+    @classmethod
     def add_verifier(
-        cls, dev: Devices, env: Environment, url: str, evidence: str
+        cls, dev: Devices, env: Environment, url: str, evidence: str, ocsp_url: str=OCSP_SERVICE_URL, rim_url: str=RIM_SERVICE_URL
     ) -> None:
         """Add a new verifier for Attestation
 
@@ -151,6 +176,8 @@ class Attestation:
             env (Environment): Type of Attestation - local, remote etc.
             url (str): URL of the Attestation Server for Remote Attestation use cases.
             evidence (str): Attestation evidence
+            ocsp_url (str): URL of the OCSP service to check the revocation status of a certificate
+            rim_url (str): URL of the RIM service for fetching driver and VBIOS RIM files
         """
         verifier_name_mapping = {
             (Devices.GPU, Environment.LOCAL): "LOCAL_GPU_CLAIMS",
@@ -161,8 +188,7 @@ class Attestation:
         }
 
         name = verifier_name_mapping.get((dev, env), "UNKNOWN_CLAIMS")
-
-        lst = [name, dev, env, url, evidence, ""]
+        lst = [name, dev, env, url, evidence, "", ocsp_url, rim_url]
         cls._verifiers.append(lst)
 
     @classmethod
@@ -182,10 +208,13 @@ class Attestation:
         return cls._verifiers
 
     @classmethod
-    def get_evidence(cls, ppcie_mode: bool = True) -> Tuple[str, List]:
+    def get_evidence(cls, options=None) -> Tuple[str, List]:
         """
         A class method to get evidence for attestation. Returns evidence for the specified verifier.
         """
+        if options == None:
+            options = {}
+
         decorative_logger.info("Attestation SDK: Getting Evidence")
         nonce = cls.get_nonce() or cls._generate_nonce()
         logger.info("Nonce generated: %s", nonce)
@@ -196,14 +225,18 @@ class Attestation:
             (Devices.SWITCH, Environment.LOCAL): attest_nvswitch_local.get_evidence,
             (Devices.SWITCH, Environment.REMOTE): attest_nvswitch_remote.get_evidence,
         }
-
+        # TODO Add support for no_switch_mode
+        evidence_options = {
+            "ppcie_mode": options.get("ppcie_mode", True),
+            "no_gpu_mode": options.get("no_gpu_mode", False)
+        }
         for verifier in cls._verifiers:
             device = verifier[VerifierFields.DEVICE]
             environment = verifier[VerifierFields.ENVIRONMENT]
             evidence_func = evidence_mapping.get(
                 (device, environment), cls._unknown_verifier
             )
-            return evidence_func(nonce, ppcie_mode)
+            return evidence_func(nonce, evidence_options)
 
         logger.error("Unknown verifier - Assuming all is good")
         return nonce, []
@@ -245,8 +278,14 @@ class Attestation:
                     nonce, evidence_list, verifier_url
                 )
             else:
+                attestation_options = {
+                    "ocsp_nonce_disabled": cls._ocsp_nonce_disabled,
+                    "rim_service_url": verifier[VerifierFields.RIM_URL],
+                    "ocsp_url": verifier[VerifierFields.OCSP_URL]
+                }
+
                 this_result, jwt_token = attestation_func(
-                    nonce, evidence_list
+                    nonce, evidence_list, attestation_options
                 )
             verifier[VerifierFields.JWT_TOKEN] = jwt_token
             attest_result = attest_result and this_result

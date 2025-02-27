@@ -1,6 +1,6 @@
 [project]
 name = "nv-local-gpu-verifier"
-version = "2.1.1"
+version = "2.3.0"
 description = "A Python-based tool that validates GPU measurements by comparing GPU runtime measurements with authenticated golden measurements"
 authors = [
     {name = "NVIDIA"}

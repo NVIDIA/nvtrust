@@ -37,13 +37,12 @@ from urllib.error import HTTPError
 import json
 import base64
 
-
 from OpenSSL import crypto
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.hashes import SHA384
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.exceptions import InvalidSignature
-from cryptography.x509 import ocsp, OCSPNonce
+from cryptography.x509 import ocsp, OCSPNonce, ExtensionNotFound
 from cryptography import x509
 
 from verifier.attestation import AttestationReport
@@ -66,6 +65,7 @@ from verifier.exceptions import (
     RIMFetchError,
     InvalidNonceError
 )
+
 
 class CcAdminUtils:
     """ A class to provide the required functionalities for the CC ADMIN to perform the GPU attestation.
@@ -111,13 +111,16 @@ class CcAdminUtils:
         if attestation_report_fwid != '':
 
             if attestation_report_fwid != CcAdminUtils.extract_fwid(cert_chain[0]):
-                info_log.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
+                info_log.error(
+                    "\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
                 event_log.info(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
                 return False
 
-            info_log.info("\t\tThe firmware ID in the device certificate chain is matching with the one in the attestation report.")
+            info_log.info(
+                "\t\tThe firmware ID in the device certificate chain is matching with the one in the attestation report.")
 
-        return CcAdminUtils.verify_certificate_chain(cert_chain, settings, BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION)
+        return CcAdminUtils.verify_certificate_chain(cert_chain, settings,
+                                                     BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION)
 
     @staticmethod
     def verify_certificate_chain(cert_chain, settings, mode):
@@ -152,7 +155,8 @@ class CcAdminUtils:
 
         if number_of_certificates != settings.MAX_CERT_CHAIN_LENGTH and mode == BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION:
             event_log.error("\t\tThe number of certificates fetched from the GPU is unexpected.")
-            raise IncorrectNumberOfCertificatesError("\t\tThe number of certificates fetched from the GPU is unexpected.")
+            raise IncorrectNumberOfCertificatesError(
+                "\t\tThe number of certificates fetched from the GPU is unexpected.")
 
         store = crypto.X509Store()
         index = number_of_certificates - 1
@@ -184,7 +188,7 @@ class CcAdminUtils:
         Returns:
             [OpenSSL.crypto.X509]: the converted X509 certificate object.
         """
-        return crypto.load_certificate(type=crypto.FILETYPE_ASN1, buffer = cert.public_bytes(serialization.Encoding.DER))
+        return crypto.load_certificate(type=crypto.FILETYPE_ASN1, buffer=cert.public_bytes(serialization.Encoding.DER))
 
     @staticmethod
     def ocsp_certificate_chain_validation(cert_chain, settings, mode):
@@ -218,19 +222,24 @@ class CcAdminUtils:
         for i in range(start_index, end_index):
             request_builder = ocsp.OCSPRequestBuilder()
             request_builder = request_builder.add_certificate(cert_chain[i], cert_chain[i + 1], SHA384())
-            nonce  = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES)
-            request_builder = request_builder.add_extension(extval = OCSPNonce(nonce),
-                                                            critical = True)
+            # Fetch OCSP Response from OCSP Service
+
+            if not BaseSettings.OCSP_NONCE_DISABLED:
+                nonce = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES)
+                request_builder = request_builder.add_extension(extval=OCSPNonce(nonce),
+                                                                critical=True)
+
             request = request_builder.build()
             # Making the network call in a separate thread.
             ocsp_response = function_wrapper_with_timeout([CcAdminUtils.send_ocsp_request,
                                                            request.public_bytes(serialization.Encoding.DER),
                                                            "send_ocsp_request"],
-                                                           BaseSettings.MAX_OCSP_TIME_DELAY)
+                                                          BaseSettings.MAX_OCSP_TIME_DELAY)
 
             # Verifying the ocsp response certificate chain.
             ocsp_response_leaf_cert = crypto.load_certificate(type=crypto.FILETYPE_ASN1,
-                                                              buffer = ocsp_response.certificates[0].public_bytes(serialization.Encoding.DER))
+                                                              buffer=ocsp_response.certificates[0].public_bytes(
+                                                                  serialization.Encoding.DER))
 
             ocsp_cert_chain = [ocsp_response_leaf_cert]
 
@@ -242,48 +251,59 @@ class CcAdminUtils:
                                                                                         BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
 
             if not ocsp_cert_chain_verification_status:
-                info_log.error(f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
+                info_log.error(
+                    f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
                 return False, gpu_attestation_warning
             elif i == end_index - 1:
                 info_log.debug("\t\tGPU Certificate OCSP Cert chain is verified")
 
-
             # Verifying the signature of the ocsp response message.
             if not CcAdminUtils.verify_ocsp_signature(ocsp_response):
-                info_log.error(f"\t\tThe ocsp response response for certificate {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} failed due to signature verification failure.")
+                info_log.error(
+                    f"\t\tThe ocsp response response for certificate {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} failed due to signature verification failure.")
                 return False, gpu_attestation_warning
             elif i == end_index - 1:
                 info_log.debug("\t\tGPU Certificate OCSP Signature is verified")
 
-            if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
-                info_log.error("\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
+            try:
+                if not BaseSettings.OCSP_NONCE_DISABLED:
+                    if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
+                        info_log.error(
+                            "\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
+                        return False, gpu_attestation_warning
+                    elif i == end_index - 1:
+                        info_log.debug("\t\tGPU Certificate OCSP Nonce is matching")
+            except ExtensionNotFound:
+                info_log.error(
+                    "\t\tOCSP response does not contain a nonce extension. If OCSP nonce validation is not required in your environment, consider disabling the nonce check.")
                 return False, gpu_attestation_warning
-            elif i == end_index - 1:
-                info_log.debug("\t\tGPU Certificate OCSP Nonce is matching")
-
             if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
                 info_log.error("\t\tCouldn't receive a proper response from the OCSP server.")
                 return False, gpu_attestation_warning
 
-            #OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
+            # OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
             if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
                 if x509.ReasonFlags.certificate_hold == ocsp_response.revocation_reason and \
-                BaseSettings.allow_hold_cert and \
-                (mode == BaseSettings.Certificate_Chain_Verification_Mode.DRIVER_RIM_CERT or BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT):
+                        BaseSettings.allow_hold_cert and \
+                        (
+                                mode == BaseSettings.Certificate_Chain_Verification_Mode.DRIVER_RIM_CERT or BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT):
                     warning = f"THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'."
                     info_log.warning(f"\t\t\tWARNING: {warning}")
                     gpu_attestation_warning = warning
                 elif ocsp_response.certificate_status == ocsp.OCSPCertStatus.UNKNOWN:
-                    info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate revocation status is UNKNOWN")
+                    info_log.error(
+                        f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate revocation status is UNKNOWN")
                     return False, gpu_attestation_warning
                 else:
-                    info_log.error(f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
+                    info_log.error(
+                        f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
                     return False, gpu_attestation_warning
 
         if not revoked_status:
             info_log.info(f"\t\t\tThe certificate chain revocation status verification successful.")
         else:
-            info_log.warning(f"\t\t\tThe certificate chain revocation status verification was not successful but continuing.")
+            info_log.warning(
+                f"\t\t\tThe certificate chain revocation status verification was not successful but continuing.")
 
         return True, gpu_attestation_warning
 
@@ -305,7 +325,8 @@ class CcAdminUtils:
         https_request = request.Request(BaseSettings.OCSP_URL, data)
         https_request.add_header("Content-Type", "application/ocsp-request")
 
-        with request.urlopen(https_request) as https_response:      #nosec taken care of the security issue by checking for the url to start with "http"
+        with request.urlopen(
+                https_request) as https_response:  # nosec taken care of the security issue by checking for the url to start with "http"
             ocsp_response = ocsp.load_der_ocsp_response(https_response.read())
 
         return ocsp_response
@@ -387,7 +408,6 @@ class CcAdminUtils:
         base_str = 'NV_GPU_DRIVER_GH100_'
         return base_str + driver_version
 
-
     @staticmethod
     def get_vbios_rim_path(settings, attestation_report):
         """ A static method to determine the path of the appropriate VBIOS RIM file.
@@ -403,9 +423,11 @@ class CcAdminUtils:
             [str] : the path to the VBIOS RIM file.
         """
         project = attestation_report.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_PROJECT")
-        project_sku = attestation_report.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_PROJECT_SKU")
+        project_sku = attestation_report.get_response_message().get_opaque_data().get_data(
+            "OPAQUE_FIELD_ID_PROJECT_SKU")
         chip_sku = attestation_report.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_CHIP_SKU")
-        vbios_version = format_vbios_version(attestation_report.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_VBIOS_VERSION"))
+        vbios_version = format_vbios_version(
+            attestation_report.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_VBIOS_VERSION"))
         vbios_version = vbios_version.replace(".", "").upper()
 
         project = project.decode('ascii').strip().strip('\x00')
@@ -464,17 +486,20 @@ class CcAdminUtils:
             event_log.error(err_msg)
             raise NonceMismatchError(err_msg)
         else:
-            info_log.info("\t\tThe nonce in the SPDM GET MEASUREMENT request message is matching with the generated nonce.")
+            info_log.info(
+                "\t\tThe nonce in the SPDM GET MEASUREMENT request message is matching with the generated nonce.")
             settings.mark_nonce_as_matching()
 
         # Checking driver version.
-        driver_version_from_attestation_report = attestation_report_obj.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_DRIVER_VERSION")
+        driver_version_from_attestation_report = attestation_report_obj.get_response_message().get_opaque_data().get_data(
+            "OPAQUE_FIELD_ID_DRIVER_VERSION")
         driver_version_from_attestation_report = driver_version_from_attestation_report.decode()
 
         if driver_version_from_attestation_report[-1] == '\0':
             driver_version_from_attestation_report = driver_version_from_attestation_report[:-1]
 
-        info_log.info(f'\t\tDriver version fetched from the attestation report : {driver_version_from_attestation_report}')
+        info_log.info(
+            f'\t\tDriver version fetched from the attestation report : {driver_version_from_attestation_report}')
 
         if driver_version_from_attestation_report != driver_version:
             err_msg = "\t\tThe driver version in attestation report is not matching with the driver version fetched from the driver."
@@ -485,9 +510,11 @@ class CcAdminUtils:
         settings.mark_attestation_report_driver_version_as_matching()
 
         # Checking vbios version.
-        vbios_version_from_attestation_report = attestation_report_obj.get_response_message().get_opaque_data().get_data("OPAQUE_FIELD_ID_VBIOS_VERSION")
+        vbios_version_from_attestation_report = attestation_report_obj.get_response_message().get_opaque_data().get_data(
+            "OPAQUE_FIELD_ID_VBIOS_VERSION")
         vbios_version_from_attestation_report = format_vbios_version(vbios_version_from_attestation_report)
-        info_log.info(f'\t\tVBIOS version fetched from the attestation report : {vbios_version_from_attestation_report}')
+        info_log.info(
+            f'\t\tVBIOS version fetched from the attestation report : {vbios_version_from_attestation_report}')
 
         if vbios_version_from_attestation_report != vbios_version:
             err_msg = "\t\tThe vbios version in attestation report is not matching with the vbios verison fetched from the driver."
@@ -498,9 +525,10 @@ class CcAdminUtils:
         settings.mark_attestation_report_vbios_version_as_matching()
 
         # Performing the signature verification.
-        attestation_report_verification_status = attestation_report_obj.verify_signature(gpu_leaf_certificate.to_cryptography(),
-                                                                                         settings.signature_length,
-                                                                                         settings.HashFunction)
+        attestation_report_verification_status = attestation_report_obj.verify_signature(
+            gpu_leaf_certificate.to_cryptography(),
+            settings.signature_length,
+            settings.HashFunction)
         if attestation_report_verification_status:
             info_log.info("\t\tAttestation report signature verification successful.")
             settings.mark_attestation_report_signature_verified()

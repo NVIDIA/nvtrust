@@ -16,7 +16,7 @@ from ..utils.config import get_allow_hold_cert
 logger = get_logger()
 
 
-def get_evidence(nonce, ppcie_mode: bool):
+def get_evidence(nonce, options):
     """
     A function to get evidence for GPU to perform remote attestation.
 
@@ -27,6 +27,8 @@ def get_evidence(nonce, ppcie_mode: bool):
     list: A list of GPU evidence collected for remote attestation.
     """
     try:
+        ppcie_mode = options.get("ppcie_mode")
+
         logger.debug("Fetching evidence for GPU to perform remote attestation")
         gpu_evidence_list = cc_admin.collect_gpu_evidence_remote(nonce, ppcie_mode=ppcie_mode)
         logger.debug("Evidence list for GPU %s", gpu_evidence_list)
