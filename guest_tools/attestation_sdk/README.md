@@ -80,11 +80,11 @@ Please execute the following commands to clean up packages that were not install
 
 - Local GPU Attestation
 
-  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/LocalGPUTest.py)
+  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/LocalGPUTest.py)
 
 - Remote GPU Attestation
 
-  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/RemoteGPUTest.py)
+  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/RemoteGPUTest.py)
 
 ## Switch Attestation
 
@@ -101,11 +101,11 @@ Please execute the following commands to clean up packages that were not install
 
 - Local nvSwitch Attestation
 
-  Refer to the [sample implementation](tests/LocalSwitchTest.py)
+  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/LocalSwitchTest.py)
 
 - Remote nvSwitch Attestation
 
-  Refer to the [sample implementation](tests/RemoteSwitchTest_v3.py)
+  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/RemoteSwitchTest.py)
 
 ## Claims and Troubleshooting information
 
@@ -135,6 +135,8 @@ v2.1.0          | v3              | 2.0
 v2.1.1          | v3              | 2.0
 v2.1.2          | v3              | 2.0
 v2.1.3          | v3              | 2.0
+v2.1.4          | v3              | 2.0
+v2.3.0          | v3              | 2.0
 
 More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 
@@ -146,11 +148,13 @@ More information on claims can be found [here](https://github.com/NVIDIA/nvtrust
 | Attestation(<-name->)                                                                                                           | Create a new Attestation Object used to call other Attestation methods.                                                               |
 | set_name(<-name->)                                                                                                              | Set a name for the Attestation SDK client                                                                                             |
 | set_nonce(<-nonce->)                                                                                                            | Set a nonce for Attestation                                                                                                           |
+| set_ocsp_nonce_disabled(<-bool->)                                                                                               | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default        |
 | add_verifier(<-attestation-device-type->, <-local/remote->, <-remote-attestation-service-url->, <-attestation-results-policy->) | Add a specific type of verifier for the client object. The verifier will be invoked during the attest operation                       |
 | get_verifiers()                                                                                                                 | Retrieves the list of verifiers added to the client object.                                                                              |
 | get_evidence()                                                                                                                  | Retrieves the list of evidence based on the attestation device (e.g., GPU, switch) and the type of attestation (e.g., local, remote). |
 | attest()                                                                                                                        | Trigger the Attestation for the client object, This uses the Attestation type configured in the add_verifier method                           |
 | get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to the Attestation result.                                             |
+| get_ocsp_nonce_disabled()                                                                                                       | Retrieves the flag which indicates whether a nonce is included when calling OCSP.                                                     |
 | validate_token(<-attestation-results-policy->)                                                                                  | Validate the Attestation Claims against a policy                                                                                      |
 | decode_token(<-jwt-token->)                                                                                                     | Decodes the JWT token to claims received by the verifier                                                                              |
 ## Attestation SDK configuration

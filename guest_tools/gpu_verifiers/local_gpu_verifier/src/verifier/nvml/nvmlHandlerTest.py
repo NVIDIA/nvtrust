@@ -133,10 +133,11 @@ class NvmlHandlerTest:
         self.BoardId = 11111
         self.Index = 0
         self.UUID = 'GPU-11111111-2222-3333-4444-555555555555'
-        self.VbiosVersion = "96.00.5e.00.01"
-        self.DriverVersion = "545.00"
+        self.VbiosVersion = "96.00.9f.00.01"
+        self.DriverVersion = "550.90.07"
         self.AttestationReport = self.fetch_attestation_report()
         settings.mark_attestation_report_as_available()
         cert_data = self.get_test_attestation_cert_chain()
         handle = TestHandle(cert_data)
         self.CertificateChains = GpuCertificateChains(handle)
+

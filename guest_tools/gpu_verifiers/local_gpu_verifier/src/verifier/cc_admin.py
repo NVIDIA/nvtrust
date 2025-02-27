@@ -133,6 +133,11 @@ def main():
         help="If the user wants to override the OCSP service url and provide their own url, then can do so by passing "
              "it as a command line argument.",
     )
+    parser.add_argument(
+        "--ocsp_nonce_disabled",
+        help="Disable using a nonce when calling OCSP",
+        action="store_true",
+    )
     args = parser.parse_args()
     arguments_as_dictionary = vars(args)
 
@@ -282,6 +287,8 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
     try:
         BaseSettings.allow_hold_cert = arguments_as_dictionary['allow_hold_cert']
+
+        BaseSettings.OCSP_NONCE_DISABLED = arguments_as_dictionary['ocsp_nonce_disabled']
 
         if not arguments_as_dictionary['rim_service_url'] is None:
             BaseSettings.set_rim_service_base_url(arguments_as_dictionary['rim_service_url'])

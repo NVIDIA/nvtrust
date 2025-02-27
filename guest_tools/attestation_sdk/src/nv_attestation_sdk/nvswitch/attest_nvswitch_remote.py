@@ -18,7 +18,7 @@ from ..utils import nras_utils
 logger = get_logger()
 
 
-def get_evidence(nonce, ppcie_mode):
+def get_evidence(nonce, options):
     """
     A function that fetches evidence for NvSwitch to perform remote attestation.
 
@@ -29,6 +29,8 @@ def get_evidence(nonce, ppcie_mode):
     list: A list of evidence for NvSwitch.
     """
     try:
+        ppcie_mode = options.get("ppcie_mode")
+
         logger.debug("Fetching evidence for NvSwitch to perform local attestation")
         switch_evidence_list = nvswitch_admin.collect_evidence_remote(nonce, ppcie_mode=ppcie_mode)
         logger.debug("Evidence list for NvSwitch %s", switch_evidence_list)

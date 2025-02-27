@@ -68,13 +68,21 @@ class BaseSettings:
     @classmethod
     def set_ocsp_url(cls, url):
         if not isinstance(url, str):
-            raise ValueError("Incorrect data type for the URL.")
+            raise ValueError("Incorrect data type for the URL.")  
+        if not url:
+            raise ValueError("OCSP URL is empty")
+        if not url.endswith('/'):
+            url += '/'
         cls.OCSP_URL = url
 
     @classmethod
     def set_rim_service_base_url(cls, url):
         if not isinstance(url, str):
             raise ValueError("Incorrect data type for the URL.")
+        if not url:
+            raise ValueError("RIM URL is empty")
+        if not url.endswith('/'):
+            url += '/'
         cls.RIM_SERVICE_BASE_URL = url
 
     @classmethod
@@ -292,6 +300,7 @@ class LS10Settings(BaseSettings):
     VBIOS_RIM_PATH = ""
     ATTESTATION_REPORT_PATH = os.path.join(RIM_DIRECTORY_PATH, "attestationReport.txt")
     SWITCH_ATTESTATION_CERTIFICATES_PATH = os.path.join(RIM_DIRECTORY_PATH, "gpuAkCertChain.txt")
+    ocsp_nonce_disabled = False
 
     @classmethod
     def set_vbios_rim_path(cls, path):
@@ -304,3 +313,7 @@ class LS10Settings(BaseSettings):
     @classmethod
     def set_switch_attestation_certificates_path(cls, path):
         cls.SWITCH_ATTESTATION_CERTIFICATES_PATH = path
+
+    @classmethod
+    def set_ocsp_nonce_disabled(cls, ocsp_nonce_disabled):
+        cls.ocsp_nonce_disabled = ocsp_nonce_disabled

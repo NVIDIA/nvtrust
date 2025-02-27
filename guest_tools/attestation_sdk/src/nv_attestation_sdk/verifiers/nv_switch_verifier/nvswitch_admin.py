@@ -220,6 +220,9 @@ def attest(args, nonce, evidence_list):
             else:
                 logger.info("\t\tnvSwitch attestation report certificate chain validation successful.")
 
+            if not args['ocsp_nonce_disabled'] is None:
+                settings.set_ocsp_nonce_disabled(args['ocsp_nonce_disabled'])
+
             cert_chain_revocation_status, switch_attestation_warning = NVSwitchAdminUtils.ocsp_certificate_chain_validation(
                 switch_attestation_cert_chain,
                 settings,
@@ -313,7 +316,7 @@ def attest(args, nonce, evidence_list):
             else:
                 overall_status = overall_status and settings.check_status()
 
-            # set current gpu_claims
+            # set current switch_claims
             claims = ClaimsUtils.get_current_switch_claims(settings, switch_uuid)
             logger.debug(f"switch UUID: {switch_uuid} Claims: {claims}")
             claims_list.append(claims)

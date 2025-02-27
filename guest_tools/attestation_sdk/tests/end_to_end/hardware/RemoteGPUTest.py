@@ -26,7 +26,7 @@ print(client.attest(evidence_list))
 print("[RemoteGPUTest] token : " + str(client.get_token()))
 print("[RemoteGPUTest] call validate_token() - expecting True")
 
-file = "policies/remote/v3/NVGPURemotePolicyExample.json"
+file = "../../policies/remote/v3/NVGPURemotePolicyExample.json"
 with open(os.path.join(os.path.dirname(__file__), file)) as json_file:
     json_data = json.load(json_file)
     remote_att_result_policy = json.dumps(json_data)

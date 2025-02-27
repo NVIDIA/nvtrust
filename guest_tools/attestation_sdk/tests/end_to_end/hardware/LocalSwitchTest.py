@@ -18,7 +18,7 @@ client.add_verifier(attestation.Devices.SWITCH, attestation.Environment.LOCAL, "
 evidence_list = client.get_evidence()
 
 client.attest(evidence_list)
-file = "policies/local/NVSwitchLocalPolicyExample.json"
+file = "../../policies/local/NVSwitchLocalPolicyExample.json"
 print ("[LocalSwitchTest] token : "+str(client.get_token()))
 
 with open(os.path.join(os.path.dirname(__file__), file)) as json_file:

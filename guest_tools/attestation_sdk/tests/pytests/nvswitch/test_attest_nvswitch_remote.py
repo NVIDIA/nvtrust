@@ -137,20 +137,18 @@ class NvSwitchAttestationTestRemote(TestCase):
         "nv_attestation_sdk.verifiers.nv_switch_verifier.nvswitch_admin.collect_evidence_remote"
     )
     def test_switch_remote_get_evidence(self, nvswitch_admin):
-        ppcie_mode = True
         nvswitch_admin.return_value = switch_evidence_list
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_nvswitch_remote.get_evidence(nonce, ppcie_mode)
+        evidence_list = attest_nvswitch_remote.get_evidence(nonce, { 'ppcie_mode': True })
         self.assertEqual(len(evidence_list), 1)
 
     @patch(
         "nv_attestation_sdk.verifiers.nv_switch_verifier.nvswitch_admin.collect_evidence_remote"
     )
     def test_switch_local_get_evidence_fails_due_to_driver_issue(self, nvswitch_admin):
-        ppcie_mode = True
         nvswitch_admin.side_effect = Exception("Driver issue encountered")
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_nvswitch_remote.get_evidence(nonce, ppcie_mode)
+        evidence_list = attest_nvswitch_remote.get_evidence(nonce, { 'ppcie_mode': True })
         self.assertEqual(len(evidence_list), 0)
 
     def test_build_payload(self):
