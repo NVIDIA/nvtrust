@@ -97,6 +97,9 @@ Method 2: Using PyPI (Requires python virtual environment creation)
 | `--switch-attestation-mode` | Type of nvSwitch Attestation          | LOCAL,  REMOTE                                                          |
 | `--log`                     | Configure log level                   | DEBUG, INFO, WARNING, ERROR, TRACE, CRITICAL               |
 | `--allow-hold-cert`         | Enable attestation when OCSP status of certificate is cert hold | N/A                                        |
+| `--rim-url RIM_SERVICE_URL` | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                              |
+| `--ocsp-url OCSP_SERVICE_URL` | The URL to be used for checking the revocation status of a certificate (e.g., `https://ocsp.ndis.nvidia.com/`)                                              |
+| `--ocsp-nonce-disabled`    | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                 |
 ## Troubleshooting
 Below are some of the common issues that have been encountered:
 ### Installation Issues:

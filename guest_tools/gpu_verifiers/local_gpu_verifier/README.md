@@ -113,6 +113,8 @@ To run the cc_admin module, use the following command:
 | `--nonce`                 | Specify a Nonce for Attestation Report                                                                                                                          |
 | `--rim_root_cert RIM_ROOT_CERT` | The absolute path to the root certificate is to be used for verifying the certificate chain of the driver and VBIOS RIM certificate chain                       |
 | `--rim_service_url RIM_SERVICE_URL` | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                                               |
+| `--ocsp_url OCSP_SERVICE_URL` | The URL to be used for checking the revocation status of a certificate (e.g., `https://ocsp.ndis.nvidia.com/`)                                              |
+| `--ocsp_nonce_disabled`    | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                 |
 
 
 If you need information about any function, use
@@ -152,6 +154,8 @@ v1.5.0          | r550TRD5
 v2.0.0          | r550TRD6
 v2.1.0          | r550TRD7, r550TRD6, r550TRD5
 v2.1.1          | r550TRD7, r550TRD6, r550TRD5
+v2.1.2          | r550TRD7, r550TRD6, r550TRD5
+v2.3.0          | r550TRD7, r550TRD6, r550TRD5
 
 ## Claims and Troubleshooting information
 For local and remote verifier claims information for NVIDIA GPUs, switches, and related troubleshooting information, please refer to the [Attestation Troubleshooting documentation](../../attestation_troubleshooting_guide.md).

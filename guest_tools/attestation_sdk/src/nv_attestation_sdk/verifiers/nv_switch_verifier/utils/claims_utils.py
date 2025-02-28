@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -34,8 +34,7 @@ import uuid
 
 import jwt
 from datetime import datetime, timedelta
-
-
+from typing import List, Any
 
 class ClaimsUtils:
     """ A class to provide the required functionalities for claims related utility functions
@@ -76,7 +75,20 @@ class ClaimsUtils:
         return overallAttestationToken
 
     @staticmethod
-    def create_detached_eat_claims(attest_result, switch_claims_list, nonce, hwmodel, ueid, attestation_warnings):
+    def create_detached_eat_claims(attest_result: bool, switch_claims_list: List[Any], nonce: str, hwmodel: str, ueid: str, attestation_warnings: List[str]):
+        """Utility method to create detached EAT claims for a specific attestation token.
+
+        Args:
+            attest_result (bool): Represents overall attestation result.
+            switch_claims_list (list): List of Switch claims.
+            nonce (str): Nonce represented as string.
+            hwmodel (str): Hardware model.
+            ueid (str): Unique Entity Identifier
+            attestation_warnings (list): List of Attestation warning messages.
+
+        Returns:
+            list: Detached claims represented as a array.
+        """
         switch_detached_claims = []
         overall_encoded_claim_arr = ["JWT"]
         overall_claims = ClaimsUtils.get_overall_claims(nonce)
@@ -88,10 +100,10 @@ class ClaimsUtils:
             jwt.encode(switch_claims, 'secret', "HS256")
             switch_claims_dict[dict_key] = jwt.encode(switch_claims, 'secret', "HS256")
             switch_claims["eat_nonce"] = nonce
-            switch_claims["hwmodel"] = hwmodel[i]
-            switch_claims["ueid"] = str(ueid[i])
+            switch_claims["hwmodel"] = hwmodel[i] if i < len(hwmodel) else None
+            switch_claims["ueid"] = str(ueid[i]) if i < len(ueid) else ""
             switch_claims["iss"] = "LOCAL_SWITCH_VERIFIER"
-            if len(attestation_warnings) > 0 and attestation_warnings[i] is not "":
+            if i < len(attestation_warnings) and attestation_warnings[i]:
                 switch_claims["x-nvidia-attestation-warning"] = attestation_warnings[i]
             switch_claims_json = json.dumps(switch_claims)
             submods_dict[dict_key] = ["DIGEST", ["SHA256", hashlib.sha256(switch_claims_json.encode('utf-8')).hexdigest()]]

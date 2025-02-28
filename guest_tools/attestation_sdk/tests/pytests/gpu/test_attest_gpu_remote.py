@@ -200,18 +200,16 @@ class GPUAttestationTestRemote(TestCase):
 
     @patch("verifier.cc_admin.collect_gpu_evidence_remote")
     def test_gpu_remote_get_evidence(self, cc_admin):
-        ppcie_mode = True
         cc_admin.return_value = gpu_evidence_list
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_gpu_remote.get_evidence(nonce, ppcie_mode)
+        evidence_list = attest_gpu_remote.get_evidence(nonce, { 'ppcie_mode': True })
         self.assertEqual(len(evidence_list), 1)
 
     @patch("verifier.cc_admin.collect_gpu_evidence_remote")
     def test_gpu_remote_get_evidence_fails_due_to_driver_issue(self, cc_admin):
-        ppcie_mode = True
         cc_admin.side_effect = Exception("Driver issue encountered")
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_gpu_remote.get_evidence(nonce, ppcie_mode)
+        evidence_list = attest_gpu_remote.get_evidence(nonce, { 'ppcie_mode': True })
         self.assertEqual(len(evidence_list), 0)
 
     def test_build_payload(self):

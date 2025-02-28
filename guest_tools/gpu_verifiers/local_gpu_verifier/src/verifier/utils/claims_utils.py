@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -29,8 +29,7 @@
 #
 import hashlib
 from datetime import datetime, timedelta
-import os
-import secrets
+from typing import List, Any
 import string
 import uuid
 from urllib import request
@@ -99,18 +98,25 @@ class ClaimsUtils:
         return overallAttestationToken
 
     @staticmethod
-    def create_detached_eat_claims(attest_result: bool, gpu_claims_list, nonce, hwmodel, oemid, ueid, driver_warnings, vbios_warnings):
-        """Utility method to create detached EAT claims for a specific attestation token
+    def create_detached_eat_claims(attest_result: bool, gpu_claims_list: List[Any], nonce: str, hwmodel: str, oemid: str, ueid: str, driver_warnings: List[str], vbios_warnings: List[str]):
 
-               Args:
-                   attest_result : boolean representing overall attestation result
-                   gpu_claims_list: list of GPU claims
+        """Utility method to create detached EAT claims for a specific attestation token.
 
-               Returns:
-                   dict representing the detached EAT claims
+        Args:
+            attest_result (bool): Represents overall attestation result.
+            gpu_claims_list (list): List of GPU claims.
+            nonce (str): Nonce represented as string.
+            hwmodel (str): Hardware model.
+            oemid (str): OEM identifier.
+            ueid (str): Unique Entity Identifier
+            driver_warnings (list): List of driver-related warnings captured during Attestation.
+            vbios_warnings (list): List of vBIOS-related warnings captured during Attestation.
+
+        Returns:
+            list: Detached claims represented as a array.
         """
-        gpu_detached_claims = []
 
+        gpu_detached_claims = []
         overall_encoded_claim_arr = []
         overall_encoded_claim_arr.append("JWT")
         overall_claims = ClaimsUtils.get_overall_claims(nonce)
@@ -123,13 +129,13 @@ class ClaimsUtils:
             dict_key = "GPU-" + str(i)
             jwt.encode(gpu_claims, 'secret', "HS256")
             gpu_claims["eat_nonce"] = nonce
-            gpu_claims["hwmodel"] = hwmodel[i]
-            gpu_claims["ueid"] = str(ueid[i])
-            gpu_claims["oemid"] = oemid[i]
+            gpu_claims["hwmodel"] = hwmodel[i] if i < len(hwmodel) else None
+            gpu_claims["ueid"] = str(ueid[i]) if i < len(ueid) else ""
+            gpu_claims["oemid"] = oemid[i] if i < len(oemid) else None
             gpu_claims["iss"] = "LOCAL_GPU_VERIFIER"
-            if len(driver_warnings) > 0 and driver_warnings[i] is not "":
+            if i < len(driver_warnings) and driver_warnings[i]:
                 warning = driver_warnings[i]
-            if len(vbios_warnings) > 0 and vbios_warnings[i] is not "":
+            if i < len(vbios_warnings) and vbios_warnings[i]:
                 warning += " " + vbios_warnings[i]
             if warning is not "":
                 gpu_claims["x-nvidia-attestation-warning"] = warning

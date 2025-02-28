@@ -25,7 +25,7 @@ from .src.utils.status import Status
 from .src.topology.validate_topology import TopologyValidation
 from .src.nvml.nvml_client import NvmlClient
 from .src.utils.logging import setup_logging, get_logger
-from .src.utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, REMOTE_NVSWITCH_VERIFIER_SERVICE_URL
+from .src.utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, REMOTE_NVSWITCH_VERIFIER_SERVICE_URL, RIM_SERVICE_URL, OCSP_SERVICE_URL
 
 parser = argparse.ArgumentParser()
 logger = setup_logging()
@@ -65,6 +65,22 @@ def verification():
                  "is held. The default value is False",
             action="store_true"
         )
+        parser.add_argument(
+            "--ocsp-nonce-disabled",
+            help="Disable using a nonce when calling OCSP",
+            action="store_true",
+        )
+        parser.add_argument(
+            "--ocsp-url",
+            help="The URL to be used for checking the revocation status of a certificate",
+            type=str,
+        )
+        parser.add_argument(
+            "--rim-url",
+            help="The URL to be used for fetching driver and VBIOS RIM files",
+            type=str,
+        )
+
         args = vars(parser.parse_args())
         logger = get_logger(args["log"])
 
@@ -93,11 +109,11 @@ def verification():
             )
             if status.switch_pre_checks is True:
                 status, gpu_attestation_report = perform_gpu_attestation(
-                    args["gpu_attestation_mode"], logger, status
+                    logger, status, args
                 )
                 if status.gpu_attestation is True:
                     status, switch_attestation_report = perform_switch_attestation(
-                        args["switch_attestation_mode"], logger, status
+                        logger, status, args
                     )
                     if status.switch_attestation is True:
                         topology = TopologyValidation()
@@ -197,29 +213,33 @@ def generate_nonce():
     return random_bytes.hex()
 
 
-def perform_gpu_attestation(attestation_mode, logger, status):
+def perform_gpu_attestation(logger, status, args):
     """
     This function performs the GPU attestation.
 
     Args:
-        attestation_mode (str): Configurable GPU attestation mode as LOCAL or REMOTE.
         :param logger:
         :param status:
+        :param args: Dictionary of arguments to perform GPU attestation
     """
     try:
         logger.debug("PPCIE: Calling Attestation SDK to attest the GPUs")
+        attestation_mode = args["gpu_attestation_mode"]
         client = attestation.Attestation()
         client.set_nonce(generate_nonce())
         client.set_name("HGX-node")
+        client.set_ocsp_nonce_disabled(args["ocsp_nonce_disabled"])
         logger.debug("PPCIE: Node name: %s", client.get_name())
         client.add_verifier(
-            attestation.Devices.GPU,
-            attestation.Environment[attestation_mode],
-            REMOTE_GPU_VERIFIER_SERVICE_URL,
-            "",
+            dev=attestation.Devices.GPU,
+            env=attestation.Environment[attestation_mode],
+            url=REMOTE_GPU_VERIFIER_SERVICE_URL,
+            evidence="",
+            ocsp_url=args.get("ocsp_url") or OCSP_SERVICE_URL,
+            rim_url=args.get("rim_url") or RIM_SERVICE_URL,
         )
         logger.debug("PPCIE: Collecting evidences for the GPU")
-        evidence_list = client.get_evidence(ppcie_mode=False)
+        evidence_list = client.get_evidence(options={"ppcie_mode": False})
         gpu_attestation_report = []
 
         # Appending the gpu attestation report in hex format
@@ -293,29 +313,33 @@ def validate_gpu_pre_checks(nvml_client, logger, status):
     return status
 
 
-def perform_switch_attestation(switch_attestaion_mode, logger, status):
+def perform_switch_attestation(logger, status, args):
     """
     This function performs the switch attestation.
 
     Args:
-        switch_attestaion_mode (str): Configurable switch attestation mode as LOCAL or REMOTE.
         :param status:
         :param logger:
+        :param args: Dictionary of arguments to perform GPU attestation
     """
     try:
         logger.debug("PPCIE: Calling Attestation SDK to attest the Switches")
+        switch_attestation_mode = args["switch_attestation_mode"]
         switch_attester = attestation.Attestation()
         switch_attester.set_name("HGX-node")
         switch_attester.set_nonce(generate_nonce())
+        switch_attester.set_ocsp_nonce_disabled(args["ocsp_nonce_disabled"])
         logger.debug("PPCIE: Node name: %s", switch_attester.get_name())
         switch_attester.add_verifier(
-            attestation.Devices.SWITCH,
-            attestation.Environment[switch_attestaion_mode],
-            REMOTE_NVSWITCH_VERIFIER_SERVICE_URL,
-            "",
+            dev=attestation.Devices.SWITCH,
+            env=attestation.Environment[switch_attestation_mode],
+            url=REMOTE_NVSWITCH_VERIFIER_SERVICE_URL,
+            evidence="",
+            ocsp_url=args.get("ocsp_url") or OCSP_SERVICE_URL,
+            rim_url=args.get("rim_url") or RIM_SERVICE_URL,
         )
         switch_attestation_report = []
-        evidence_list = switch_attester.get_evidence(ppcie_mode=False)
+        evidence_list = switch_attester.get_evidence(options={"ppcie_mode": False})
         for evidence in evidence_list:
             if isinstance(evidence, NVSwitch):
                 # Process nvmlhandler object when LOCAL attestation
@@ -339,7 +363,7 @@ def perform_switch_attestation(switch_attestaion_mode, logger, status):
         else:
             status.switch_attestation = False
         logger.info("PPCIE: Switch attestation result is %s", attestation_result)
-        file = "data/NVSwitch" + switch_attestaion_mode.capitalize() + "Policy.json"
+        file = "data/NVSwitch" + switch_attestation_mode.capitalize() + "Policy.json"
         with open(
                 os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
         ) as json_file:

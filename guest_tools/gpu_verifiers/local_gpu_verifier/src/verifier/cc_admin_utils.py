@@ -43,7 +43,7 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.hashes import SHA384
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.exceptions import InvalidSignature
-from cryptography.x509 import ocsp, OCSPNonce
+from cryptography.x509 import ocsp, OCSPNonce, ExtensionNotFound
 from cryptography import x509
 
 from verifier.attestation import AttestationReport
@@ -218,9 +218,13 @@ class CcAdminUtils:
         for i in range(start_index, end_index):
             request_builder = ocsp.OCSPRequestBuilder()
             request_builder = request_builder.add_certificate(cert_chain[i], cert_chain[i + 1], SHA384())
-            nonce  = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES)
-            request_builder = request_builder.add_extension(extval = OCSPNonce(nonce),
+            # Fetch OCSP Response from OCSP Service
+
+            if not BaseSettings.OCSP_NONCE_DISABLED:
+                nonce = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES)
+                request_builder = request_builder.add_extension(extval = OCSPNonce(nonce),
                                                             critical = True)
+                
             request = request_builder.build()
             # Making the network call in a separate thread.
             ocsp_response = function_wrapper_with_timeout([CcAdminUtils.send_ocsp_request,
@@ -255,12 +259,16 @@ class CcAdminUtils:
             elif i == end_index - 1:
                 info_log.debug("\t\tGPU Certificate OCSP Signature is verified")
 
-            if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
-                info_log.error("\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
-                return False, gpu_attestation_warning
-            elif i == end_index - 1:
-                info_log.debug("\t\tGPU Certificate OCSP Nonce is matching")
-
+            try:
+                if not BaseSettings.OCSP_NONCE_DISABLED:
+                    if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
+                        info_log.error("\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
+                        return False, gpu_attestation_warning
+                    elif i == end_index - 1:
+                        info_log.debug("\t\tGPU Certificate OCSP Nonce is matching")
+            except ExtensionNotFound:
+                    info_log.error("\t\tOCSP response does not contain a nonce extension. If OCSP nonce validation is not required in your environment, consider disabling the nonce check.")
+                    return False, gpu_attestation_warning
             if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
                 info_log.error("\t\tCouldn't receive a proper response from the OCSP server.")
                 return False, gpu_attestation_warning

@@ -14,7 +14,7 @@ from nv_attestation_sdk.utils.logging_config import get_logger
 logger = get_logger()
 
 
-def get_evidence(nonce, ppcie_mode: bool):
+def get_evidence(nonce, options):
     """
     A function that fetches evidence for NvSwitch to perform local attestation.
 
@@ -25,6 +25,8 @@ def get_evidence(nonce, ppcie_mode: bool):
     list: A list of evidence for NvSwitch.
     """
     try:
+        ppcie_mode = options.get("ppcie_mode")
+
         logger.debug("Fetching evidence for NvSwitch to perform local attestation")
         switch_evidence_list = nvswitch_admin.collect_evidence(nonce, ppcie_mode=ppcie_mode)
         logger.debug("Evidence list for NvSwitch %s", switch_evidence_list)
@@ -34,12 +36,13 @@ def get_evidence(nonce, ppcie_mode: bool):
     return []
 
 
-def attest(nonce: str, evidence_list):
+def attest(nonce: str, evidence_list, attestation_options):
     """Attest a device locally
 
     Args:
         evidence_list:
         nonce (str): Nonce as hex string
+        attestation_options (dict): Arguments with which to perform attestation 
 
     Returns:
         Attestation result and JWT token
@@ -54,10 +57,11 @@ def attest(nonce: str, evidence_list):
             "vbios_rim": None,
             "user_mode": True,
             "rim_root_cert": None,
-            "rim_service_url": RIM_SERVICE_URL,
+            "rim_service_url": attestation_options.get("rim_service_url") or RIM_SERVICE_URL,
             "allow_hold_cert": get_allow_hold_cert(),
-            "ocsp_url": OCSP_SERVICE_URL,
+            "ocsp_url": attestation_options.get("ocsp_url") or OCSP_SERVICE_URL,
             "nonce": nonce,
+            'ocsp_nonce_disabled': attestation_options.get("ocsp_nonce_disabled") or False
         }
         attestation_result, jwt_token = nvswitch_admin.attest(
             params, nonce, evidence_list
