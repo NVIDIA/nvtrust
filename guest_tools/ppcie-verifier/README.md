@@ -1,14 +1,19 @@
 # Protected PCIE Verifier 
-``````markdown
-   - Overview 
-   - Architecture diagram
-   - Getting Started
-      - Prerequisites
-      - Installation
-      - Usage
-      - Troubleshooting
-   - License
-``````
+- [Protected PCIE Verifier](#protected-pcie-verifier)
+  - [Overview](#overview)
+  - [High-Level Architecture Diagram](#high-level-architecture-diagram)
+    - [Detailed Architecture Flow](#detailed-architecture-flow)
+  - [Getting started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Installation/Dependencies](#installationdependencies)
+    - [Usage](#usage)
+      - [Options](#options)
+  - [Troubleshooting](#troubleshooting)
+    - [Installation Issues:](#installation-issues)
+    - [Configuration Issues](#configuration-issues)
+  - [License](#license)
+  - [Support](#support)
+
 ## Overview 
 In a multi-GPU confidential computing (CC) setup, NVLink interconnects and NVSwitches are used for GPU to GPU data traffic. NVLink interconnects and NVSwitches are outside the trust boundary and thus should not allow access to plain-text data. All data that flows over NVLink must be encrypted prior to transfer and decrypted at the destination GPU. On the GPU encryption and decryption is performed by the GPU copy engine (CE).
 
@@ -49,7 +54,6 @@ Following the attestation process, the tool conducts a final topology check to v
 16. The final attestation results are presented to the user, detailing the checks performed and the status of each device in the system.
 
 ## Getting started
-
 ### Prerequisites
     HGX system with 8 GPUs and 4 switches assigned to the single tenant
     python >= 3.8
@@ -121,4 +125,9 @@ Please execute the following commands to clean up packages that were not install
     **Solution**: This requires installing the correct version of the Nvidia Switch driver compatible with the GPU driver
 
 ## License
-The license for this repository is Apache v2 except where otherwise noted.
+This repository is licensed under Apache License v2.0 except where otherwise noted.
+
+Users who use NVIDIA Attestation Cloud Services or the NVIDIA Trust software components, without an Enterprise Product license may exercise the software and services solely for the purposes of development of a confidential computing service, not a commercial offering/ redistribution. A commercial Enterprise Product license must be obtained before offering the software within a paid commercial service.
+
+## Support
+For issues or questions, please [file a bug](https://github.com/NVIDIA/nvtrust/issues). For additional support, contact us at [attestation-support@nvidia.com](mailto:attestation-support@nvidia.com)

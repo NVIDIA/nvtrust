@@ -21,6 +21,8 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
   - [Attestation SDK APIs](#attestation-sdk-apis)
   - [Attestation SDK configuration](#attestation-sdk-configuration)
   - [Note](#note)
+  - [License](#license)
+  - [Support](#support)
 
 ## Features
 
@@ -165,3 +167,11 @@ NV_ALLOW_HOLD_CERT       | true/false       | Enable attestation if the OCSP rev
 
 ## Note
 Please note that starting from nvTrust v1.5.0, the NRAS v1 API and Relying Party Policy version 1.0 have been deprecated. Additionally, installation via wheel files will no longer be supported from v1.5.0 onward.
+
+## License
+This repository is licensed under Apache License v2.0 except where otherwise noted.
+
+Users who use NVIDIA Attestation Cloud Services or the NVIDIA Trust software components, without an Enterprise Product license may exercise the software and services solely for the purposes of development of a confidential computing service, not a commercial offering/ redistribution. A commercial Enterprise Product license must be obtained before offering the software within a paid commercial service.
+
+## Support
+For issues or questions, please [file a bug](https://github.com/NVIDIA/nvtrust/issues). For additional support, contact us at [attestation-support@nvidia.com](mailto:attestation-support@nvidia.com)
