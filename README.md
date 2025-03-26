@@ -23,3 +23,9 @@ For more information, including documentation, white papers, and videos regardin
 ## License
 
 This repository is licensed under Apache License v2.0 except where otherwise noted.
+
+Please note that users who use Software with NVIDIA Attestation Cloud Services or the NVIDIA Trust without an Enterprise Product license may exercise the software solely for the purposes of developing a confidential computing service, not a commercial offering. A commercial Enterprise Product license must be obtained before offering within a paid commercial service.
+
+## Support
+
+For issues or questions, please [file a bug](https://github.com/NVIDIA/nvtrust/issues). For additional support, contact us at [attestation-support@nvidia.com](mailto:attestation-support@nvidia.com)
