@@ -282,3 +282,8 @@ class InvalidNonceError(Error):
     """ It is raised if user specified Nonce is not 32 bytes in length.
     """
     pass
+
+class InvalidClaimsVersionError(Error):
+    """ It is raised when the claims version is not supported.
+    """
+    pass

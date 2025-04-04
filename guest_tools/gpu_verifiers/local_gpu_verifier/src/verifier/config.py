@@ -1,7 +1,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -70,52 +70,26 @@ class BaseSettings:
     MAX_NETWORK_TIME_DELAY = 10
     OCSP_URL = os.getenv('NV_OCSP_URL', 'https://ocsp.ndis.nvidia.com/')
     OCSP_NONCE_DISABLED = False
+    CLAIMS_VERSION = "2.0"
     OCSP_HASH_FUNCTION = sha384
     RIM_SERVICE_BASE_URL = os.getenv('NV_RIM_URL', 'https://rim.attestation.nvidia.com/v1/rim/')
     Certificate_Chain_Verification_Mode = Enum("CERT CHAIN VERIFICATION MODE",
                                                ['GPU_ATTESTATION', 'OCSP_RESPONSE', 'DRIVER_RIM_CERT',
                                                 'VBIOS_RIM_CERT'])
     NVDEC_STATUS = Enum("NVDEC0 status", [("ENABLED", 0xAA), ("DISABLED", 0x55)])
+    class Status(Enum):
+        VALID = "valid"
+        INVALID = "invalid"
+        REVOKED = "revoked"
+        EXPIRED = "expired"
     INDEX_OF_IK_CERT = 1
     SKU = "PROD"
     claims = {}
     allow_hold_cert = False
+    service_key = None
     ROOT_CERT_DIR = os.path.join(parent_dir, "certs")
     RIM_ROOT_CERT = os.path.join(ROOT_CERT_DIR, 'verifier_RIM_root.pem')
     DEVICE_ROOT_CERT = os.path.join(ROOT_CERT_DIR, 'verifier_device_root.pem')
-
-    EXECUTION_SEQUENCE_INDEX = {
-        'GPU_AVAILABILITY': 0,
-        'ATTESTATION_REPORT_AVAILABILITY': 1,
-        'GPU_INFO_FETCH': 2,
-        'CORRECT_GPU_ARCH': 3,
-        'ROOT_CERT_AVAILABILITY': 4,
-        'GPU_CERT_CHAIN_VERIFIED': 5,
-        'GPU_CERT_OCSP_CERT_CHAIN_VERIFICATION': 6,
-        'GPU_CERT_OCSP_SIGNATURE_VERIFICATION': 7,
-        'GPU_CERT_OCSP_NONCE_MATCH': 8,
-        'GPU_CERT_CHECK_COMPLETE': 9,
-        'ATTESTATION_REPORT_MSR_AVAILABILITY': 10,
-        'ATTESTATION_REPORT_PARSED': 11,
-        'NONCE_MATCH': 12,
-        'ATTESTATION_REPORT_DRV_VERSION_MATCH': 13,
-        'ATTESTATION_REPORT_VBIOS_VERSION_MATCH': 14,
-        'ATTESTATION_REPORT_VERIFICATION': 15,
-        'DRIVER_RIM_FETCH': 16,
-        'DRIVER_RIM_MEASUREMENT_AVAILABILITY': 17,
-        'DRIVER_RIM_SCHEMA_VALIDATION': 18,
-        'DRIVER_RIM_VERSION_MATCH': 19,
-        'DRIVER_RIM_CERT_EXTRACT': 20,
-        'DRIVER_RIM_SIGNATURE_VERIFICATION': 21,
-        'VBIOS_RIM_FETCH': 22,
-        'VBIOS_RIM_MEASUREMENT_AVAILABILITY': 23,
-        'VBIOS_RIM_SCHEMA_VALIDATION': 24,
-        'VBIOS_RIM_VERSION_MATCH': 25,
-        'VBIOS_RIM_CERT_EXTRACT': 26,
-        'VBIOS_RIM_SIGNATURE_VERIFICATION': 27,
-        'DRV_VBIOS_MSR_INDEX_CONFLICT': 28,
-        'MEASUREMENT_MATCH': 29,
-    }
 
     @classmethod
     def set_ocsp_url(cls, url):
@@ -136,6 +110,12 @@ class BaseSettings:
         if not url.endswith('/'):
             url += '/'
         cls.RIM_SERVICE_BASE_URL = url
+
+    @classmethod
+    def set_service_key(cls, service_key):
+        if not isinstance(service_key, str):
+            raise ValueError("Incorrect data type for the service_key.")
+        cls.service_key = service_key
 
     @classmethod
     def get_sku(cls):
@@ -164,62 +144,185 @@ class BaseSettings:
         cls.NONCE = nonce
 
     def __init__(self):
-        self.measurement_comparison = False
-        self.gpu_arch_is_correct = False
-        self.attestation_report_measurements_availability = False
-        self.gpu_info_fetch = False
-        self.gpu_cert_chain_verification = False
-        self.root_cert_availability = False
-        self.attestation_report_verification = False
-        self.parse_attestation_report = False
-        self.nonce_comparison = False
-        self.attestation_report_driver_version_match = False
-        self.attestation_report_vbios_version_match = False
-        self.rim_driver_version_match = False
-        self.rim_vbios_version_match = False
-        self.rim_driver_measurements_availability = False
-        self.rim_vbios_measurements_availability = False
-        self.driver_rim_schema_validation = False
-        self.vbios_rim_schema_validation = False
-        self.driver_rim_signature_verification = False
-        self.vbios_rim_signature_verification = False
-        self.driver_rim_certificate_extraction = False
-        self.vbios_rim_certificate_extraction = False
-        self.fetch_driver_rim = False
-        self.fetch_vbios_rim = False
-        self.no_driver_vbios_measurement_index_conflict = False
-        self.gpu_certificate_ocsp_nonce_match = False
-        self.gpu_certificate_ocsp_signature_verification = False
-        self.gpu_certificate_ocsp_cert_chain_verification = False
-        self.gpu_cert_check_complete = False
-        self.gpu_attestation_report_cert_chain_validated = False
-        self.driver_rim_certificate_validated = False
-        self.vbios_rim_certificate_validated = False
-        self.attestation_report_signature_verification = False
-        self.gpu_driver_version = ""
-        self.gpu_vbios_version = ""
+        self.measurement_comparison = None
+        self.gpu_arch_is_correct = None
+        self.parse_attestation_report = None
+        self.nonce_comparison = None
+        self.attestation_report_driver_version_match = None
+        self.attestation_report_vbios_version_match = None
+        self.gpu_driver_rim_version_matched = None
+        self.gpu_vbios_rim_version_matched = None
+        self.rim_driver_measurements_availability = None
+        self.rim_vbios_measurements_availability = None
+        self.gpu_driver_rim_schema_validated = None
+        self.gpu_vbios_rim_schema_validated = None
+        self.gpu_driver_rim_signature_verified = None
+        self.gpu_vbios_rim_signature_verified = None
+        self.fetch_driver_rim = None
+        self.fetch_vbios_rim = None
+        self.no_driver_vbios_measurement_index_conflict = None
+        self.gpu_attestation_report_cert_chain_validated = None
+        self.attestation_report_signature_verification = None
+        self.gpu_driver_version = None
+        self.gpu_vbios_version = None
+        self.gpu_attestation_report_cert_chain_fwid_matched = None
+        self.gpu_driver_rim_cert_chain_validated = None
+        self.gpu_vbios_rim_cert_chain_validated = None
+        self.gpu_attestation_report_cert_expiration_date = None
+        self.gpu_driver_rim_cert_expiration_date = None
+        self.gpu_vbios_rim_cert_expiration_date = None
+        self.gpu_attestation_report_cert_revocation_reason = None
+        self.gpu_driver_rim_cert_revocation_reason = None
+        self.gpu_vbios_rim_cert_revocation_reason = None
+        self.gpu_attestation_report_cert_ocsp_status = None
+        self.gpu_driver_rim_cert_ocsp_status = None
+        self.gpu_vbios_rim_cert_ocsp_status = None
+        self.gpu_attestation_report_cert_status = None
+        self.gpu_driver_rim_cert_status = None
+        self.gpu_vbios_rim_cert_status = None
 
     @classmethod
-    def mark_attestation_report_as_available(cls):
+    def mark_attestation_report_as_available(cls, flag=True):
         event_log.debug("mark_attestation_report_as_available called.")
-        cls.attestation_report_availability = True
+        cls.attestation_report_availability = flag
 
     def check_if_gpu_attestation_report_cert_chain_validated(self):
         event_log.debug(
             f"check_if_gpu_attestation_report_cert_chain_validated: {self.gpu_attestation_report_cert_chain_validated}")
         return self.gpu_attestation_report_cert_chain_validated
 
-    def mark_gpu_attestation_report_cert_chain_validated(self):
+    def mark_gpu_attestation_report_cert_chain_validated(self, flag=True):
         event_log.debug("mark_gpu_attestation_report_cert_chain_validated called")
-        self.gpu_attestation_report_cert_chain_validated = True
+        self.gpu_attestation_report_cert_chain_validated = flag
+
+    def check_gpu_attestation_report_cert_status(self):
+        event_log.debug(f"check_gpu_attestation_report_cert_status called.{self.gpu_attestation_report_cert_status}")
+        return self.gpu_attestation_report_cert_status
+
+    def mark_gpu_attestation_report_cert_status(self, cert_status):
+        event_log.debug("mark_gpu_attestation_report_cert_status called.")
+        self.gpu_attestation_report_cert_status = cert_status
+
+    def check_gpu_driver_rim_cert_status(self):
+        event_log.debug(f"check_gpu_driver_rim_cert_status called.{self.gpu_driver_rim_cert_status}")
+        return self.gpu_driver_rim_cert_status
+
+    def mark_gpu_driver_rim_cert_status(self, cert_status):
+        event_log.debug("mark_gpu_driver_rim_cert_status called.")
+        self.gpu_driver_rim_cert_status = cert_status
+
+    def check_gpu_vbios_rim_cert_status(self):
+        event_log.debug(f"check_gpu_vbios_rim_cert_status called.{self.gpu_vbios_rim_cert_status}")
+        return self.gpu_vbios_rim_cert_status
+
+    def mark_gpu_vbios_rim_cert_status(self, cert_status):
+        event_log.debug("mark_gpu_vbios_rim_cert_status called.")
+        self.gpu_vbios_rim_cert_status = cert_status
+
+    def check_gpu_attestation_report_cert_revocation_reason(self):
+        event_log.debug(f"check_gpu_attestation_report_cert_revocation_reason called.{self.gpu_attestation_report_cert_revocation_reason}")
+        return self.gpu_attestation_report_cert_revocation_reason
+
+    def mark_gpu_attestation_report_cert_revocation_reason(self, revocation_reason):
+        event_log.debug("mark_gpu_attestation_report_cert_revocation_reason called.")
+        self.gpu_attestation_report_cert_revocation_reason = revocation_reason
+
+    def check_gpu_driver_rim_cert_revocation_reason(self):
+        event_log.debug(f"check_gpu_driver_rim_cert_revocation_reason called.{self.gpu_driver_rim_cert_revocation_reason}")
+        return self.gpu_driver_rim_cert_revocation_reason
+
+    def mark_gpu_driver_rim_cert_revocation_reason(self, revocation_reason):
+        event_log.debug("mark_gpu_driver_rim_cert_revocation_reason called.")
+        self.gpu_driver_rim_cert_revocation_reason = revocation_reason
+
+    def check_gpu_vbios_rim_cert_revocation_reason(self):
+        event_log.debug(f"check_gpu_vbios_rim_cert_revocation_reason called.{self.gpu_vbios_rim_cert_revocation_reason}")
+        return self.gpu_vbios_rim_cert_revocation_reason
+
+    def mark_gpu_vbios_rim_cert_revocation_reason(self, revocation_reason):
+        event_log.debug("mark_gpu_vbios_rim_cert_revocation_reason called.")
+        self.gpu_vbios_rim_cert_revocation_reason = revocation_reason
+
+    def check_gpu_attestation_report_cert_ocsp_status(self):
+        event_log.debug(f"check_gpu_attestation_report_cert_ocsp_status: {self.gpu_attestation_report_cert_ocsp_status}")
+        return self.gpu_attestation_report_cert_ocsp_status
+
+    def mark_gpu_attestation_report_cert_ocsp_status(self, ocsp_status):
+        event_log.debug("mark_gpu_attestation_report_cert_ocsp_status called.")
+        self.gpu_attestation_report_cert_ocsp_status = ocsp_status
+
+    def check_gpu_driver_rim_cert_ocsp_status(self):
+        event_log.debug(f"check_gpu_driver_rim_cert_ocsp_status: {self.gpu_driver_rim_cert_ocsp_status}")
+        return self.gpu_driver_rim_cert_ocsp_status
+
+    def mark_gpu_driver_rim_cert_ocsp_status(self, ocsp_status):
+        event_log.debug("mark_gpu_driver_rim_cert_ocsp_status called.")
+        self.gpu_driver_rim_cert_ocsp_status = ocsp_status
+
+    def check_gpu_vbios_rim_cert_ocsp_status(self):
+        event_log.debug(f"check_gpu_vbios_rim_cert_ocsp_status: {self.gpu_vbios_rim_cert_ocsp_status}")
+        return self.gpu_vbios_rim_cert_ocsp_status
+
+    def mark_gpu_vbios_rim_cert_ocsp_status(self, ocsp_status):
+        event_log.debug("mark_gpu_vbios_rim_cert_ocsp_status called.")
+        self.gpu_vbios_rim_cert_ocsp_status = ocsp_status
+
+    def check_if_gpu_driver_rim_cert_chain_validated(self):
+        event_log.debug(f"check_if_gpu_driver_rim_cert_chain_validated: {self.gpu_driver_rim_cert_chain_validated}")
+        return self.gpu_driver_rim_cert_chain_validated
+
+    def mark_gpu_driver_rim_cert_chain_validated(self, flag=True):
+        event_log.debug("mark_gpu_driver_rim_cert_chain_validated called")
+        self.gpu_driver_rim_cert_chain_validated = flag
+
+    def check_if_gpu_vbios_rim_cert_chain_validated(self):
+        event_log.debug(f"check_if_gpu_vbios_rim_cert_chain_validated: {self.gpu_vbios_rim_cert_chain_validated}")
+        return self.gpu_vbios_rim_cert_chain_validated
+
+    def mark_gpu_vbios_rim_cert_chain_validated(self, flag=True):
+        event_log.debug("mark_gpu_vbios_rim_cert_chain_validated called")
+        self.gpu_vbios_rim_cert_chain_validated = flag
+
+    def check_gpu_attestation_report_cert_expiration_date(self):
+        event_log.debug(f"check_gpu_attestation_report_cert_expiration_date called.{self.gpu_attestation_report_cert_expiration_date}")
+        return self.gpu_attestation_report_cert_expiration_date
+
+    def mark_gpu_attestation_report_cert_expiration_date(self, expiration_date):
+        event_log.debug("mark_gpu_attestation_report_cert_expiration_date called.")
+        self.gpu_attestation_report_cert_expiration_date = expiration_date
+
+    def check_gpu_driver_rim_cert_expiration_date(self):
+        event_log.debug(f"check_gpu_driver_rim_cert_expiration_date called.{self.gpu_driver_rim_cert_expiration_date}")
+        return self.gpu_driver_rim_cert_expiration_date
+
+    def mark_gpu_driver_rim_cert_expiration_date(self, expiration_date):
+        event_log.debug("mark_gpu_driver_rim_cert_expiration_date called.")
+        self.gpu_driver_rim_cert_expiration_date = expiration_date
+
+    def check_gpu_vbios_rim_cert_expiration_date(self):
+        event_log.debug(f"check_gpu_vbios_rim_cert_expiration_date called.{self.gpu_vbios_rim_cert_expiration_date}")
+        return self.gpu_vbios_rim_cert_expiration_date
+
+    def mark_gpu_vbios_rim_cert_expiration_date(self, expiration_date):
+        event_log.debug("mark_gpu_vbios_rim_cert_expiration_date called.")
+        self.gpu_vbios_rim_cert_expiration_date = expiration_date
+
+    def check_if_gpu_attestation_report_cert_chain_fwid_matched(self):
+        event_log.debug(
+            f"check_if_gpu_attestation_report_cert_chain_fwid_matched: {self.gpu_attestation_report_cert_chain_fwid_matched}")
+        return self.gpu_attestation_report_cert_chain_fwid_matched
+
+    def mark_gpu_attestation_report_cert_chain_fwid_matched(self, flag=True):
+        event_log.debug("mark_gpu_attestation_report_cert_chain_fwid_matched called")
+        self.gpu_attestation_report_cert_chain_fwid_matched = flag
 
     def check_if_attestation_report_signature_verified(self):
         event_log.debug(f"check_if_attestation_report_signature_verified: {self.attestation_report_signature_verification}")
         return self.attestation_report_signature_verification
 
-    def mark_attestation_report_signature_verified(self):
+    def mark_attestation_report_signature_verified(self, flag=True):
         event_log.debug("mark_attestation_report_signature_verified called")
-        self.attestation_report_signature_verification = True
+        self.attestation_report_signature_verification = flag
 
     def check_if_driver_rim_fetched(self):
         event_log.debug(f"check_if_driver_rim_fetched: {self.fetch_driver_rim}")
@@ -237,29 +340,29 @@ class BaseSettings:
         event_log.debug("mark_vbios_rim_fetched called.")
         self.fetch_vbios_rim = True
 
-    def check_if_driver_rim_signature_verified(self):
-        event_log.debug(f"check_if_driver_rim_signature_verified: {self.driver_rim_signature_verification}")
-        return self.driver_rim_signature_verification
+    def check_if_gpu_driver_rim_signature_verified(self):
+        event_log.debug(f"check_if_gpu_driver_rim_signature_verified: {self.gpu_driver_rim_signature_verified}")
+        return self.gpu_driver_rim_signature_verified
 
-    def mark_driver_rim_signature_verified(self):
-        event_log.debug("mark_driver_rim_signature_verified called.")
-        self.driver_rim_signature_verification = True
+    def mark_gpu_driver_rim_signature_verified(self, flag=True):
+        event_log.debug("mark_gpu_driver_rim_signature_verified called.")
+        self.gpu_driver_rim_signature_verified = flag
 
-    def check_if_vbios_rim_signature_verified(self):
-        event_log.debug(f"check_if_vbios_rim_signature_verified: {self.vbios_rim_signature_verification}")
-        return self.vbios_rim_signature_verification
+    def check_if_gpu_vbios_rim_signature_verified(self):
+        event_log.debug(f"check_if_gpu_vbios_rim_signature_verified: {self.gpu_vbios_rim_signature_verified}")
+        return self.gpu_vbios_rim_signature_verified
 
-    def mark_vbios_rim_signature_verified(self):
-        event_log.debug("mark_vbios_rim_signature_verified called.")
-        self.vbios_rim_signature_verification = True
+    def mark_gpu_vbios_rim_signature_verified(self, flag=True):
+        event_log.debug("mark_gpu_vbios_rim_signature_verified called.")
+        self.gpu_vbios_rim_signature_verified = flag
 
-    def check_if_driver_rim_schema_validated(self):
-        event_log.debug(f"check_if_driver_rim_schema_validated: {self.driver_rim_schema_validation}")
-        return self.driver_rim_schema_validation
+    def check_if_gpu_driver_rim_schema_validated(self):
+        event_log.debug(f"check_if_gpu_driver_rim_schema_validated: {self.gpu_driver_rim_schema_validated}")
+        return self.gpu_driver_rim_schema_validated
 
-    def mark_driver_rim_schema_validated(self):
-        event_log.debug("mark_driver_rim_schema_validated called.")
-        self.driver_rim_schema_validation = True
+    def mark_gpu_driver_rim_schema_validated(self, flag=True):
+        event_log.debug("mark_gpu_driver_rim_schema_validated called.")
+        self.gpu_driver_rim_schema_validated = flag
 
     def check_gpu_driver_version(self):
         event_log.debug(f"check_gpu_driver_version called.{self.gpu_driver_version}")
@@ -278,97 +381,73 @@ class BaseSettings:
         if vbios_version is not None:
             self.gpu_vbios_version = vbios_version.upper()
 
-    def check_if_vbios_rim_schema_validated(self):
-        event_log.debug(f"check_if_vbios_rim_schema_validated: {self.vbios_rim_schema_validation}")
-        return self.vbios_rim_schema_validation
+    def check_if_gpu_vbios_rim_schema_validated(self):
+        event_log.debug(f"check_if_gpu_vbios_rim_schema_validated: {self.gpu_vbios_rim_schema_validated}")
+        return self.gpu_vbios_rim_schema_validated
 
-    def mark_vbios_rim_schema_validated(self):
-        event_log.debug("mark_vbios_rim_schema_validated called.")
-        self.vbios_rim_schema_validation = True
+    def mark_gpu_vbios_rim_schema_validated(self, flag=True):
+        event_log.debug("mark_gpu_vbios_rim_schema_validated called.")
+        self.gpu_vbios_rim_schema_validated = flag
 
     def check_rim_driver_measurements_availability(self):
         event_log.debug(f"check_rim_driver_measurements_availability: {self.rim_driver_measurements_availability}")
         return self.rim_driver_measurements_availability
 
-    def mark_rim_driver_measurements_as_available(self):
+    def mark_rim_driver_measurements_as_available(self, flag=True):
         event_log.debug("mark_rim_driver_measurements_as_available called.")
-        self.rim_driver_measurements_availability = True
+        self.rim_driver_measurements_availability = flag
 
     def check_rim_vbios_measurements_availability(self):
         event_log.debug(f"check_rim_vbios_measurements_availability: {self.rim_vbios_measurements_availability}")
         return self.rim_vbios_measurements_availability
 
-    def mark_rim_vbios_measurements_as_available(self):
+    def mark_rim_vbios_measurements_as_available(self, flag=True):
         event_log.debug("mark_rim_vbios_measurements_as_available called.")
-        self.rim_vbios_measurements_availability = True
-
+        self.rim_vbios_measurements_availability = flag
 
     def check_if_measurements_are_matching(self):
-        if self.measurement_comparison:
+        if self.measurement_comparison is True:
             return "success"
-        else:
+        elif self.measurement_comparison is False:
             return "fail"
+        else:
+            return None
 
-    def mark_measurements_as_matching(self):
+    def mark_measurements_as_matching(self, flag=True):
         event_log.debug("mark_measurements_as_matching called.")
-        self.measurement_comparison = True
+        self.measurement_comparison = flag
 
+    def check_if_gpu_driver_rim_version_matched(self):
+        event_log.debug(f"check_if_gpu_driver_rim_version_matched: {self.gpu_driver_rim_version_matched}")
+        return self.gpu_driver_rim_version_matched
 
-    def check_if_rim_driver_version_matches(self):
-        event_log.debug(f"check_if_rim_driver_version_matches: {self.rim_driver_version_match}")
-        return self.rim_driver_version_match
+    def mark_gpu_driver_rim_version_matched(self, flag=True):
+        event_log.debug("mark_gpu_driver_rim_version_matched called.")
+        self.gpu_driver_rim_version_matched = flag
 
-    def mark_rim_driver_version_as_matching(self):
-        event_log.debug("mark_rim_driver_version_as_matching called.")
-        self.rim_driver_version_match = True
+    def check_if_gpu_vbios_rim_version_matched(self):
+        event_log.debug(f"check_if_gpu_vbios_rim_version_matched: {self.gpu_vbios_rim_version_matched}")
+        return self.gpu_vbios_rim_version_matched
 
-    def check_if_rim_vbios_version_matches(self):
-        event_log.debug(f"check_if_rim_vbios_version_matches: {self.rim_vbios_version_match}")
-        return self.rim_vbios_version_match
-
-    def mark_rim_vbios_version_as_matching(self):
-        event_log.debug("mark_rim_vbios_version_as_matching called.")
-        self.rim_vbios_version_match = True
-
-    def check_if_driver_rim_cert_validated(self):
-        event_log.debug(f"check_if_driver_rim_cert_validated: {self.driver_rim_certificate_validated}")
-        return self.driver_rim_certificate_validated
-
-    def mark_driver_rim_cert_validated_successfully(self):
-        event_log.debug("mark_driver_rim_cert_validatedd_successfully called.")
-        self.driver_rim_certificate_validated = True
-
-    def check_if_vbios_rim_cert_extracted(self):
-        event_log.debug(f"check_if_vbios_rim_cert_extracted: {self.vbios_rim_certificate_extraction}")
-        return self.vbios_rim_certificate_extraction
-
-    def mark_vbios_rim_cert_extracted_successfully(self):
-        event_log.debug("mark_vbios_rim_cert_extracted_successfully called.")
-        self.vbios_rim_certificate_extraction = True
-
-    def check_if_vbios_rim_cert_validated(self):
-        event_log.debug(f"check_if_vbios_rim_cert_extracted: {self.vbios_rim_certificate_validated}")
-        return self.vbios_rim_certificate_validated
-
-    def mark_vbios_rim_cert_validated_successfully(self):
-        event_log.debug("mark_vbios_rim_cert_validated_successfully called.")
-        self.vbios_rim_certificate_validated = True
+    def mark_gpu_vbios_rim_version_matched(self, flag=True):
+        event_log.debug("mark_gpu_vbios_rim_version_matched called.")
+        self.gpu_vbios_rim_version_matched = flag
 
     def check_if_gpu_arch_is_correct(self):
         event_log.debug(f"check_if_gpu_arch_is_correct: {self.gpu_arch_is_correct}")
         return self.gpu_arch_is_correct
 
-    def mark_gpu_arch_is_correct(self):
+    def mark_gpu_arch_is_correct(self, flag=True):
         event_log.debug("mark_gpu_arch_is_correct called.")
-        self.gpu_arch_is_correct = True
+        self.gpu_arch_is_correct = flag
 
     def check_if_nonce_are_matching(self):
         event_log.debug(f"check_if_nonce_are_matching: {self.nonce_comparison}")
         return self.nonce_comparison
 
-    def mark_nonce_as_matching(self):
+    def mark_nonce_as_matching(self, flag=True):
         event_log.debug("mark_nonce_as_matching called.")
-        self.nonce_comparison = True
+        self.nonce_comparison = flag
 
     def check_if_attestation_report_parsed_successfully(self):
         event_log.debug(f"check_if_attestation_report_parsed_successfully: {self.parse_attestation_report}")
@@ -383,44 +462,59 @@ class BaseSettings:
             f"check_if_attestation_report_driver_version_matches: {self.attestation_report_driver_version_match}")
         return self.attestation_report_driver_version_match
 
-    def mark_attestation_report_driver_version_as_matching(self):
+    def mark_attestation_report_driver_version_as_matching(self, flag=True):
         event_log.debug("mark_attestation_report_driver_version_as_matching called.")
-        self.attestation_report_driver_version_match = True
+        self.attestation_report_driver_version_match = flag
 
     def check_if_attestation_report_vbios_version_matches(self):
         event_log.debug(
             f"check_if_attestation_report_vbios_version_matches: {self.attestation_report_vbios_version_match}")
         return self.attestation_report_vbios_version_match
 
-    def mark_attestation_report_vbios_version_as_matching(self):
+    def mark_attestation_report_vbios_version_as_matching(self, flag=True):
         event_log.debug("mark_attestation_report_vbios_version_as_matching called.")
-        self.attestation_report_vbios_version_match = True
+        self.attestation_report_vbios_version_match = flag
 
     def check_if_no_driver_vbios_measurement_index_conflict(self):
-        event_log.debug(
-            f"check_if_no_driver_vbios_measurement_index_conflict: {self.no_driver_vbios_measurement_index_conflict}")
+        event_log.debug(f"check_if_no_driver_vbios_measurement_index_conflict: {self.no_driver_vbios_measurement_index_conflict}")
         return self.no_driver_vbios_measurement_index_conflict
 
-    def mark_no_driver_vbios_measurement_index_conflict(self):
+    def mark_no_driver_vbios_measurement_index_conflict(self, flag=True):
         event_log.debug("mark_no_driver_vbios_measurement_conflict called.")
-        self.no_driver_vbios_measurement_index_conflict = True
+        self.no_driver_vbios_measurement_index_conflict = flag
 
     def check_status(self):
         if self.check_if_gpu_arch_is_correct() and \
                 self.check_if_gpu_attestation_report_cert_chain_validated() and \
                 self.check_if_attestation_report_parsed_successfully() and \
                 self.check_if_nonce_are_matching() and \
+                ((self.check_gpu_attestation_report_cert_status() == 'valid') or
+                 (BaseSettings.allow_hold_cert and self.check_gpu_attestation_report_cert_status() == 'revoked' and self.check_gpu_attestation_report_cert_revocation_reason() == 'certificate_hold')) and \
+                ((self.check_gpu_attestation_report_cert_ocsp_status() == 'good') or
+                 (BaseSettings.allow_hold_cert and self.check_gpu_attestation_report_cert_ocsp_status() == 'revoked' and self.check_gpu_attestation_report_cert_revocation_reason() == 'certificate_hold')) and \
                 self.check_if_attestation_report_driver_version_matches() and \
                 self.check_if_attestation_report_vbios_version_matches() and \
                 self.check_if_attestation_report_signature_verified() and \
+                self.check_if_gpu_attestation_report_cert_chain_fwid_matched and \
                 self.check_if_driver_rim_fetched() and \
-                self.check_if_driver_rim_schema_validated() and \
-                self.check_if_driver_rim_cert_validated() and \
-                self.check_if_driver_rim_signature_verified() and \
+                self.check_if_gpu_driver_rim_schema_validated() and \
+                self.check_if_gpu_driver_rim_cert_chain_validated() and \
+                ((self.check_gpu_driver_rim_cert_status() == 'valid') or
+                 (BaseSettings.allow_hold_cert and self.check_gpu_driver_rim_cert_status() == 'revoked' and self.check_gpu_driver_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                ((self.check_gpu_driver_rim_cert_ocsp_status() == 'good') or
+                 (BaseSettings.allow_hold_cert and self.check_gpu_driver_rim_cert_ocsp_status() == 'revoked' and self.check_gpu_driver_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                self.check_if_gpu_driver_rim_signature_verified() and \
+                self.check_if_gpu_driver_rim_version_matched() and \
                 self.check_rim_driver_measurements_availability() and \
                 self.check_if_vbios_rim_fetched() and \
-                self.check_if_vbios_rim_schema_validated() and \
-                self.check_if_vbios_rim_signature_verified() and \
+                self.check_if_gpu_vbios_rim_schema_validated() and \
+                self.check_if_gpu_vbios_rim_signature_verified() and \
+                self.check_if_gpu_vbios_rim_version_matched() and \
+                self.check_if_gpu_vbios_rim_cert_chain_validated() and \
+                ((self.check_gpu_vbios_rim_cert_status() == 'valid') or
+                 (BaseSettings.allow_hold_cert and self.check_gpu_vbios_rim_cert_status() == 'revoked' and self.check_gpu_vbios_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                ((self.check_gpu_vbios_rim_cert_ocsp_status() == 'good') or
+                 (BaseSettings.allow_hold_cert and self.check_gpu_vbios_rim_cert_ocsp_status() == 'revoked' and self.check_gpu_vbios_rim_cert_revocation_reason() == 'certificate_hold')) and \
                 self.check_rim_vbios_measurements_availability() and \
                 self.check_if_no_driver_vbios_measurement_index_conflict() and \
                 self.check_if_measurements_are_matching() == "success":

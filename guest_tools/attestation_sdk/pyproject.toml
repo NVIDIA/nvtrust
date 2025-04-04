@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nv-attestation-sdk"
-version = "2.3.0"
+version = "2.4.0"
 description = "The Attestation SDK provides developers with a easy to use APIs for implementing attestation capabilities into their applications."
 authors = ["Karthik Jayaraman <kjayaraman@nvidia.com>"]
 readme = "README.md"
@@ -22,7 +22,7 @@ xmlschema = "==2.2.3"
 pyOpenSSL = "==24.2.1"
 PyJWT = "==2.7.0"
 nvidia-ml-py = ">=12.535.77"
-nv-local-gpu-verifier = "2.3.0"
+nv-local-gpu-verifier = "2.4.0"
 build = ">=0.7.0"
 twine = ">=3.7.1"
 pylint = ">=2.9.6"

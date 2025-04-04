@@ -15,7 +15,7 @@
     - [nvmlHandler](#nvmlhandler)
     - [verifier](#verifier-1)
     - [cc\_admin](#cc_admin)
-  - [Compatibility Matrix](#compatibility-matrix)
+    - [Compatibility Matrix](#compatibility-matrix)
   - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
   - [License](#license)
   - [Support](#support)
@@ -104,21 +104,22 @@ To run the cc_admin module, use the following command:
 
     python3 -m verifier.cc_admin [-h] [-v] [--test_no_gpu] [--driver_rim DRIVER_RIM] [--vbios_rim VBIOS_RIM] [--user_mode] [--nonce] [--allow_hold_cert]
 
-| Option                    | Description                                                                                                                                                     |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `-h, --help`              | Show this help message and exit                                                                                                                                 |
-| `-v, --verbose`           | Print more detailed output                                                                                                                                      |
-| `--test_no_gpu`           | If there is no GPU and we need to test the verifier, no NVML APIs will be available, so the verifier will use hardcoded GPU info                                |
-| `--driver_rim DRIVER_RIM` | The path to the driver RIM. If not provided, it will use the default file: `/usr/share/nvidia/rim/RIM_GH100PROD.swidtag`                                        |
-| `--vbios_rim VBIOS_RIM`   | The path to the VBIOS RIM. If not provided, it will try to find the appropriate file in `verifier_cc/samples/` directory for the VBIOS ROM flashed onto the GPU |
-| `--user_mode`             | Runs the GPU attestation in user mode                                                                                                                           |
-| `--allow_hold_cert`       | Continue attestation if the OCSP revocation status of the certificate in the RIM files is 'certificate_hold'                                                    |
-| `--nonce`                 | Specify a Nonce for Attestation Report                                                                                                                          |
-| `--rim_root_cert RIM_ROOT_CERT` | The absolute path to the root certificate is to be used for verifying the certificate chain of the driver and VBIOS RIM certificate chain                       |
-| `--rim_service_url RIM_SERVICE_URL` | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                                               |
-| `--ocsp_url OCSP_SERVICE_URL` | The URL to be used for checking the revocation status of a certificate (e.g., `https://ocsp.ndis.nvidia.com/`)                                              |
-| `--ocsp_nonce_disabled`    | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                 |
-
+| Option                              | Description                                                                                                                                                                                                         |
+|-------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-h, --help`                        | Show this help message and exit                                                                                                                                                                                     |
+| `-v, --verbose`                     | Print more detailed output                                                                                                                                                                                          |
+| `--test_no_gpu`                     | If there is no GPU and we need to test the verifier, no NVML APIs will be available, so the verifier will use hardcoded GPU info                                                                                    |
+| `--driver_rim DRIVER_RIM`           | The path to the driver RIM. If not provided, it will use the default file: `/usr/share/nvidia/rim/RIM_GH100PROD.swidtag`                                                                                            |
+| `--vbios_rim VBIOS_RIM`             | The path to the VBIOS RIM. If not provided, it will try to find the appropriate file in `verifier_cc/samples/` directory for the VBIOS ROM flashed onto the GPU                                                     |
+| `--user_mode`                       | Runs the GPU attestation in user mode                                                                                                                                                                               |
+| `--allow_hold_cert`                 | Continue attestation if the OCSP revocation status of the certificate in the RIM files is 'certificate_hold'                                                                                                        |
+| `--nonce`                           | Specify a Nonce for Attestation Report                                                                                                                                                                              |
+| `--rim_root_cert RIM_ROOT_CERT`     | The absolute path to the root certificate is to be used for verifying the certificate chain of the driver and VBIOS RIM certificate chain                                                                           |
+| `--rim_service_url RIM_SERVICE_URL` | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                                                                                                   |
+| `--ocsp_url OCSP_SERVICE_URL` | The URL to be used for checking the revocation status of a certificate (e.g., `https://ocsp.ndis.nvidia.com/`)                                                                                                      |
+| `--ocsp_nonce_disabled`    | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                                                                      |
+| `--service-key`    | Service key which is used to auth remote service calls to attestation services. None by default. Note: No valid service keys have been created by admins yet - using any key will result in attestation failure.    |
+| `--claims_version`                  | Specify the claims version to retrieve version-specific attestation claims (e.g., 2.0). Please refer to the [Attestation Troubleshooting documentation](../../attestation_troubleshooting_guide.md) for the claims. If the claims version is not set, it defaults to 2.0.|
 
 If you need information about any function, use
         
@@ -159,14 +160,13 @@ v2.1.0          | r550TRD7, r550TRD6, r550TRD5
 v2.1.1          | r550TRD7, r550TRD6, r550TRD5
 v2.1.2          | r550TRD7, r550TRD6, r550TRD5
 v2.3.0          | r550TRD7, r550TRD6, r550TRD5
+v2.4.0          | r570TRD2
 
 ## Claims and Troubleshooting information
 For local and remote verifier claims information for NVIDIA GPUs, switches, and related troubleshooting information, please refer to the [Attestation Troubleshooting documentation](../../attestation_troubleshooting_guide.md).
 
 ## License
 This repository is licensed under Apache License v2.0 except where otherwise noted.
-
-Users who use NVIDIA Attestation Cloud Services or the NVIDIA Trust software components, without an Enterprise Product license may exercise the software and services solely for the purposes of development of a confidential computing service, not a commercial offering/ redistribution. A commercial Enterprise Product license must be obtained before offering the software within a paid commercial service.
 
 ## Support
 For issues or questions, please [file a bug](https://github.com/NVIDIA/nvtrust/issues). For additional support, contact us at [attestation-support@nvidia.com](mailto:attestation-support@nvidia.com)

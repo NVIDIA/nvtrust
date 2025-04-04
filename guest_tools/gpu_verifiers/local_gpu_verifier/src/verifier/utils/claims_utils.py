@@ -58,26 +58,71 @@ class ClaimsUtils:
                 settings:  Hopper Settings object
                 gpu_uuid:  UUID of the GPU
         """
-        claims = {'measres': settings.check_if_measurements_are_matching(),
-            "x-nvidia-gpu-arch-check": settings.check_if_gpu_arch_is_correct(),
-                  "x-nvidia-gpu-driver-version": settings.check_gpu_driver_version(),
-                  "x-nvidia-gpu-vbios-version": settings.check_gpu_vbios_version(),
-                  "x-nvidia-gpu-attestation-report-cert-chain-validated": settings.check_if_gpu_attestation_report_cert_chain_validated(),
-                  "x-nvidia-gpu-attestation-report-parsed": settings.check_if_attestation_report_parsed_successfully(),
-                  "x-nvidia-gpu-attestation-report-nonce-match": settings.check_if_nonce_are_matching(),
-                  "x-nvidia-gpu-attestation-report-signature-verified": settings.check_if_attestation_report_signature_verified(),
-                  "x-nvidia-gpu-driver-rim-fetched": settings.check_if_driver_rim_fetched(),
-                  "x-nvidia-gpu-driver-rim-schema-validated": settings.check_if_driver_rim_schema_validated(),
-                  "x-nvidia-gpu-driver-rim-cert-validated": settings.check_if_driver_rim_cert_validated(),
-                  "x-nvidia-gpu-driver-rim-signature-verified": settings.check_if_driver_rim_signature_verified(),
-                  "x-nvidia-gpu-driver-rim-measurements-available": settings.check_rim_driver_measurements_availability(),
-                  "x-nvidia-gpu-vbios-rim-fetched": settings.check_if_vbios_rim_fetched(),
-                  "x-nvidia-gpu-vbios-rim-schema-validated": settings.check_if_vbios_rim_schema_validated(),
-                  "x-nvidia-gpu-vbios-rim-cert-validated": settings.check_if_vbios_rim_cert_validated(),
-                  "x-nvidia-gpu-vbios-rim-signature-verified": settings.check_if_vbios_rim_signature_verified(),
-                  "x-nvidia-gpu-vbios-rim-measurements-available": settings.check_rim_vbios_measurements_availability(),
-                  "x-nvidia-gpu-vbios-index-no-conflict": settings.check_if_no_driver_vbios_measurement_index_conflict()
-                  }
+        if BaseSettings.CLAIMS_VERSION == "3.0":
+            claims = {'measres': settings.check_if_measurements_are_matching(),
+                      "x-nvidia-gpu-arch-check": settings.check_if_gpu_arch_is_correct(),
+                      "x-nvidia-gpu-driver-version": settings.check_gpu_driver_version(),
+                      "x-nvidia-gpu-vbios-version": settings.check_gpu_vbios_version(),
+                      "x-nvidia-gpu-attestation-report-cert-chain":
+                      {
+                          "x-nvidia-cert-expiration-date": settings.check_gpu_attestation_report_cert_expiration_date(),
+                          "x-nvidia-cert-status": settings.check_gpu_attestation_report_cert_status(),
+                          "x-nvidia-cert-ocsp-status": settings.check_gpu_attestation_report_cert_ocsp_status(),
+                          "x-nvidia-cert-revocation-reason": settings.check_gpu_attestation_report_cert_revocation_reason()
+                      },
+                      "x-nvidia-gpu-attestation-report-cert-chain-fwid-match": settings.check_if_gpu_attestation_report_cert_chain_fwid_matched(),
+                      "x-nvidia-gpu-attestation-report-parsed": settings.check_if_attestation_report_parsed_successfully(),
+                      "x-nvidia-gpu-attestation-report-nonce-match": settings.check_if_nonce_are_matching(),
+                      "x-nvidia-gpu-attestation-report-signature-verified": settings.check_if_attestation_report_signature_verified(),
+                      "x-nvidia-gpu-driver-rim-fetched": settings.check_if_driver_rim_fetched(),
+                      "x-nvidia-gpu-driver-rim-schema-validated": settings.check_if_gpu_driver_rim_schema_validated(),
+                      "x-nvidia-gpu-driver-rim-cert-chain":
+                      {
+                          "x-nvidia-cert-expiration-date": settings.check_gpu_driver_rim_cert_expiration_date(),
+                          "x-nvidia-cert-status": settings.check_gpu_driver_rim_cert_status(),
+                          "x-nvidia-cert-ocsp-status": settings.check_gpu_driver_rim_cert_ocsp_status(),
+                          "x-nvidia-cert-revocation-reason": settings.check_gpu_driver_rim_cert_revocation_reason()
+                      },
+                      "x-nvidia-gpu-driver-rim-signature-verified": settings.check_if_gpu_driver_rim_signature_verified(),
+                      "x-nvidia-gpu-driver-rim-version-match":settings.check_if_gpu_driver_rim_version_matched(),
+                      "x-nvidia-gpu-driver-rim-measurements-available": settings.check_rim_driver_measurements_availability(),
+                      "x-nvidia-gpu-vbios-rim-fetched": settings.check_if_vbios_rim_fetched(),
+                      "x-nvidia-gpu-vbios-rim-schema-validated": settings.check_if_gpu_vbios_rim_schema_validated(),
+                      "x-nvidia-gpu-vbios-rim-cert-chain":
+                      {
+                          "x-nvidia-cert-expiration-date": settings.check_gpu_vbios_rim_cert_expiration_date(),
+                          "x-nvidia-cert-status": settings.check_gpu_vbios_rim_cert_status(),
+                          "x-nvidia-cert-ocsp-status": settings.check_gpu_vbios_rim_cert_ocsp_status(),
+                          "x-nvidia-cert-revocation-reason": settings.check_gpu_vbios_rim_cert_revocation_reason()
+                      },
+                      "x-nvidia-gpu-vbios-rim-version-match": settings.check_if_gpu_vbios_rim_version_matched(),
+                      "x-nvidia-gpu-vbios-rim-signature-verified": settings.check_if_gpu_vbios_rim_signature_verified(),
+                      "x-nvidia-gpu-vbios-rim-measurements-available": settings.check_rim_vbios_measurements_availability(),
+                      "x-nvidia-gpu-vbios-index-no-conflict": settings.check_if_no_driver_vbios_measurement_index_conflict()
+                      }
+        elif BaseSettings.CLAIMS_VERSION == "2.0":
+            claims = {'measres': settings.check_if_measurements_are_matching() or "fail",
+                      "x-nvidia-gpu-arch-check": settings.check_if_gpu_arch_is_correct() or False,
+                      "x-nvidia-gpu-driver-version": settings.check_gpu_driver_version() or "",
+                      "x-nvidia-gpu-vbios-version": settings.check_gpu_vbios_version() or "",
+                      "x-nvidia-gpu-attestation-report-cert-chain-validated": settings.check_if_gpu_attestation_report_cert_chain_validated() or False,
+                      "x-nvidia-gpu-attestation-report-parsed": settings.check_if_attestation_report_parsed_successfully() or False,
+                      "x-nvidia-gpu-attestation-report-nonce-match": settings.check_if_nonce_are_matching() or False,
+                      "x-nvidia-gpu-attestation-report-signature-verified": settings.check_if_attestation_report_signature_verified() or False,
+                      "x-nvidia-gpu-driver-rim-fetched": settings.check_if_driver_rim_fetched() or False,
+                      "x-nvidia-gpu-driver-rim-schema-validated": settings.check_if_gpu_driver_rim_schema_validated() or False,
+                      "x-nvidia-gpu-driver-rim-cert-validated": settings.check_if_gpu_driver_rim_cert_chain_validated() or False,
+                      "x-nvidia-gpu-driver-rim-signature-verified": settings.check_if_gpu_driver_rim_signature_verified() or False,
+                      "x-nvidia-gpu-driver-rim-measurements-available": settings.check_rim_driver_measurements_availability() or False,
+                      "x-nvidia-gpu-vbios-rim-fetched": settings.check_if_vbios_rim_fetched() or False,
+                      "x-nvidia-gpu-vbios-rim-schema-validated": settings.check_if_gpu_vbios_rim_schema_validated() or False,
+                      "x-nvidia-gpu-vbios-rim-cert-validated": settings.check_if_gpu_vbios_rim_cert_chain_validated() or False,
+                      "x-nvidia-gpu-vbios-rim-signature-verified": settings.check_if_gpu_vbios_rim_signature_verified() or False,
+                      "x-nvidia-gpu-vbios-rim-measurements-available": settings.check_rim_vbios_measurements_availability() or False,
+                      "x-nvidia-gpu-vbios-index-no-conflict": settings.check_if_no_driver_vbios_measurement_index_conflict() or False
+                      }
+        else:
+            return {}
         if settings.check_if_measurements_are_matching() == "success":
             claims["secboot"] = True
             claims["dbgstat"] = "disabled"
@@ -90,7 +135,7 @@ class ClaimsUtils:
         overallAttestationToken["exp"] = datetime.utcnow() + timedelta(hours=1)
         overallAttestationToken["iat"] = datetime.utcnow()
         overallAttestationToken["jti"] = str(uuid.uuid4())
-        overallAttestationToken["x-nvidia-ver"] = "2.0"
+        overallAttestationToken["x-nvidia-ver"] = BaseSettings.CLAIMS_VERSION
         overallAttestationToken["iss"] = "LOCAL_GPU_VERIFIER"
         overallAttestationToken["x-nvidia-overall-att-result"] = "false"
         overallAttestationToken["submods"] = {}

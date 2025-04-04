@@ -1,18 +1,18 @@
 # Protected PCIE Verifier 
 - [Protected PCIE Verifier](#protected-pcie-verifier)
-  - [Overview](#overview)
-  - [High-Level Architecture Diagram](#high-level-architecture-diagram)
-    - [Detailed Architecture Flow](#detailed-architecture-flow)
-  - [Getting started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation/Dependencies](#installationdependencies)
-    - [Usage](#usage)
-      - [Options](#options)
-  - [Troubleshooting](#troubleshooting)
-    - [Installation Issues:](#installation-issues)
-    - [Configuration Issues](#configuration-issues)
-  - [License](#license)
-  - [Support](#support)
+    - [Overview](#overview)
+    - [High-Level Architecture Diagram](#high-level-architecture-diagram)
+        - [Detailed Architecture Flow](#detailed-architecture-flow)
+    - [Getting started](#getting-started)
+        - [Prerequisites](#prerequisites)
+        - [Installation/Dependencies](#installationdependencies)
+        - [Usage](#usage)
+            - [Options](#options)
+    - [Troubleshooting](#troubleshooting)
+        - [Installation Issues:](#installation-issues)
+        - [Configuration Issues](#configuration-issues)
+    - [License](#license)
+    - [Support](#support)
 
 ## Overview 
 In a multi-GPU confidential computing (CC) setup, NVLink interconnects and NVSwitches are used for GPU to GPU data traffic. NVLink interconnects and NVSwitches are outside the trust boundary and thus should not allow access to plain-text data. All data that flows over NVLink must be encrypted prior to transfer and decrypted at the destination GPU. On the GPU encryption and decryption is performed by the GPU copy engine (CE).
@@ -95,15 +95,17 @@ Method 2: Using PyPI (Requires python virtual environment creation)
 
 #### Options
   
-| Option                      | Description                           | Value Options                                                            |
-|-----------------------------|---------------------------------------|--------------------------------------------------------------------------|
-| `--gpu-attestation-mode`    | Type of GPU Attestation               | LOCAL, REMOTE                                                          |
-| `--switch-attestation-mode` | Type of nvSwitch Attestation          | LOCAL,  REMOTE                                                          |
-| `--log`                     | Configure log level                   | DEBUG, INFO, WARNING, ERROR, TRACE, CRITICAL               |
-| `--allow-hold-cert`         | Enable attestation when OCSP status of certificate is cert hold | N/A                                        |
-| `--rim-url RIM_SERVICE_URL` | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                              |
-| `--ocsp-url OCSP_SERVICE_URL` | The URL to be used for checking the revocation status of a certificate (e.g., `https://ocsp.ndis.nvidia.com/`)                                              |
-| `--ocsp-nonce-disabled`    | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                 |
+| Option                        | Description                                                                                                                                                                                                      | Value Options                                                            |
+|-------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `--gpu-attestation-mode`      | Type of GPU Attestation                                                                                                                                                                                          | LOCAL, REMOTE                                                          |
+| `--switch-attestation-mode`   | Type of nvSwitch Attestation                                                                                                                                                                                     | LOCAL,  REMOTE                                                          |
+| `--log`                       | Configure log level                                                                                                                                                                                              | DEBUG, INFO, WARNING, ERROR, TRACE, CRITICAL               |
+| `--allow-hold-cert`           | Enable attestation when OCSP status of certificate is cert hold                                                                                                                                                  | N/A                                        |
+| `--rim-url RIM_SERVICE_URL`   | The URL to be used for fetching driver and VBIOS RIM files (e.g., `https://rim.nvidia.com/rims/`)                                                                                                                |
+| `--ocsp-url OCSP_SERVICE_URL` | The URL to be used for checking the revocation status of a certificate (e.g., `https://ocsp.ndis.nvidia.com/`)                                                                                                   |
+| `--ocsp-nonce-disabled`       | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                                                                   |
+| `--service-key`               | Service key which is used to auth remote service calls to attestation services. None by default. Note: No valid service keys have been created by admins yet - using any key will result in attestation failure. |
+| `--claims-version`            | Specify the claims version to retrieve version-specific attestation claims (e.g., 2.0). Please refer to the [Attestation Troubleshooting documentation](../attestation_troubleshooting_guide.md) for the claims. If the claims version is not set, it defaults to 2.0. | "2.0" or "3.0"                               |
 ## Troubleshooting
 Below are some of the common issues that have been encountered:
 ### Installation Issues:
@@ -126,8 +128,6 @@ Please execute the following commands to clean up packages that were not install
 
 ## License
 This repository is licensed under Apache License v2.0 except where otherwise noted.
-
-Users who use NVIDIA Attestation Cloud Services or the NVIDIA Trust software components, without an Enterprise Product license may exercise the software and services solely for the purposes of development of a confidential computing service, not a commercial offering/ redistribution. A commercial Enterprise Product license must be obtained before offering the software within a paid commercial service.
 
 ## Support
 For issues or questions, please [file a bug](https://github.com/NVIDIA/nvtrust/issues). For additional support, contact us at [attestation-support@nvidia.com](mailto:attestation-support@nvidia.com)

@@ -1,0 +1,33 @@
+{
+  "version":"4.0",
+  "authorization-rules":{
+    "type": "JWT",
+    "overall-claims": {
+      "x-nvidia-overall-att-result": true,
+      "x-nvidia-ver": "3.0"
+    },
+    "detached-claims":{
+      "measres": "success",
+      "x-nvidia-switch-arch-check": true,
+      "x-nvidia-switch-bios-rim-measurements-available": true,
+      "x-nvidia-switch-attestation-report-signature-verified": true,
+      "x-nvidia-switch-attestation-report-parsed": true,
+      "x-nvidia-switch-attestation-report-nonce-match": true,
+      "x-nvidia-switch-attestation-report-cert-chain":
+      {
+        "x-nvidia-cert-status": "valid",
+        "x-nvidia-cert-ocsp-status": "good"
+      },
+      "x-nvidia-switch-attestation-report-cert-chain-fwid-match": true,
+      "x-nvidia-switch-bios-rim-schema-validated": true,
+      "x-nvidia-switch-bios-rim-signature-verified": true,
+      "x-nvidia-switch-bios-rim-cert-chain":
+      {
+        "x-nvidia-cert-status": "valid",
+        "x-nvidia-cert-ocsp-status": "good"
+      },
+      "x-nvidia-switch-bios-rim-version-match": true,
+      "x-nvidia-switch-bios-rim-fetched": true
+    }
+  }
+}

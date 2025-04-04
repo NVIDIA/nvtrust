@@ -58,6 +58,7 @@ class TestVerification(unittest.TestCase):
         client.attest.return_value = True
         client.validate_token.return_value = True
         client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="2.0"
         attestation.Attestation.return_value = client
         status.topology_checks = True
         status.gpu_pre_checks = True
@@ -68,7 +69,7 @@ class TestVerification(unittest.TestCase):
         switch_topology_check.return_value = status
         get_ready_state.return_value = 1
         set_ready_state.return_value = pynvml.NVML_SUCCESS
-        testargs = ["prog", "--gpu-attestation-mode", "LOCAL", "--switch-attestation-mode", "LOCAL", "--log", "DEBUG"]
+        testargs = ["prog", "--gpu-attestation-mode", "LOCAL", "--switch-attestation-mode", "LOCAL", "--log", "DEBUG", "--claims-version", "3.0"]
         with patch.object(sys, 'argv', testargs):
             verification()
 
@@ -133,6 +134,7 @@ class TestVerification(unittest.TestCase):
         client.attest.return_value = True
         client.validate_token.return_value = True
         client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="2.0"
         attestation.Attestation.return_value = client
         status, attestation_report = perform_gpu_attestation(logger, status, {'gpu_attestation_mode': 'REMOTE', 'ocsp_nonce_disabled': 'False'})
         self.assertTrue(status.gpu_attestation)
@@ -151,8 +153,47 @@ class TestVerification(unittest.TestCase):
         client.attest.return_value = True
         client.validate_token.return_value = True
         client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="2.0"
         attestation.Attestation.return_value = client
         status, attestation_report = perform_switch_attestation(logger, status, {'switch_attestation_mode':'REMOTE', 'ocsp_nonce_disabled': 'False'})
+        self.assertTrue(status.switch_attestation)
+        self.assertIsNotNone(attestation_report)
+
+    @patch("nv_attestation_sdk.attestation.Attestation")
+    def test_perform_gpu_attestation_with_claims_version(self, attestation_client):
+        logger = logging.getLogger('test')
+        status = Status()
+        attestation_client.return_value = attestation.Attestation('test-name')
+        client = attestation.Attestation('test-name')
+        client.get_evidence.return_value = [
+            {
+                "evidence": PPCIE_EVIDENCE}
+        ]
+        client.attest.return_value = True
+        client.validate_token.return_value = True
+        client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="3.0"
+        attestation.Attestation.return_value = client
+        status, attestation_report = perform_gpu_attestation(logger, status, {'gpu_attestation_mode': 'REMOTE', 'ocsp_nonce_disabled': 'False', 'claims_version': '3.0'})
+        self.assertTrue(status.gpu_attestation)
+        self.assertIsNotNone(attestation_report)
+
+    @patch("nv_attestation_sdk.attestation.Attestation")
+    def test_perform_switch_attestation_with_claims_version(self, attestation_client):
+        logger = logging.getLogger('test')
+        status = Status()
+        attestation_client.return_value = attestation.Attestation('test-name')
+        client = attestation.Attestation('test-name')
+        client.get_evidence.return_value = [
+            {
+                "evidence": PPCIE_EVIDENCE}
+        ]
+        client.attest.return_value = True
+        client.validate_token.return_value = True
+        client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="3.0"
+        attestation.Attestation.return_value = client
+        status, attestation_report = perform_switch_attestation(logger, status, {'switch_attestation_mode':'REMOTE', 'ocsp_nonce_disabled': 'False', 'claims_version': '3.0'})
         self.assertTrue(status.switch_attestation)
         self.assertIsNotNone(attestation_report)
 
@@ -169,6 +210,7 @@ class TestVerification(unittest.TestCase):
         client.attest.return_value = True
         client.validate_token.return_value = True
         client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="2.0"
         attestation.Attestation.return_value = client
         status, attestation_report = perform_gpu_attestation(logger, status, {'gpu_attestation_mode': 'REMOTE', 'ocsp_nonce_disabled': 'True'})
         self.assertTrue(status.gpu_attestation)
@@ -187,6 +229,7 @@ class TestVerification(unittest.TestCase):
         client.attest.return_value = True
         client.validate_token.return_value = True
         client.clear_verifiers.return_value = None
+        client.get_claims_version.return_value="2.0"
         attestation.Attestation.return_value = client
         status, attestation_report = perform_switch_attestation(logger, status, {'switch_attestation_mode':'REMOTE', 'ocsp_nonce_disabled': 'True'})
         self.assertTrue(status.switch_attestation)

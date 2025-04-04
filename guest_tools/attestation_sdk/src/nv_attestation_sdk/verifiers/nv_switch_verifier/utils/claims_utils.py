@@ -35,6 +35,7 @@ import uuid
 import jwt
 from datetime import datetime, timedelta
 from typing import List, Any
+from nv_attestation_sdk.verifiers.nv_switch_verifier.config import BaseSettings
 
 class ClaimsUtils:
     """ A class to provide the required functionalities for claims related utility functions
@@ -42,18 +43,49 @@ class ClaimsUtils:
 
     @staticmethod
     def get_current_switch_claims(settings, switch_uuid: string = ""):
-        claims = {'measres': settings.check_if_measurements_are_matching(),
-                  "x-nvidia-switch-arch-check": settings.check_if_switch_arch_is_correct(),
-                  'x-nvidia-switch-bios-version': settings.check_bios_version(),
-                  "x-nvidia-switch-attestation-report-cert-chain-validated": settings.check_if_switch_attestation_report_cert_chain_validated(),
-                  "x-nvidia-switch-attestation-report-parsed": settings.check_if_attestation_report_parsed_successfully(),
-                  "x-nvidia-switch-attestation-report-nonce-match": settings.check_if_nonce_are_matching(),
-                  "x-nvidia-switch-attestation-report-signature-verified": settings.check_if_attestation_report_signature_verified(),
-                  "x-nvidia-switch-bios-rim-fetched": settings.check_if_bios_rim_fetched(),
-                  "x-nvidia-switch-bios-rim-schema-validated": settings.check_if_bios_rim_schema_validated(),
-                  "x-nvidia-switch-bios-rim-cert-validated": settings.check_if_bios_rim_cert_validated(),
-                  "x-nvidia-switch-bios-rim-signature-verified": settings.check_if_bios_rim_signature_verified(),
-                  "x-nvidia-switch-bios-rim-measurements-available": settings.check_rim_bios_measurements_availability()}
+        if BaseSettings.CLAIMS_VERSION == "3.0":
+            claims = {'measres': settings.check_if_measurements_are_matching(),
+                      "x-nvidia-switch-arch-check": settings.check_if_switch_arch_is_correct(),
+                      "x-nvidia-switch-bios-version": settings.check_bios_version(),
+                      "x-nvidia-switch-attestation-report-cert-chain":
+                      {
+                          "x-nvidia-cert-expiration-date": settings.check_switch_attestation_report_cert_expiration_date(),
+                          "x-nvidia-cert-status": settings.check_switch_attestation_report_cert_status(),
+                          "x-nvidia-cert-ocsp-status": settings.check_switch_attestation_report_cert_ocsp_status(),
+                          "x-nvidia-cert-revocation-reason": settings.check_switch_attestation_report_cert_revocation_reason()
+                      },
+                      "x-nvidia-switch-attestation-report-cert-chain-fwid-match": settings.check_if_switch_attestation_report_cert_chain_fwid_matched(),
+                      "x-nvidia-switch-attestation-report-parsed": settings.check_if_attestation_report_parsed_successfully(),
+                      "x-nvidia-switch-attestation-report-nonce-match": settings.check_if_nonce_are_matching(),
+                      "x-nvidia-switch-attestation-report-signature-verified": settings.check_if_attestation_report_signature_verified(),
+                      "x-nvidia-switch-bios-rim-fetched": settings.check_if_bios_rim_fetched(),
+                      "x-nvidia-switch-bios-rim-schema-validated": settings.check_if_bios_rim_schema_validated(),
+                      "x-nvidia-switch-bios-rim-cert-chain":
+                      {
+                          "x-nvidia-cert-expiration-date": settings.check_switch_vbios_rim_cert_expiration_date(),
+                          "x-nvidia-cert-status": settings.check_switch_vbios_rim_cert_status(),
+                          "x-nvidia-cert-ocsp-status": settings.check_switch_vbios_rim_cert_ocsp_status(),
+                          "x-nvidia-cert-revocation-reason": settings.check_switch_vbios_rim_cert_revocation_reason()
+                      },
+                      "x-nvidia-switch-bios-rim-signature-verified": settings.check_if_bios_rim_signature_verified(),
+                      "x-nvidia-switch-bios-rim-version-match": settings.check_if_rim_bios_version_matches(),
+                      "x-nvidia-switch-bios-rim-measurements-available": settings.check_rim_bios_measurements_availability()}
+        elif BaseSettings.CLAIMS_VERSION == "2.0":
+            claims = {'measres': settings.check_if_measurements_are_matching() or "fail",
+                  "x-nvidia-switch-arch-check": settings.check_if_switch_arch_is_correct() or False,
+                  'x-nvidia-switch-bios-version': settings.check_bios_version() or "",
+                  "x-nvidia-switch-attestation-report-cert-chain-validated": settings.check_if_switch_attestation_report_cert_chain_validated() or False,
+                  "x-nvidia-switch-attestation-report-parsed": settings.check_if_attestation_report_parsed_successfully() or False,
+                  "x-nvidia-switch-attestation-report-nonce-match": settings.check_if_nonce_are_matching() or False,
+                  "x-nvidia-switch-attestation-report-signature-verified": settings.check_if_attestation_report_signature_verified() or False,
+                  "x-nvidia-switch-bios-rim-fetched": settings.check_if_bios_rim_fetched() or False,
+                  "x-nvidia-switch-bios-rim-schema-validated": settings.check_if_bios_rim_schema_validated() or False,
+                  "x-nvidia-switch-bios-rim-cert-validated": settings.check_if_switch_vbios_rim_cert_chain_validated() or False,
+                  "x-nvidia-switch-bios-rim-signature-verified": settings.check_if_bios_rim_signature_verified() or False,
+                  "x-nvidia-switch-bios-rim-measurements-available": settings.check_rim_bios_measurements_availability() or False
+            }
+        else:
+            return {}
         if settings.check_if_measurements_are_matching() == "success":
             claims["secboot"] = True
             claims["dbgstat"] = "disabled"
@@ -67,7 +99,7 @@ class ClaimsUtils:
         overallAttestationToken["exp"] = datetime.utcnow() + timedelta(hours=1)
         overallAttestationToken["iat"] = datetime.utcnow()
         overallAttestationToken["jti"] = str(uuid.uuid4())
-        overallAttestationToken["x-nvidia-ver"] = "2.0"
+        overallAttestationToken["x-nvidia-ver"] = BaseSettings.CLAIMS_VERSION
         overallAttestationToken["iss"] = "LOCAL_SWITCH_VERIFIER"
         overallAttestationToken["x-nvidia-overall-att-result"] = "false"
         overallAttestationToken["submods"] = {}

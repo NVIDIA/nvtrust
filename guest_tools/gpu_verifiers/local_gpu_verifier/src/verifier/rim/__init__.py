@@ -269,25 +269,28 @@ class RIM:
             if verified_root is None:
                 err_msg = "\t\t\tRIM signature verification failed."
                 event_log.error(err_msg)
+                settings.mark_gpu_driver_rim_signature_verified(False) if self.rim_name == "driver" else settings.mark_gpu_vbios_rim_signature_verified(False)
                 raise RIMSignatureVerificationError(err_msg)
 
         except InvalidSignature as error:
             err_msg = "\t\t\tRIM signature verification failed."
             event_log.error(err_msg)
+            settings.mark_gpu_driver_rim_signature_verified(False) if self.rim_name == "driver" else settings.mark_gpu_vbios_rim_signature_verified(False)
             raise RIMSignatureVerificationError(err_msg)
         
         except Exception as error:
             info_log.error(error)
             err_msg = "\t\t\tRIM signature verification failed."
             event_log.error(err_msg)
+            settings.mark_gpu_driver_rim_signature_verified(False) if self.rim_name == "driver" else settings.mark_gpu_vbios_rim_signature_verified(False)
             raise RIMSignatureVerificationError(err_msg)
 
         info_log.info(f"\t\t\t{self.rim_name} RIM signature verification successful.")
         self.root = verified_root
         if self.rim_name == 'driver':
-            settings.mark_driver_rim_cert_validated_successfully()
+            settings.mark_gpu_driver_rim_signature_verified()
         else:
-            settings.mark_vbios_rim_cert_validated_successfully()
+            settings.mark_gpu_vbios_rim_signature_verified()
         return True
     
     def get_measurements(self):
@@ -344,6 +347,7 @@ class RIM:
             self.measurements_obj[index] = golden_measurement
 
         if len(self.measurements_obj) == 0:
+            settings.mark_rim_driver_measurements_as_available(False) if self.rim_name == 'driver' else settings.mark_rim_vbios_measurements_as_available(False)
             raise NoRIMMeasurementsError(f"\tNo golden measurements found in {self.rim_name} rim.\n\tQuitting now.")
 
         event_log.debug(f"{self.rim_name} golden measurements are : \n\t\t\t\t\t\t\t")
@@ -402,17 +406,18 @@ class RIM:
             info_log.info("\t\t\tRIM Schema validation passed.")
             
             if self.rim_name == 'driver':
-                settings.mark_driver_rim_schema_validated()
+                settings.mark_gpu_driver_rim_schema_validated()
             else:
-                settings.mark_vbios_rim_schema_validated()
+                settings.mark_gpu_vbios_rim_schema_validated()
 
             if version != self.colloquialVersion.lower():
+                settings.mark_gpu_driver_rim_version_matched(False) if self.rim_name == 'driver' else settings.mark_gpu_vbios_rim_version_matched(False)
                 info_log.warning(f"\t\t\tThe {self.rim_name} version in the RIM file is not matching with the installed {self.rim_name} version.")
             else:
                 if self.rim_name == 'driver':
-                    settings.mark_rim_driver_version_as_matching()
+                    settings.mark_gpu_driver_rim_version_matched()
                 else:
-                    settings.mark_rim_vbios_version_as_matching()
+                    settings.mark_gpu_vbios_rim_version_matched()
 
                 event_log.debug(f"The {self.rim_name} version in the RIM file is matching with the installed {self.rim_name} version.")
 
@@ -427,23 +432,55 @@ class RIM:
                 mode = BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT
 
             rim_cert_chain.append(crypto.load_certificate(type = crypto.FILETYPE_PEM, buffer = root_cert_data))
-            rim_cert_chain_verification_status = CcAdminUtils.verify_certificate_chain(rim_cert_chain,
+            rim_cert_chain_verification_status, rim_cert_expired, rim_cert_expiration_date = CcAdminUtils.verify_certificate_chain(rim_cert_chain,
                                                                                        settings,
                                                                                        mode)
+            settings.mark_gpu_driver_rim_cert_expiration_date(rim_cert_expiration_date) if self.rim_name == "driver" else settings.mark_gpu_vbios_rim_cert_expiration_date(rim_cert_expiration_date)
+
             if not rim_cert_chain_verification_status:
+                if self.rim_name == "driver":
+                    settings.mark_gpu_driver_rim_cert_status(BaseSettings.Status.INVALID.value)
+                    settings.mark_gpu_driver_rim_cert_chain_validated(False)
+                else:
+                    settings.mark_gpu_vbios_rim_cert_status(BaseSettings.Status.INVALID.value)
+                    settings.mark_gpu_vbios_rim_cert_chain_validated(False)
+                if rim_cert_expired:
+                    if self.rim_name == 'driver':
+                        settings.mark_gpu_driver_rim_cert_status(BaseSettings.Status.EXPIRED.value)
+                        info_log.info(f"Driver RIM certificate expired on {rim_cert_expiration_date}.")
+                    else:
+                        settings.mark_gpu_vbios_rim_cert_status(BaseSettings.Status.EXPIRED.value)
+                        info_log.info(f"VBIOS RIM certificate expired on {rim_cert_expiration_date}.")
                 raise RIMCertChainVerificationError(f"\t\t\t{self.rim_name} RIM cert chain verification failed")
 
             info_log.info(f"\t\t\t{self.rim_name} RIM certificate chain verification successful.")
 
-            rim_cert_chain_ocsp_revocation_status, gpu_attestation_warning = CcAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain, settings, mode)
+            rim_cert_chain_ocsp_revocation_status, gpu_attestation_warning, ocsp_status, revocation_reason = CcAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain, settings, mode)
+
+            if self.rim_name == 'driver':
+                settings.mark_gpu_driver_rim_cert_ocsp_status(ocsp_status)
+                settings.mark_gpu_driver_rim_cert_revocation_reason(revocation_reason)
+                settings.mark_gpu_driver_rim_cert_status(BaseSettings.Status.REVOKED.value if revocation_reason is not None else BaseSettings.Status.VALID.value)
+            else:
+                settings.mark_gpu_vbios_rim_cert_ocsp_status(ocsp_status)
+                settings.mark_gpu_vbios_rim_cert_revocation_reason(revocation_reason)
+                settings.mark_gpu_vbios_rim_cert_status(BaseSettings.Status.REVOKED.value if revocation_reason is not None else BaseSettings.Status.VALID.value)
 
             if not rim_cert_chain_ocsp_revocation_status:
+                settings.mark_gpu_driver_rim_cert_status(BaseSettings.Status.INVALID.value) if self.rim_name == 'driver' else settings.mark_gpu_vbios_rim_cert_status(BaseSettings.Status.INVALID.value)
+                settings.mark_gpu_driver_rim_cert_chain_validated(False) if self.rim_name == 'driver' else settings.mark_gpu_vbios_rim_cert_chain_validated(False)
                 info_log.error(f"{self.rim_name} RIM cert chain ocsp status verification failed.")
-                sys.exit()
+                raise RIMCertChainOCSPVerificationError(f"\t\t\tOCSP validation of {self.rim_name} RIM failed. OCSP Status: {ocsp_status} and Revocation Reason: {revocation_reason}")
+
+            if self.rim_name == 'driver':
+                settings.mark_gpu_driver_rim_cert_chain_validated()
+            else:
+                settings.mark_gpu_vbios_rim_cert_chain_validated()
             
             return self.verify_signature(settings), gpu_attestation_warning
         
-        else:            
+        else:
+            settings.mark_gpu_driver_rim_schema_validated(False) if self.rim_name == 'driver' else settings.mark_gpu_vbios_rim_schema_validated(False)
             raise RIMSchemaValidationError(f"\t\t\tSchema validation of {self.rim_name} RIM failed.")
 
     def __init__(self, rim_name, settings, rim_path = '', content = ''):

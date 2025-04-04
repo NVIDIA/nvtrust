@@ -8,3 +8,4 @@
 *.log
 venv
 *.bak
+.coverage

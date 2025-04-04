@@ -18,6 +18,7 @@ from nv_attestation_sdk.utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL
 from .gpu import attest_gpu_local, attest_gpu_remote
 from .nvswitch import attest_nvswitch_local, attest_nvswitch_remote
 from .utils import claim_utils, local_utils, nras_utils
+from .utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, REMOTE_NVSWITCH_VERIFIER_SERVICE_URL
 from typing import Tuple, List
 
 decorative_logger = setup_logging()
@@ -91,22 +92,43 @@ class Attestation:
 
     _staticNonce = None
     _name = None
+    _serviceKey = None
     _nonceServer = None
     _tokens = None
     _verifiers = []
     _instance = None
     _ocsp_nonce_disabled = False
     _no_gpu_mode = False
+    _claims_version = "2.0"
 
     def __new__(cls, name=None):
         if cls._instance is None:
             cls._instance = super(Attestation, cls).__new__(cls)
             cls._name = name if isinstance(name, str) else ""
+            cls._serviceKey = None
             cls._nonceServer = ""
             cls._staticNonce = ""
             cls._verifiers = []
             cls._tokens = {}
         return cls._instance
+    
+    @classmethod
+    def set_service_key(cls, service_key: str) -> None:
+        """Service key which is used to auth remote service calls to attestation services.
+
+        Args:
+            service_key (str): Service key which is used to auth remote service calls to attestation services
+        """
+        cls._serviceKey = service_key
+
+    @classmethod
+    def get_service_key(cls) -> str:
+        """Service key which is used to auth remote service calls to attestation services.
+
+        Returns:
+            Str: Service key which is used to auth remote service calls to attestation services
+        """
+        return cls._serviceKey
 
     @classmethod
     def set_name(cls, name: str) -> None:
@@ -164,6 +186,23 @@ class Attestation:
         """
         return cls._ocsp_nonce_disabled
 
+    @classmethod
+    def set_claims_version(cls, claims_version: str) -> None:
+        """To set the version of claims to be returned.  v2.0 by default
+
+        Args:
+            claims_version (str): claims version
+        """
+        cls._claims_version = claims_version
+
+    @classmethod
+    def get_claims_version(cls) -> str:
+        """Get the claims version
+
+        Returns:
+            str: claims version
+        """
+        return cls._claims_version
 
     @classmethod
     def add_verifier(
@@ -186,7 +225,12 @@ class Attestation:
             (Devices.SWITCH, Environment.REMOTE): "REMOTE_SWITCH_CLAIMS",
             (Devices.CPU, Environment.TEST): "TEST_CPU_CLAIMS",
         }
-
+        if env == Environment.REMOTE and not url:
+            if dev == Devices.GPU:
+                url = REMOTE_GPU_VERIFIER_SERVICE_URL
+            elif dev == Devices.SWITCH:
+                url = REMOTE_NVSWITCH_VERIFIER_SERVICE_URL
+            logger.info("Using default Remote verifier URL: %s", url)
         name = verifier_name_mapping.get((dev, env), "UNKNOWN_CLAIMS")
         lst = [name, dev, env, url, evidence, "", ocsp_url, rim_url]
         cls._verifiers.append(lst)
@@ -273,17 +317,19 @@ class Attestation:
             attestation_func = attestation_mapping.get(
                 (device, environment), cls._unknown_verifier
             )
+            attestation_options = {
+                "ocsp_nonce_disabled": cls._ocsp_nonce_disabled,
+                "rim_service_url": verifier[VerifierFields.RIM_URL],
+                "ocsp_url": verifier[VerifierFields.OCSP_URL],
+                "claims_version": cls._claims_version,
+                "verifier_url": verifier_url,
+                "service_key": cls._serviceKey
+            }
             if environment == Environment.REMOTE:
                 this_result, jwt_token = attestation_func(
-                    nonce, evidence_list, verifier_url
+                    nonce, evidence_list, attestation_options
                 )
             else:
-                attestation_options = {
-                    "ocsp_nonce_disabled": cls._ocsp_nonce_disabled,
-                    "rim_service_url": verifier[VerifierFields.RIM_URL],
-                    "ocsp_url": verifier[VerifierFields.OCSP_URL]
-                }
-
                 this_result, jwt_token = attestation_func(
                     nonce, evidence_list, attestation_options
                 )

@@ -1,0 +1,20 @@
+{
+  "sub": "NVIDIA-PLATFORM-ATTESTATION",
+  "nbf": 1736197199,
+  "exp": 1736200919,
+  "iat": 1736197319,
+  "jti": "5050a4f5-9771-4151-8e83-b7e494bfd47e",
+  "x-nvidia-ver": "3.0",
+  "iss": "LOCAL_GPU_VERIFIER",
+  "x-nvidia-overall-att-result": true,
+  "submods": {
+    "GPU-0": [
+      "DIGEST",
+      [
+        "SHA256",
+        "a904188fa8a03c91446f93bd25eb04bec4ff821f33a57479aac90707aa26848d"
+      ]
+    ]
+  },
+  "eat_nonce": "931d8dd0add203ac3d8b4fbde75e115278eefcdc8c5b87671a748f32364dfcb"
+}

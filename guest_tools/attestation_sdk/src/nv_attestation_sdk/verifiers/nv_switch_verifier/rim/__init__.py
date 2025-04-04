@@ -269,10 +269,8 @@ class RIM:
             [bool] : If signature verification is successful, then return the True. Otherwise,
                 raises RIMSignatureVerificationError.
         """
-        if self.rim_name == 'driver':
-            self.debug_log.debug("Driver rim cert has been extracted successfully")
-        else:
-            self.debug_log.debug("Vbios rim cert has been extracted successfully")
+        self.debug_log.debug("Vbios rim cert has been extracted successfully")
+
         try:
             # performs the signature verification of the RIM. We will get the root of the RIM
             # if the signature verification is successful otherwise, it raises InvalidSignature exception.
@@ -282,22 +280,25 @@ class RIM:
             if verified_root is None:
                 err_msg = "\t\t\tRIM signature verification failed."
                 self.debug_log.error(err_msg)
+                settings.mark_vbios_rim_signature_verified(False)
                 raise RIMSignatureVerificationError(err_msg)
 
         except InvalidSignature as error:
             err_msg = "\t\t\tRIM signature verification failed."
             self.debug_log.error(err_msg)
+            settings.mark_vbios_rim_signature_verified(False)
             raise RIMSignatureVerificationError(err_msg)
 
         except Exception as error:
             self.info_log.error(error)
             err_msg = "\t\t\tRIM signature verification failed."
             self.debug_log.error(err_msg)
+            settings.mark_vbios_rim_signature_verified(False)
             raise RIMSignatureVerificationError(err_msg)
 
         self.info_log.info(f"\t\t\t{self.rim_name} RIM signature verification successful.")
         self.root = verified_root
-        settings.mark_bios_rim_cert_validated()
+        settings.mark_vbios_rim_signature_verified()
         return True
 
     def get_measurements(self):
@@ -355,6 +356,7 @@ class RIM:
             self.measurements_obj[index] = golden_measurement
 
         if len(self.measurements_obj) == 0:
+            settings.mark_rim_vbios_measurements_as_available(False)
             raise NoRIMMeasurementsError(f"\tNo golden measurements found in {self.rim_name} rim.\n\tQuitting now.")
 
         self.debug_log.debug(f"{self.rim_name} golden measurements are : \n\t\t\t\t\t\t\t")
@@ -367,10 +369,7 @@ class RIM:
                 self.debug_log.debug(
                     f"\t\t\t\t\t\t\t\t value {i + 1} : {self.measurements_obj[idx].get_value_at_index(i)}")
 
-        if self.rim_name == 'driver':
-            settings.mark_rim_driver_measurements_as_available()
-        else:
-            settings.mark_rim_vbios_measurements_as_available()
+        settings.mark_rim_vbios_measurements_as_available()
 
     def verify(self, version, settings, schema_path=''):
         """ Performs the schema validation if it is successful then signature verification is done.
@@ -398,20 +397,14 @@ class RIM:
 
         if self.validate_schema(schema_path=schema_path):
             self.info_log.info("\t\t\tRIM Schema validation passed.")
-
-            if self.rim_name == 'driver':
-                settings.mark_driver_rim_schema_validated()
-            else:
-                settings.mark_bios_rim_schema_validated()
+            settings.mark_bios_rim_schema_validated()
 
             if version != self.colloquialVersion.lower():
+                settings.mark_rim_vbios_version_as_matching(False)
                 self.info_log.warning(
                     f"\t\t\tThe {self.rim_name} version in the RIM file is not matching with the installed {self.rim_name} version.")
             else:
-                if self.rim_name == 'driver':
-                    settings.mark_rim_driver_version_as_matching()
-                else:
-                    settings.mark_rim_vbios_version_as_matching()
+                settings.mark_rim_vbios_version_as_matching()
 
                 self.debug_log.debug(
                     f"The {self.rim_name} version in the RIM file is matching with the installed {self.rim_name} version.")
@@ -427,24 +420,40 @@ class RIM:
                 mode = BaseSettings.Certificate_Chain_Verification_Mode.VBIOS_RIM_CERT
 
             rim_cert_chain.append(crypto.load_certificate(type=crypto.FILETYPE_PEM, buffer=root_cert_data))
-            rim_cert_chain_verification_status = NVSwitchAdminUtils.verify_certificate_chain(rim_cert_chain,
+            rim_cert_chain_verification_status, rim_cert_expired, rim_cert_expiration_date = NVSwitchAdminUtils.verify_certificate_chain(rim_cert_chain,
                                                                                        settings,
                                                                                        mode)
+
+            settings.mark_switch_vbios_rim_cert_expiration_date(rim_cert_expiration_date)
+
             if not rim_cert_chain_verification_status:
+                settings.mark_switch_vbios_rim_cert_status(BaseSettings.Status.INVALID.value)
+                settings.mark_switch_vbios_rim_cert_chain_validated(False)
+                if rim_cert_expired:
+                    settings.mark_switch_vbios_rim_cert_status(BaseSettings.Status.EXPIRED.value)
+                    self.info_log.info(f"BIOS RIM certificate expired on {rim_cert_expiration_date}.")
                 raise RIMCertChainVerificationError(f"\t\t\t{self.rim_name} RIM cert chain verification failed")
 
             self.info_log.info(f"\t\t\t{self.rim_name} RIM certificate chain verification successful.")
 
-            rim_cert_chain_ocsp_revocation_status, switch_attestation_warning = NVSwitchAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain,
+            rim_cert_chain_ocsp_revocation_status, switch_attestation_warning, ocsp_status, revocation_reason = NVSwitchAdminUtils.ocsp_certificate_chain_validation(rim_cert_chain,
                                                                                                    settings, mode)
 
-            if not rim_cert_chain_ocsp_revocation_status:
-                self.info_log.error(f"{self.rim_name} RIM cert chain ocsp status verification failed.")
-                sys.exit()
+            settings.mark_switch_vbios_rim_cert_ocsp_status(ocsp_status)
+            settings.mark_switch_vbios_rim_cert_revocation_reason(revocation_reason)
+            settings.mark_switch_vbios_rim_cert_status(BaseSettings.Status.REVOKED.value if revocation_reason is not None else BaseSettings.Status.VALID.value)
 
+            if not rim_cert_chain_ocsp_revocation_status:
+                settings.mark_switch_vbios_rim_cert_status(BaseSettings.Status.INVALID.value)
+                settings.mark_switch_vbios_rim_cert_chain_validated(False)
+                self.info_log.error(f"{self.rim_name} RIM cert chain ocsp status verification failed.")
+                raise RIMCertChainOCSPVerificationError(f"\t\t\tOCSP validation of {self.rim_name} RIM failed. OCSP Status: {ocsp_status} and Revocation Reason: {revocation_reason}")
+
+            settings.mark_switch_vbios_rim_cert_chain_validated()
             return self.verify_signature(settings), switch_attestation_warning
 
         else:
+            settings.mark_bios_rim_schema_validated(False)
             raise RIMSchemaValidationError(f"\t\t\tSchema validation of {self.rim_name} RIM failed.")
 
     def __init__(self, rim_name, settings, info_logger, debug_logger, rim_path='', content=''):
