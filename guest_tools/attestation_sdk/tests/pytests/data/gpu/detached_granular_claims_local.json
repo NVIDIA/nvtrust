@@ -1,0 +1,51 @@
+{
+  "measres": "success",
+  "x-nvidia-gpu-arch-check": true,
+  "x-nvidia-gpu-driver-version": "570.44",
+  "x-nvidia-gpu-vbios-version": "96.00.9F.00.01",
+  "x-nvidia-gpu-attestation-report-cert-chain": {
+    "x-nvidia-cert-expiration-date": "9999-12-31T23:59:59",
+    "x-nvidia-cert-status": "valid",
+    "x-nvidia-cert-ocsp-status": "good",
+    "x-nvidia-cert-revocation-reason": null
+  },
+  "x-nvidia-gpu-attestation-report-cert-chain-fwid-match": true,
+  "x-nvidia-gpu-attestation-report-parsed": true,
+  "x-nvidia-gpu-attestation-report-nonce-match": true,
+  "x-nvidia-gpu-attestation-report-signature-verified": true,
+  "x-nvidia-gpu-driver-rim-fetched": true,
+  "x-nvidia-gpu-driver-rim-schema-validated": true,
+  "x-nvidia-gpu-driver-rim-cert-chain": {
+    "x-nvidia-cert-expiration-date": "2026-11-20T03:10:39",
+    "x-nvidia-cert-status": "valid",
+    "x-nvidia-cert-ocsp-status": "good",
+    "x-nvidia-cert-revocation-reason": null
+  },
+  "x-nvidia-gpu-driver-rim-signature-verified": true,
+  "x-nvidia-gpu-driver-rim-version-match": true,
+  "x-nvidia-gpu-driver-rim-measurements-available": true,
+  "x-nvidia-gpu-vbios-rim-fetched": true,
+  "x-nvidia-gpu-vbios-rim-schema-validated": true,
+  "x-nvidia-gpu-vbios-rim-cert-chain": {
+    "x-nvidia-cert-expiration-date": "2026-02-22T23:17:58",
+    "x-nvidia-cert-status": "valid",
+    "x-nvidia-cert-ocsp-status": "good",
+    "x-nvidia-cert-revocation-reason": null
+  },
+  "x-nvidia-gpu-vbios-rim-version-match": true,
+  "x-nvidia-gpu-vbios-rim-signature-verified": true,
+  "x-nvidia-gpu-vbios-rim-measurements-available": true,
+  "x-nvidia-gpu-vbios-index-no-conflict": true,
+  "eat_nonce": "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb",
+  "hwmodel": "GH100 A01 GSP BROM",
+  "ueid": "490457405999046854973671575630853621547794591064",
+  "oemid": "5703",
+  "iss": "LOCAL_GPU_VERIFIER",
+  "x-nvidia-attestation-warning": "THE CERTIFICATE HCC RIM L4 Signer IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'.",
+  "nbf": 1736197199,
+  "exp": 1736200919,
+  "iat": 1736197319,
+  "jti": "a03100f6-4a97-4ba9-84cf-f866eddaefd0",
+  "secboot":true,
+  "dbgstat":"disabled"
+}

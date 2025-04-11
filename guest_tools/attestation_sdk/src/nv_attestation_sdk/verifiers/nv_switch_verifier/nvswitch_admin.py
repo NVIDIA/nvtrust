@@ -130,6 +130,7 @@ def attest(args, nonce, evidence_list):
         --rim_root_cert
     	--rim_service_url
         --ocsp_url
+        --claims_version
 
     Args:
         args (Dictionary): the dictionary object containing Attestation Options.
@@ -148,12 +149,19 @@ def attest(args, nonce, evidence_list):
 
     try:
         BaseSettings.allow_hold_cert = args['allow_hold_cert']
+        BaseSettings.CLAIMS_VERSION = args.get("claims_version") or "2.0"
+
+        if BaseSettings.CLAIMS_VERSION != "2.0" and BaseSettings.CLAIMS_VERSION != "3.0":
+            raise InvalidClaimsVersionError(f'Claims version is not supported: {BaseSettings.CLAIMS_VERSION}')
 
         if not args['rim_service_url'] is None:
             BaseSettings.set_rim_service_base_url(args['rim_service_url'])
 
         if not args['ocsp_url'] is None:
             BaseSettings.set_ocsp_url(args['ocsp_url'])
+
+        if not args['service_key'] is None:
+            BaseSettings.set_service_key(args['service_key'])
 
         for i, evidence_obj in enumerate(evidence_list):
             switch_uuid = evidence_obj.uuid
@@ -163,11 +171,10 @@ def attest(args, nonce, evidence_list):
             if nscq_handler.get_switch_architecture()[0] != settings.SwitchArch:
                 err_msg = "\tSwitch architecture is not supported."
                 logger.error(err_msg)
+                settings.mark_switch_arch_is_correct(False)
                 raise UnsupportedSwitchException(err_msg)
             logger.debug("\tSwitch architecture is correct.")
 
-
-            settings = LS10Settings()
             settings.mark_switch_arch_is_correct()
 
             logger.info("NVSwitch info fetched successfully.")
@@ -177,18 +184,13 @@ def attest(args, nonce, evidence_list):
             attestation_report_obj = AttestationReport(evidence_obj.attestation_report, logger, logger)
             settings.mark_attestation_report_parsed()
 
-
-
             # driver_version = attestation_report_obj.get_response_message().get_opaque_data().get_data(
             #                                                                                "OPAQUE_FIELD_ID_DRIVER_VERSION").hex()
             vbios_version_bytes = attestation_report_obj.get_response_message().get_opaque_data().get_data(
                                                                                            "OPAQUE_FIELD_ID_VBIOS_VERSION")
             vbios_version = vbios_version_bytes.decode('utf-8')
 
-
             settings.mark_bios_version(vbios_version)
-
-
 
             logger.info("\tValidating Switch certificate chains.")
             switch_attestation_cert_chain = evidence_obj.attestation_cert_chain
@@ -208,33 +210,44 @@ def attest(args, nonce, evidence_list):
 
             switch_leaf_cert = (switch_attestation_cert_chain[0])
             logger.debug("\t\tverifying attestation certificate chain.")
-            cert_verification_status = NVSwitchAdminUtils.verify_switch_certificate_chain(switch_attestation_cert_chain,
+            cert_verification_status, cert_expired, cert_expiration_date = NVSwitchAdminUtils.verify_switch_certificate_chain(switch_attestation_cert_chain,
                                                                                           settings,
                                                                                           attestation_report_obj.get_response_message().get_opaque_data().get_data(
                                                                                            "OPAQUE_FIELD_ID_FWID").hex())
 
+            settings.mark_switch_attestation_report_cert_expiration_date(cert_expiration_date)
             if not cert_verification_status:
                 err_msg = "\t\tnvSwitch attestation report certificate chain validation failed."
                 logger.error(err_msg)
+                settings.mark_switch_attestation_report_cert_status(BaseSettings.Status.INVALID.value)
+                if cert_expired:
+                    settings.mark_switch_attestation_report_cert_status(BaseSettings.Status.EXPIRED.value)
+                    logger.info(f"Attestation Report certificate expired on {cert_expiration_date}.")
+                settings.mark_switch_attestation_report_cert_chain_validated(False)
                 raise CertChainVerificationFailureError(err_msg)
-            else:
-                logger.info("\t\tnvSwitch attestation report certificate chain validation successful.")
+
+            logger.info("\t\tnvSwitch attestation report certificate chain validation successful.")
 
             if not args['ocsp_nonce_disabled'] is None:
                 settings.set_ocsp_nonce_disabled(args['ocsp_nonce_disabled'])
 
-            cert_chain_revocation_status, switch_attestation_warning = NVSwitchAdminUtils.ocsp_certificate_chain_validation(
+            cert_chain_revocation_status, switch_attestation_warning, ocsp_status, revocation_reason = NVSwitchAdminUtils.ocsp_certificate_chain_validation(
                 switch_attestation_cert_chain,
                 settings,
                 BaseSettings.Certificate_Chain_Verification_Mode.SWITCH_ATTESTATION)
 
+            settings.mark_switch_attestation_report_cert_ocsp_status(ocsp_status)
+            settings.mark_switch_attestation_report_cert_revocation_reason(revocation_reason)
+            settings.mark_switch_attestation_report_cert_status(BaseSettings.Status.REVOKED.value if revocation_reason is not None else BaseSettings.Status.VALID.value)
 
             if not cert_chain_revocation_status:
                 err_msg = "\t\tnvSwitch attestation report certificate chain revocation validation failed."
                 logger.error(err_msg)
+                settings.mark_switch_attestation_report_cert_status(BaseSettings.Status.INVALID.value)
+                settings.mark_switch_attestation_report_cert_chain_validated(False)
                 raise CertChainVerificationFailureError(err_msg)
 
-            settings.mark_switch_attestation_report_cert_chain_as_validated()
+            settings.mark_switch_attestation_report_cert_chain_validated()
 
             logger.info("\tAuthenticating attestation report")
             attestation_report_obj.print_obj(logger)
@@ -255,7 +268,6 @@ def attest(args, nonce, evidence_list):
 
             # performing the schema validation and signature verification of the vbios RIM.
             logger.info("\t\tAuthenticating VBIOS RIM.")
-            vbios_rim_path = settings.VBIOS_RIM_PATH
 
             if args['vbios_rim'] is None:
                 logger.info("\t\t\tFetching the VBIOS RIM from the RIM service.")
@@ -288,7 +300,7 @@ def attest(args, nonce, evidence_list):
                     logger.error("Failed to fetch Vbios RIM file from RIM service due to: %s", error)
                     logger.error(f'The verification of nvSwitch {i} resulted in failure.')
                     overall_status = False
-                    sys.exit()
+                    raise RIMFetchError(f'Unable to fetch vbios RIM from RIM service: {vbios_rim_file_id}')
             else:
                 logger.info("\t\t\tUsing the vbios from the local disk : " + args['vbios_rim'])
                 vbios_rim = RIM(rim_name='vbios', settings=settings, rim_path=args['vbios_rim'])
@@ -296,7 +308,6 @@ def attest(args, nonce, evidence_list):
             vbios_rim_verification_status, switch_attestation_warning = vbios_rim.verify(version=vbios_version, settings=settings)
             switch_attestation_warning_list.append(switch_attestation_warning)
             if vbios_rim_verification_status:
-                settings.mark_vbios_rim_signature_verified()
                 logger.info("\t\t\tVBIOS RIM verification successful")
             else:
                 logger.error("\t\tVBIOS RIM verification failed.")

@@ -59,6 +59,8 @@ from verifier.exceptions import (
     AttestationReportVerificationError,
     RIMVerificationFailureError,
     UnknownGpuArchitectureError,
+    RIMFetchError,
+    InvalidClaimsVersionError
 )
 from verifier.cc_admin_utils import CcAdminUtils
 from verifier.utils.claims_utils import ClaimsUtils
@@ -80,80 +82,101 @@ gpu_vbios_attestation_warning_list = []
 def main():
     """ The main function for the CC admin tool.
     """
-    global arguments_as_dictionary
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-v",
-        "--verbose",
-        help="Print more detailed output.",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--test_no_gpu",
-        help="""If there is no gpu and we
-                need to test the verifier, then no nvml apis will be available so, the verifier
-                will use a hardcoded gpu info.""",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--driver_rim",
-        help="The path to the driver RIM.",
-    )
-    parser.add_argument(
-        "--vbios_rim",
-        help="The path to the VBIOS RIM.",
-    )
-    parser.add_argument(
-        "--user_mode",
-        help="Runs the gpu attestation in user mode.",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--allow_hold_cert",
-        help="If the user wants to continue the attestation in case of the OCSP revocation status of the certificate "
-             "in the RIM files is 'certificate_hold'.",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--nonce",
-        help="Nonce (32 Bytes) represented in Hex String format used for Attestation Report",
-    )
-    parser.add_argument(
-        "--rim_root_cert",
-        help="The path to the root cert to be used for the cert chain verification of the driver and vbios rim "
-             "certificate chain.",
-    )
-    parser.add_argument(
-        "--rim_service_url",
-        help="If the user wants to override the RIM service base url and provide their own url, then can do so by "
-             "passing it as a command line argument.",
-    )
-    parser.add_argument(
-        "--ocsp_url",
-        help="If the user wants to override the OCSP service url and provide their own url, then can do so by passing "
-             "it as a command line argument.",
-    )
-    parser.add_argument(
-        "--ocsp_nonce_disabled",
-        help="Disable using a nonce when calling OCSP",
-        action="store_true",
-    )
-    args = parser.parse_args()
-    arguments_as_dictionary = vars(args)
+    try:
+        global arguments_as_dictionary
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "-v",
+            "--verbose",
+            help="Print more detailed output.",
+            action="store_true",
+        )
+        parser.add_argument(
+            "--test_no_gpu",
+            help="""If there is no gpu and we
+                    need to test the verifier, then no nvml apis will be available so, the verifier
+                    will use a hardcoded gpu info.""",
+            action="store_true",
+        )
+        parser.add_argument(
+            "--driver_rim",
+            help="The path to the driver RIM.",
+        )
+        parser.add_argument(
+            "--vbios_rim",
+            help="The path to the VBIOS RIM.",
+        )
+        parser.add_argument(
+            "--user_mode",
+            help="Runs the gpu attestation in user mode.",
+            action="store_true",
+        )
+        parser.add_argument(
+            "--allow_hold_cert",
+            help="If the user wants to continue the attestation in case of the OCSP revocation status of the certificate "
+                 "in the RIM files is 'certificate_hold'.",
+            action="store_true",
+        )
+        parser.add_argument(
+            "--service_key",
+            help="Service key which is used to auth remote service calls to attestation services",
+        )
+        parser.add_argument(
+            "--nonce",
+            help="Nonce (32 Bytes) represented in Hex String format used for Attestation Report",
+        )
+        parser.add_argument(
+            "--rim_root_cert",
+            help="The path to the root cert to be used for the cert chain verification of the driver and vbios rim "
+                 "certificate chain.",
+        )
+        parser.add_argument(
+            "--rim_service_url",
+            help="If the user wants to override the RIM service base url and provide their own url, then can do so by "
+                 "passing it as a command line argument.",
+        )
+        parser.add_argument(
+            "--ocsp_url",
+            help="If the user wants to override the OCSP service url and provide their own url, then can do so by passing "
+                 "it as a command line argument.",
+        )
+        parser.add_argument(
+            "--ocsp_nonce_disabled",
+            help="Disable using a nonce when calling OCSP",
+            action="store_true",
+        )
+        parser.add_argument(
+            "--claims_version",
+            help="The version of the claims(Can be 2.0 or 3.0)",
+            choices=["2.0", "3.0"],
+            default="2.0"
+        )
+        args = parser.parse_args()
+        arguments_as_dictionary = vars(args)
 
-    # nonce is generated / set if cc_admin is run as a standalone-tool
-    if arguments_as_dictionary["test_no_gpu"]:
-        nonce = BaseSettings.NONCE
-    else:
-        info_log.info("Generating nonce in the local GPU Verifier ..")
-        nonce = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES).hex()
+        # nonce is generated / set if cc_admin is run as a standalone-tool
+        if arguments_as_dictionary["test_no_gpu"]:
+            nonce = BaseSettings.NONCE
+        else:
+            info_log.info("Generating nonce in the local GPU Verifier ..")
+            nonce = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES).hex()
 
-    evidence_list = collect_gpu_evidence(nonce, arguments_as_dictionary['test_no_gpu'])
-    result, _ = attest(arguments_as_dictionary, nonce, evidence_list)
+        evidence_list = collect_gpu_evidence(nonce, arguments_as_dictionary['test_no_gpu'])
+        result, _ = attest(arguments_as_dictionary, nonce, evidence_list)
 
-    if not result:
+        if not result:
+            sys.exit(1)
+    except Exception as e:
+        info_log.debug(e)
+        info_log.error("Attestation Failed")
+        depth = 0
+        while e:
+            indent = "  " * depth
+            cause = f"Caused by:" if e.__cause__ else ""
+            print(f"{indent}{type(e).__name__}: {str(e)}. {cause}")
+            e = e.__cause__
+            depth += 1
         sys.exit(1)
-
 
 def collect_gpu_evidence(nonce: str, no_gpu_mode=False, ppcie_mode=True):
     """ Method to Collect GPU Evidence used by Attestation SDK
@@ -196,9 +219,9 @@ def collect_gpu_evidence(nonce: str, no_gpu_mode=False, ppcie_mode=True):
             evidence_list.append(gpu_info_obj)
         info_log.info("All GPU Evidences fetched successfully")
     except Exception as error:
-        info_log.error(error)
-    finally:
-        return evidence_list
+        info_log.debug(error)
+        raise Exception("Error occurred while collecting GPU evidence") from error
+    return evidence_list
 
 
 def collect_gpu_evidence_local(nonce: str, ppcie_mode: bool = True, no_gpu_mode=False, ):
@@ -240,7 +263,7 @@ def collect_gpu_evidence_remote(nonce: str, no_gpu_mode=False, ppcie_mode=True):
     return remote_evidence_list
 
 
-def init_nvml(ppcie_mode:bool):
+def init_nvml(ppcie_mode: bool):
     """ Method to Initialize NVML library
     """
     try:
@@ -251,23 +274,20 @@ def init_nvml(ppcie_mode:bool):
         if not NvmlHandler.is_cc_enabled() and not NvmlHandler.is_ppcie_mode_enabled():
             event_log.debug("The confidential compute is", NvmlHandler.is_cc_enabled(), "and the PPCIE mode is",
                             NvmlHandler.is_ppcie_mode_enabled())
-            err_msg = ("The confidential compute feature and PPCIE mode is disabled !! Exiting now. Please enable one of "
-                       "the feature and try again")
-            info_log.error(err_msg)
-            sys.exit()
+            err_msg = "System must be running in either confidential compute mode or PPCIE mode to perform attestation"
+            info_log.debug(err_msg)
+            raise Exception(err_msg)
 
         if NvmlHandler.is_ppcie_mode_enabled() and ppcie_mode:
-            err_msg = ("Attestation Failed! Attestation in standalone mode is not supported for PPCIE system. Exiting "
-                       "now.")
-            info_log.error(err_msg)
-            sys.exit()
+            err_msg = "Attestation in standalone mode is not supported for PPCIE system"
+            info_log.debug(err_msg)
+            raise Exception(err_msg)
 
         if NvmlHandler.is_cc_dev_mode():
-            info_log.info("The system is running in CC DevTools mode !!")
+            info_log.info("The system is running in CC DevTools mode")
     except Exception as error:
-        info_log.error("Error occurred while initializing the NVML library. Error: %s", error)
-        sys.exit()
-
+        info_log.debug("Error occurred while initializing the NVML library. Error: %s", error)
+        raise Exception("Error occurred while initializing the NVML library") from error
 
 def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
     """ Method to perform GPU Attestation and return an Attestation Response.
@@ -284,9 +304,14 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
     overall_status = False
     gpu_claims_list = []
     att_report_nonce_hex = CcAdminUtils.validate_and_extract_nonce(nonce)
+    settings = HopperSettings()
 
     try:
         BaseSettings.allow_hold_cert = arguments_as_dictionary['allow_hold_cert']
+        BaseSettings.CLAIMS_VERSION = arguments_as_dictionary.get("claims_version") or "2.0"
+
+        if BaseSettings.CLAIMS_VERSION != "2.0" and BaseSettings.CLAIMS_VERSION != "3.0":
+            raise InvalidClaimsVersionError(f'Claims version is not supported: {BaseSettings.CLAIMS_VERSION}')
 
         BaseSettings.OCSP_NONCE_DISABLED = arguments_as_dictionary['ocsp_nonce_disabled']
 
@@ -295,6 +320,9 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
         if not arguments_as_dictionary['ocsp_url'] is None:
             BaseSettings.set_ocsp_url(arguments_as_dictionary['ocsp_url'])
+
+        if not arguments_as_dictionary['service_key'] is None:
+            BaseSettings.set_service_key(arguments_as_dictionary['service_key'])
 
         if arguments_as_dictionary['verbose']:
             info_log.setLevel(logging.DEBUG)
@@ -314,6 +342,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
             else:
                 err_msg = "Unknown GPU architecture."
                 event_log.error(err_msg)
+                settings.mark_gpu_arch_is_correct(False)
                 raise UnknownGpuArchitectureError(err_msg)
 
             event_log.debug("GPU info fetched successfully.")
@@ -323,6 +352,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
             if gpu_info_obj.get_gpu_architecture() != settings.GpuArch:
                 err_msg = "\tGPU architecture is not supported."
                 event_log.error(err_msg)
+                settings.mark_gpu_arch_is_correct(False)
                 raise UnsupportedGpuArchitectureError(err_msg)
 
             event_log.debug("\tGPU architecture is correct.")
@@ -362,25 +392,37 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
             gpu_leaf_cert = (gpu_attestation_cert_chain[0])
             event_log.debug("\t\tverifying attestation certificate chain.")
-            cert_verification_status = CcAdminUtils.verify_gpu_certificate_chain(gpu_attestation_cert_chain, settings,
+            cert_verification_status, cert_expired, cert_expiration_date = CcAdminUtils.verify_gpu_certificate_chain(gpu_attestation_cert_chain, settings,
                                                                                  attestation_report_obj.get_response_message().get_opaque_data().get_data(
                                                                                      "OPAQUE_FIELD_ID_FWID").hex())
 
+            settings.mark_gpu_attestation_report_cert_expiration_date(cert_expiration_date)
             if not cert_verification_status:
                 err_msg = "\t\tGPU attestation report certificate chain validation failed."
                 event_log.error(err_msg)
+                settings.mark_gpu_attestation_report_cert_status(BaseSettings.Status.INVALID.value)
+                if cert_expired:
+                    settings.mark_gpu_attestation_report_cert_status(BaseSettings.Status.EXPIRED.value)
+                    info_log.info(f"Attestation Report certificate expired on {cert_expiration_date}.")
+                settings.mark_gpu_attestation_report_cert_chain_validated(False)
                 raise CertChainVerificationFailureError(err_msg)
-            else:
-                info_log.info("\t\tGPU attestation report certificate chain validation successful.")
 
-            cert_chain_revocation_status, gpu_attestation_warning = CcAdminUtils.ocsp_certificate_chain_validation(
+            info_log.info("\t\tGPU attestation report certificate chain validation successful.")
+
+            cert_chain_revocation_status, gpu_attestation_warning, ocsp_status, revocation_reason = CcAdminUtils.ocsp_certificate_chain_validation(
                 gpu_attestation_cert_chain,
                 settings,
                 BaseSettings.Certificate_Chain_Verification_Mode.GPU_ATTESTATION)
 
+            settings.mark_gpu_attestation_report_cert_ocsp_status(ocsp_status)
+            settings.mark_gpu_attestation_report_cert_revocation_reason(revocation_reason)
+            settings.mark_gpu_attestation_report_cert_status(BaseSettings.Status.REVOKED.value if revocation_reason is not None else BaseSettings.Status.VALID.value)
+
             if not cert_chain_revocation_status:
                 err_msg = "\t\tGPU attestation report certificate chain revocation validation failed."
                 event_log.error(err_msg)
+                settings.mark_gpu_attestation_report_cert_status(BaseSettings.Status.INVALID.value)
+                settings.mark_gpu_attestation_report_cert_chain_validated(False)
                 raise CertChainVerificationFailureError(err_msg)
 
             settings.mark_gpu_attestation_report_cert_chain_validated()
@@ -422,7 +464,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                     except Exception as error:
                         info_log.error("Error occurred while fetching the driver RIM from the "
                                        "RIM service due to %s", error)
-                        sys.exit()
+                        raise RIMFetchError(f'Unable to fetch driver RIM from RIM service: {driver_rim_file_id}') from error
                 else:
                     info_log.info("\t\t\tUsing the local driver rim file : " + settings.DRIVER_RIM_PATH)
                     driver_rim = RIM(rim_name='driver', settings=settings, rim_path=settings.DRIVER_RIM_PATH)
@@ -435,7 +477,6 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                                                                                                settings=settings)
             gpu_driver_attestation_warning_list.append(gpu_driver_attestation_warning)
             if driver_rim_verification_status:
-                settings.mark_driver_rim_signature_verified()
                 info_log.info("\t\t\tDriver RIM verification successful")
             else:
                 event_log.error("\t\t\tDriver RIM verification failed.")
@@ -443,7 +484,6 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
             # performing the schema validation and signature verification of the vbios RIM.
             info_log.info("\t\tAuthenticating VBIOS RIM.")
-            vbios_rim_path = settings.VBIOS_RIM_PATH
 
             if arguments_as_dictionary['vbios_rim'] is None:
 
@@ -483,7 +523,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                     except Exception as error:
                         info_log.error("Error occurred while fetching the vbios RIM from the "
                                        "RIM service due to %s", error)
-                        sys.exit()
+                        raise RIMFetchError(f'Unable to fetch vbios RIM from RIM service: {vbios_rim_file_id}') from error
 
                 else:
                     info_log.info("\t\t\tUsing the TEST_NO_GPU VBIOS rim file.")
@@ -498,7 +538,6 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                                                                                       settings=settings)
             gpu_vbios_attestation_warning_list.append(gpu_attestation_warning)
             if vbios_rim_verification_status:
-                settings.mark_vbios_rim_signature_verified()
                 info_log.info("\t\t\tVBIOS RIM verification successful")
             else:
                 event_log.error("\t\tVBIOS RIM verification failed.")

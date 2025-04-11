@@ -220,3 +220,8 @@ class NoSwitchFoundError(PynscqError):
     """ It is raised in case the number of available Switch is zero.
     """
     pass
+
+class InvalidClaimsVersionError(Error):
+    """ It is raised when the claims version is not supported.
+    """
+    pass

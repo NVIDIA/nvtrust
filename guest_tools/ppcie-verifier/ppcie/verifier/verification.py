@@ -11,6 +11,7 @@ import argparse
 from nv_attestation_sdk import attestation
 
 from nv_attestation_sdk.verifiers.nv_switch_verifier.nscq import NSCQHandler
+from nv_attestation_sdk.utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL
 from verifier.nvml import NvmlHandler
 from nv_attestation_sdk.utils.config import set_allow_hold_cert
 from nv_attestation_sdk.verifiers.nv_switch_verifier.models.nvswitch import NVSwitch
@@ -25,7 +26,7 @@ from .src.utils.status import Status
 from .src.topology.validate_topology import TopologyValidation
 from .src.nvml.nvml_client import NvmlClient
 from .src.utils.logging import setup_logging, get_logger
-from .src.utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, REMOTE_NVSWITCH_VERIFIER_SERVICE_URL, RIM_SERVICE_URL, OCSP_SERVICE_URL
+from .src.utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, REMOTE_NVSWITCH_VERIFIER_SERVICE_URL, RIM_SERVICE_URL, OCSP_SERVICE_URL, ATTESTATION_SERVICE_KEY
 
 parser = argparse.ArgumentParser()
 logger = setup_logging()
@@ -80,7 +81,18 @@ def verification():
             help="The URL to be used for fetching driver and VBIOS RIM files",
             type=str,
         )
-
+        parser.add_argument(
+            "--service_key",
+            help="Service key which is used to auth remote service calls to attestation services",
+            type=str
+        )
+        parser.add_argument(
+            "--claims-version",
+            help="The version of the claims(Can be 2.0 or 3.0)",
+            type=str,
+            choices=["2.0", "3.0"],
+            default="2.0"
+        )
         args = vars(parser.parse_args())
         logger = get_logger(args["log"])
 
@@ -228,7 +240,9 @@ def perform_gpu_attestation(logger, status, args):
         client = attestation.Attestation()
         client.set_nonce(generate_nonce())
         client.set_name("HGX-node")
+        client.set_claims_version(args.get("claims_version") or "2.0")
         client.set_ocsp_nonce_disabled(args["ocsp_nonce_disabled"])
+        client.set_service_key(args.get('service_key') or ATTESTATION_SERVICE_KEY)
         logger.debug("PPCIE: Node name: %s", client.get_name())
         client.add_verifier(
             dev=attestation.Devices.GPU,
@@ -266,7 +280,7 @@ def perform_gpu_attestation(logger, status, args):
             status.gpu_attestation = True
         else:
             status.gpu_attestation = False
-        file = "data/NVGPU" + attestation_mode.capitalize() + "Policy.json"
+        file = "data/NVGPU" + attestation_mode.capitalize() + "Policy_claims_" + client.get_claims_version() +".json"
         with open(
                 os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
         ) as json_file:
@@ -328,7 +342,9 @@ def perform_switch_attestation(logger, status, args):
         switch_attester = attestation.Attestation()
         switch_attester.set_name("HGX-node")
         switch_attester.set_nonce(generate_nonce())
+        switch_attester.set_claims_version(args.get("claims_version") or "2.0")
         switch_attester.set_ocsp_nonce_disabled(args["ocsp_nonce_disabled"])
+        switch_attester.set_service_key(args.get('service_key') or ATTESTATION_SERVICE_KEY)
         logger.debug("PPCIE: Node name: %s", switch_attester.get_name())
         switch_attester.add_verifier(
             dev=attestation.Devices.SWITCH,
@@ -363,7 +379,7 @@ def perform_switch_attestation(logger, status, args):
         else:
             status.switch_attestation = False
         logger.info("PPCIE: Switch attestation result is %s", attestation_result)
-        file = "data/NVSwitch" + switch_attestation_mode.capitalize() + "Policy.json"
+        file = "data/NVSwitch" + switch_attestation_mode.capitalize() + "Policy_claims_" + switch_attester.get_claims_version() +".json"
         with open(
                 os.path.join(os.path.dirname(__file__), file), encoding="utf-8"
         ) as json_file:

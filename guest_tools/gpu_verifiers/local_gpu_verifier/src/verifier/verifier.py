@@ -101,6 +101,7 @@ class Verifier:
                 else:
                     info_log.info("\t\t\t"+str(index))
             info_log.info("\t\t\t]")
+            settings.mark_measurements_as_matching(False)
             return False
         else:
             info_log.info("\t\t\tThe runtime measurements are matching with the golden measurements.\
@@ -133,6 +134,7 @@ class Verifier:
 
             if vbios_golden_measurements[gld_msr_idx].is_active() and \
                gld_msr_idx in self.golden_measurements:
+               settings.mark_no_driver_vbios_measurement_index_conflict(False)
                raise InvalidMeasurementIndexError(f"The driver and vbios RIM have measurement at the same index : {gld_msr_idx}")
             
             elif vbios_golden_measurements[gld_msr_idx].is_active():

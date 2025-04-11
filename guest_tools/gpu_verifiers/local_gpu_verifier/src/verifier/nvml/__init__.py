@@ -210,12 +210,14 @@ class NvmlHandler:
             return bin_attestation_report_data
 
         except TimeoutError as err:
-            raise TimeoutError("\tThe call to fetch attestation report timed out.")
+            BaseSettings.mark_attestation_report_as_available(False)
+            raise TimeoutError("\tThe call to fetch attestation report timed out.") from err
         except Exception as err:
+            BaseSettings.mark_attestation_report_as_available(False)
             info_log.error(err)
             err_msg = "\tSomething went wrong while fetching the attestation report from the gpu."
             event_log.error(err_msg)
-            raise AttestationReportFetchError(err_msg)
+            raise AttestationReportFetchError(err_msg) from err
 
     def get_driver_version(self):
         """ Fetches the DriverVersion field of the NvmlHandler class object.

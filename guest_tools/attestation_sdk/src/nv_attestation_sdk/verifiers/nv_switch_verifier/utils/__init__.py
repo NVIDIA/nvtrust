@@ -132,30 +132,29 @@ def format_vbios_version(version):
 
 
 def function_caller(inp, logger):
-    """ This function is run in a separate thread by 
-    function_wrapper_with_timeout function so that if the execution of the
-    function passed as an argument takes more than the max threshold time limit then
-    the thread is killed.
+    """ This function is run in a separate thread by
+    function_wrapper_with_timeout function so that return values
+    and exceptions are propagated to the caller.
+    Note that since Python does not provide a way to cancel/kill
+    a running thread the caller must expect that a thread that
+    exceeded the time limit is still running.
 
     Args:
         inp (tuple): the tuple containing the function to be executed and its
-                     arguments. 
+                     arguments.
     """
-    assert type(inp) is list
-
-    event = inp[-1]
-    q = inp[-2]
-    function_name = inp[-3]
+    q = inp[-1]
+    function_name = inp[-2]
     function = inp[0]
-    arguments = inp[1:-3]
+    arguments = inp[1:-2]
+    try:
+        result = function(*arguments)
+        q.put((result, None))
+        logger.info(f"{function_name} completed successfully")
+    except BaseException as e:
+        q.put((None, e))
+        logger.info(f"{function_name} raised an exception")
 
-    result = function(*arguments)
-
-    if event.is_set():
-        event_log.info(f"{function_name} execution timed out, stopping.")
-        return
-
-    q.put(result)
 
 
 def function_wrapper_with_timeout(args, logger, max_time_delay):
@@ -164,30 +163,27 @@ def function_wrapper_with_timeout(args, logger, max_time_delay):
 
     Args:
         args (list): the list containing the function and its arguments.
-        logger (logging.Logger): the logger object which prints the output according to its set level.
-        max_time_delay (int): the timeout value in seconds.
 
     Raises:
         TimeoutError: it is raised if the thread spawned takes more time than
                       the threshold time limit.
+        Exception: raises any exception raised by the called thread
 
     Returns:
         [any]: the return of the function being executed in the thread.
     """
     assert type(args) is list
+    function_name = args[-1]
+    q = queue.Queue()
+    args.append(q)
+    args = ((args), logger)
+    logger.info(f"{function_name} called.")
+    thread = Thread(target=function_caller, args=args, daemon=True)
+    thread.start()
     try:
-        function_name = args[-1]
-        q = queue.Queue()
-        args.append(q)
-        event = Event()
-        args.append(event)
-        args = ((args), logger)
-        logger.debug(f"{function_name} called.")
-        thread = Thread(target=function_caller, args=args)
-        thread.start()
-        return_value = q.get(block=True, timeout=max_time_delay)
-        event.set()
-        return return_value
-    except Empty:
-        logger.error(f"The {function_name} call timed out.")
-        raise TimeoutError(f"The {function_name} call timed out.")
+        return_value, inner_exception = q.get(block=True, timeout=max_time_delay)
+    except Empty as e:
+        raise TimeoutError(f"Call to {function_name} timed out after {max_time_delay} seconds.") from e
+    if inner_exception is not None:
+        raise inner_exception
+    return return_value

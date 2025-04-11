@@ -187,29 +187,27 @@ def format_vbios_version(version):
 
 def function_caller(inp):
     """ This function is run in a separate thread by
-    function_wrapper_with_timeout function so that if the execution of the
-    function passed as an argument takes more than the max threshold time limit then
-    the thread is killed.
+    function_wrapper_with_timeout function so that return values
+    and exceptions are propagated to the caller.
+    Note that since Python does not provide a way to cancel/kill
+    a running thread the caller must expect that a thread that
+    exceeded the time limit is still running.
 
     Args:
         inp (tuple): the tuple containing the function to be executed and its
                      arguments.
     """
-    assert type(inp) is list
-
-    event = inp[-1]
-    q = inp[-2]
-    function_name = inp[-3]
+    q = inp[-1]
+    function_name = inp[-2]
     function = inp[0]
-    arguments = inp[1:-3]
-
-    result = function(*arguments)
-
-    if event.is_set():
-        event_log.info(f"{function_name} execution timed out, stopping.")
-        return
-
-    q.put(result)
+    arguments = inp[1:-2]
+    try:
+        result = function(*arguments)
+        q.put((result, None))
+        event_log.info(f"{function_name} completed successfully")
+    except BaseException as e:
+        q.put((None, e))
+        event_log.info(f"{function_name} raised an exception")
 
 
 def function_wrapper_with_timeout(args, max_time_delay):
@@ -222,24 +220,23 @@ def function_wrapper_with_timeout(args, max_time_delay):
     Raises:
         TimeoutError: it is raised if the thread spawned takes more time than
                       the threshold time limit.
+        Exception: raises any exception raised by the called thread
 
     Returns:
         [any]: the return of the function being executed in the thread.
     """
     assert type(args) is list
+    function_name = args[-1]
+    q = queue.Queue()
+    args.append(q)
+    args = ((args),)
+    event_log.info(f"{function_name} called.")
+    thread = Thread(target=function_caller, args=args, daemon=True)
+    thread.start()
     try:
-        function_name = args[-1]
-        q = queue.Queue()
-        args.append(q)
-        event = Event()
-        args.append(event)
-        args = ((args),)
-        event_log.info(f"{function_name} called.")
-        thread = Thread(target=function_caller, args=args)
-        thread.start()
-        return_value = q.get(block=True, timeout=max_time_delay)
-        event.set()
-        return return_value
-    except Empty:
-        event_log.error(f"The {function_name} call timed out.")
-        raise TimeoutError(f"The {function_name} call timed out.")
+        return_value, inner_exception = q.get(block=True, timeout=max_time_delay)
+    except Empty as e:
+        raise TimeoutError(f"Call to {function_name} timed out after {max_time_delay} seconds.") from e
+    if inner_exception is not None:
+        raise inner_exception
+    return return_value

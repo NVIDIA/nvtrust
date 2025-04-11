@@ -27,7 +27,11 @@ def validate_claims(token: dict, auth_rules: dict) -> bool:
     file_logger.info("Comparing token: %s with rules auth_rules: %s", token, auth_rules)
     for key in auth_rules:
         if key in token:
-            if token[key] != auth_rules[key]:
+            # Check if both values are dictionaries and recurse for nested dictionaries
+            if isinstance(auth_rules[key], dict) and isinstance(token[key], dict):
+                if not validate_claims(token[key], auth_rules[key]):
+                    return False
+            elif token[key] != auth_rules[key]:
                 console_logger.error(
                     "[ERROR] Invalid token. Authorized claims does not match "
                     "the appraisal policy: %s",

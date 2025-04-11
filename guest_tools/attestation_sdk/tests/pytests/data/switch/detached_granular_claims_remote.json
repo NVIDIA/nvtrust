@@ -1,0 +1,38 @@
+{
+  "measres": "success",
+  "x-nvidia-switch-arch-check": true,
+  "x-nvidia-switch-bios-version": "96.00.9F.00.01",
+  "x-nvidia-switch-attestation-report-cert-chain": {
+    "x-nvidia-cert-expiration-date": "9999-12-31T23:59:59",
+    "x-nvidia-cert-status": "valid",
+    "x-nvidia-cert-ocsp-status": "good",
+    "x-nvidia-cert-revocation-reason": null
+  },
+  "x-nvidia-switch-attestation-report-cert-chain-fwid-match": true,
+  "x-nvidia-switch-attestation-report-parsed": true,
+  "x-nvidia-switch-attestation-report-nonce-match": true,
+  "x-nvidia-switch-attestation-report-signature-verified": true,
+  "x-nvidia-switch-bios-rim-fetched": true,
+  "x-nvidia-switch-bios-rim-schema-validated": true,
+  "x-nvidia-switch-bios-rim-cert-chain": {
+    "x-nvidia-cert-expiration-date": "2026-02-22T23:17:58",
+    "x-nvidia-cert-status": "valid",
+    "x-nvidia-cert-ocsp-status": "good",
+    "x-nvidia-cert-revocation-reason": null
+  },
+  "x-nvidia-switch-bios-rim-version-match": true,
+  "x-nvidia-switch-bios-rim-signature-verified": true,
+  "x-nvidia-switch-bios-rim-measurements-available": true,
+  "eat_nonce": "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb",
+  "hwmodel": "GH100 A01 GSP BROM",
+  "ueid": "490457405999046854973671575630853621547794591064",
+  "oemid": "5703",
+  "iss": "https://nras.attestation.nvidia.com",
+  "x-nvidia-attestation-warning": "THE CERTIFICATE HCC RIM L4 Signer IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'.",
+  "nbf": 1736197199,
+  "exp": 1736200919,
+  "iat": 1736197319,
+  "jti": "a03100f6-4a97-4ba9-84cf-f866eddaefd0",
+  "secboot":true,
+  "dbgstat":"disabled"
+}

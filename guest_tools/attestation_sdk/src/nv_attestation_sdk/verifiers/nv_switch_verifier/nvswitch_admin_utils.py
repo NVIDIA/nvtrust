@@ -37,6 +37,7 @@ from urllib.error import HTTPError
 import json
 import base64
 import logging
+import urllib
 
 from OpenSSL import crypto
 from cryptography.hazmat.primitives import serialization
@@ -45,11 +46,14 @@ from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.exceptions import InvalidSignature
 from cryptography.x509 import ocsp, OCSPNonce, ExtensionNotFound
 from cryptography import x509
+from datetime import datetime
 
 from nv_attestation_sdk.verifiers.nv_switch_verifier.attestation import AttestationReport
 from nv_attestation_sdk.verifiers.nv_switch_verifier.config import (
     BaseSettings,
 )
+from nv_attestation_sdk.utils.headers import SERVICE_KEY_VALUE
+
 from nv_attestation_sdk.verifiers.nv_switch_verifier.utils import (
     format_vbios_version,
     function_wrapper_with_timeout,
@@ -111,11 +115,13 @@ class NVSwitchAdminUtils:
             if attestation_report_fwid != NVSwitchAdminUtils.extract_fwid(cert_chain[0]):
                 logger.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
                 logger.debug(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
+                settings.mark_switch_attestation_report_cert_chain_fwid_matched(False)
                 return False
 
             logger.info(
                 "\t\tThe firmware ID in the device certificate chain is matching with the one in the attestation report.")
 
+        settings.mark_switch_attestation_report_cert_chain_fwid_matched()
         return NVSwitchAdminUtils.verify_certificate_chain(cert_chain, settings,
                                                            BaseSettings.Certificate_Chain_Verification_Mode.SWITCH_ATTESTATION)
 
@@ -157,23 +163,36 @@ class NVSwitchAdminUtils:
                 "\t\tThe number of certificates fetched from the Switch is unexpected.")
 
         store = crypto.X509Store()
+        earliest_expiration_iso8601 = None
+        expired = False
         index = number_of_certificates - 1
         while index > -1:
+            expiration_iso8601 = datetime.strptime(cert_chain[index].get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ').isoformat()
+            if earliest_expiration_iso8601 is None or expiration_iso8601 < earliest_expiration_iso8601:
+                earliest_expiration_iso8601 = expiration_iso8601
+
             if index == number_of_certificates - 1:
                 # The root CA certificate is stored at the end in the cert chain.
                 store.add_cert(cert_chain[index])
                 index = index - 1
             else:
-                store_context = crypto.X509StoreContext(store, cert_chain[index])
                 try:
+                    store_context = crypto.X509StoreContext(store, cert_chain[index])
                     store_context.verify_certificate()
                     store.add_cert(cert_chain[index])
                     index = index - 1
                 except crypto.X509StoreContextError as e:
-                    logger.debug(f'Cert chain verification is failing at index : {index}')
-                    logger.error(e)
-                    return False
-        return True
+                    X509_V_ERR_CERT_HAS_EXPIRED = 10
+                    if e.errors[0] == X509_V_ERR_CERT_HAS_EXPIRED:
+                        expired = True
+                        logger.debug(f'Certificate chain verification failed because of expired cert at index {index}.')
+                        logger.error(e)
+                        return False, expired, earliest_expiration_iso8601
+                    else:
+                        logger.debug(f'Cert chain verification is failing at index : {index}')
+                        logger.error(e)
+                        return False, expired, earliest_expiration_iso8601
+        return True, expired, earliest_expiration_iso8601
 
     @staticmethod
     def convert_cert_from_cryptography_to_pyopenssl(cert):
@@ -208,6 +227,8 @@ class NVSwitchAdminUtils:
         revoked_status = False
         start_index = 0
         switch_attestation_warning = ""
+        ocsp_status = None
+        revocation_reason = None
 
         if mode == BaseSettings.Certificate_Chain_Verification_Mode.SWITCH_ATTESTATION:
             start_index = 1
@@ -243,21 +264,21 @@ class NVSwitchAdminUtils:
             for j in range(i, len(cert_chain)):
                 ocsp_cert_chain.append(NVSwitchAdminUtils.convert_cert_from_cryptography_to_pyopenssl(cert_chain[j]))
 
-            ocsp_cert_chain_verification_status = NVSwitchAdminUtils.verify_certificate_chain(ocsp_cert_chain,
+            ocsp_cert_chain_verification_status, ocsp_cert_expired, ocsp_cert_expiration_date = NVSwitchAdminUtils.verify_certificate_chain(ocsp_cert_chain,
                                                                                               settings,
                                                                                               BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
 
             if not ocsp_cert_chain_verification_status:
                 logger.error(
                     f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
-                return False, switch_attestation_warning
+                return False, switch_attestation_warning, ocsp_status, revocation_reason
             elif i == end_index - 1:
                 logger.debug("\t\tSwitch Certificate OCSP Cert chain is verified")
             # Verifying the signature of the ocsp response message.
             if not NVSwitchAdminUtils.verify_ocsp_signature(ocsp_response):
                 logger.error(
                     f"\t\tThe ocsp response response for certificate {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} failed due to signature verification failure.")
-                return False, switch_attestation_warning
+                return False, switch_attestation_warning, ocsp_status, revocation_reason
             elif i == end_index - 1:
                 logger.debug("\t\tSwitch Certificate OCSP Signature is verified")
 
@@ -266,16 +287,16 @@ class NVSwitchAdminUtils:
                     if nonce != ocsp_response.extensions.get_extension_for_class(OCSPNonce).value.nonce:
                         logger.error(
                             "\t\tThe nonce in the OCSP response message is not matching with the one passed in the OCSP request message.")
-                        return False, switch_attestation_warning
+                        return False, switch_attestation_warning, ocsp_status, revocation_reason
                     elif i == end_index - 1:
                         logger.debug("\t\tSwitch Certificate OCSP Nonce is matching")
             except ExtensionNotFound:
                     info_log.error("\t\tOCSP response does not contain a nonce extension. If OCSP nonce validation is not required in your environment, consider disabling the nonce check.")
-                    return False, switch_attestation_warning
+                    return False, switch_attestation_warning, ocsp_status, revocation_reason
 
             if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
                 logger.error("\t\tCouldn't receive a proper response from the OCSP server.")
-                return False, switch_attestation_warning
+                return False, switch_attestation_warning, ocsp_status, revocation_reason
 
             #OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
             if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
@@ -287,24 +308,29 @@ class NVSwitchAdminUtils:
                     warning = f"THE CERTIFICATE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED WITH THE STATUS AS 'CERTIFICATE_HOLD'."
                     logger.warning(
                         f"\t\t\tWARNING: {warning}")
+                    ocsp_status = "revoked"
+                    revocation_reason = ocsp_response.revocation_reason.name
                     switch_attestation_warning = warning
                     revoked_status = True
                 elif ocsp_response.certificate_status == ocsp.OCSPCertStatus.UNKNOWN:
+                    ocsp_status = "unknown"
                     logger.error(
-                        f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate revocation status is UNKNOWN")
-                    return False, switch_attestation_warning
+                        f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} certificate status is UNKNOWN")
+                    return False, switch_attestation_warning, ocsp_status, revocation_reason
                 else:
+                    ocsp_status = "revoked"
+                    revocation_reason = ocsp_response.revocation_reason.name
                     logger.error(
-                        f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason}")
-                    return False, switch_attestation_warning
+                        f"\t\t\tTHE {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} IS REVOKED FOR REASON : {ocsp_response.revocation_reason.name}")
+                    return False, switch_attestation_warning, ocsp_status, revocation_reason
 
         if not revoked_status:
             logger.info(f"\t\t\tThe certificate chain revocation status verification successful.")
         else:
             logger.warning(
                 f"\t\t\tThe certificate chain revocation status verification was not successful but continuing.")
-
-        return True, switch_attestation_warning
+        ocsp_status = ocsp_status or "good"
+        return True, switch_attestation_warning, ocsp_status, revocation_reason
 
     @staticmethod
     def send_ocsp_request(data):
@@ -323,6 +349,8 @@ class NVSwitchAdminUtils:
 
         https_request = request.Request(BaseSettings.OCSP_URL, data)
         https_request.add_header("Content-Type", "application/ocsp-request")
+        if BaseSettings.service_key:
+            https_request.add_header("Authorization", SERVICE_KEY_VALUE.format(BaseSettings.service_key))
 
         with request.urlopen(
                 https_request) as https_response:  #nosec taken care of the security issue by checking for the url to start with "http"
@@ -365,8 +393,13 @@ class NVSwitchAdminUtils:
         Returns:
             [str]: the content of the required RIM file as a string.
         """
+        headers = {}
+        if BaseSettings.service_key:
+            headers['Authorization'] = SERVICE_KEY_VALUE.format(BaseSettings.service_key)
+
         try:
-            with request.urlopen(BaseSettings.RIM_SERVICE_BASE_URL + file_id) as https_response:
+            req = urllib.request.Request(BaseSettings.RIM_SERVICE_BASE_URL + file_id, headers=headers)
+            with request.urlopen(req) as https_response:
                 data = https_response.read()
                 json_object = json.loads(data)
                 base64_data = json_object['rim']
@@ -374,7 +407,7 @@ class NVSwitchAdminUtils:
                 return decoded_str.decode('utf-8')
         except HTTPError:
             logger.error("Could not fetch rim file from RIM service with id : " + file_id)
-            sys.exit()
+            raise RIMFetchError(f'Unable to fetch RIM file from RIM service: {file_id}')
 
 
     @staticmethod
@@ -463,6 +496,7 @@ class NVSwitchAdminUtils:
         if request_nonce != nonce:
             err_msg = "\t\tThe nonce in the SPDM GET MEASUREMENT request message is not matching with the generated nonce."
             logger.error(err_msg)
+            settings.mark_nonce_as_matching(False)
             raise NonceMismatchError(err_msg)
         else:
             logger.info(
@@ -480,6 +514,7 @@ class NVSwitchAdminUtils:
             err_msg = ("\t\tThe vbios version in attestation report is not matching with the vbios verison fetched "
                        "from the driver. This is expected and will be fixed in the next release.")
             logger.error(err_msg)
+            settings.mark_attestation_report_vbios_version_as_matching(False)
             # TODO: Uncomment this exception once we have nscq API to retrieve vBIOS version
             # raise VBIOSVersionMismatchError(err_msg)
 
@@ -497,6 +532,7 @@ class NVSwitchAdminUtils:
         else:
             err_msg = "\t\tAttestation report signature verification failed."
             logger.error(err_msg)
+            settings.mark_attestation_report_signature_verified(False)
             raise SignatureVerificationError(err_msg)
 
         return attestation_report_verification_status

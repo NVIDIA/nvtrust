@@ -8,12 +8,13 @@ import json
 import os
 import jwt
 
-NRAS_URL = "https://nras.attestation.nvidia.com/v3/attest/switch"
+NRAS_URL = "https://nras.attestation.nvidia.com/v4/attest/switch"
 
 client = attestation.Attestation()
 client.set_name("thisNode1")
 print ("[RemoteSwitchTest] node name :", client.get_name())
-file = "../../policies/remote/v3/NVSwitchRemotePolicyExample.json"
+file = "../../policies/remote/v4/NVSwitchRemotePolicyExample.json"
+client.set_claims_version("3.0")
 
 client.set_nonce("931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb")
 

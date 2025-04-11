@@ -9,7 +9,7 @@ import jwt
 
 from verifier import cc_admin
 from nv_attestation_sdk.utils.logging_config import get_logger
-from ..utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL
+from ..utils.config import RIM_SERVICE_URL, OCSP_SERVICE_URL, ATTESTATION_SERVICE_KEY
 from ..utils.config import get_allow_hold_cert
 logger = get_logger()
 
@@ -40,7 +40,7 @@ def attest(nonce: str, gpu_evidence_list, attestation_options):
     Args:
         nonce (str): Nonce as hex string
         gpu_evidence_list (_type_): GPU evidence list
-        attestation_options (dict): Arguments with which to perform attestation 
+        attestation_options (dict): Arguments with which to perform attestation
 
     Returns:
         Attestation result and JWT token
@@ -60,7 +60,9 @@ def attest(nonce: str, gpu_evidence_list, attestation_options):
             "ocsp_url": attestation_options.get("ocsp_url") or OCSP_SERVICE_URL,
             "nonce": nonce,
             "ppcie_mode": attestation_options.get("ppcie_mode") or True,
-            'ocsp_nonce_disabled': attestation_options.get("ocsp_nonce_disabled") or False
+            'ocsp_nonce_disabled': attestation_options.get("ocsp_nonce_disabled") or False,
+            "service_key": attestation_options.get("service_key") or ATTESTATION_SERVICE_KEY,
+            "claims_version": attestation_options.get("claims_version") or "2.0"
         }
         attestation_result, jwt_token = cc_admin.attest(
             params, nonce, gpu_evidence_list

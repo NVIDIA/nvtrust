@@ -15,6 +15,7 @@ REMOTE_NVSWITCH_VERIFIER_SERVICE_URL = os.getenv(
 # Planned to move the below to a list of acceptable GPU architectures
 GPU_ARCH = "HOPPER"
 
+ATTESTATION_SERVICE_KEY = os.getenv("NVIDIA_ATTESTATION_SERVICE_KEY")
 
 def set_allow_hold_cert(value):
     global CERT_HOLD_STATUS

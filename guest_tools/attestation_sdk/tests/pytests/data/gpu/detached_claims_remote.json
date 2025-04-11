@@ -26,5 +26,7 @@
   "x-nvidia-gpu-driver-rim-cert-validated": true,
   "x-nvidia-gpu-vbios-version": "96.00.9F.00.01",
   "x-nvidia-gpu-vbios-rim-measurements-available": true,
-  "exp": 4880995383
+  "exp": 4880995383,
+  "secboot":true,
+  "dbgstat":"disabled"
 }

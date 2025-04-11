@@ -18,5 +18,7 @@
   "nbf": 1726766276,
   "exp": 4880995383,
   "iat": 1726766396,
-  "jti": "4927a1cf-ee1c-42b7-aa7b-9662a7c667a2"
+  "jti": "4927a1cf-ee1c-42b7-aa7b-9662a7c667a2",
+  "secboot":true,
+  "dbgstat":"disabled"
 }

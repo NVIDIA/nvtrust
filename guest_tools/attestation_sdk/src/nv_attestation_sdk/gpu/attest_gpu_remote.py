@@ -11,7 +11,8 @@ from verifier import cc_admin
 from nv_attestation_sdk.utils.logging_config import get_logger
 from ..utils import unified_eat_parser
 from ..utils import nras_utils
-from ..utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, GPU_ARCH
+from ..utils.config import REMOTE_GPU_VERIFIER_SERVICE_URL, GPU_ARCH, ATTESTATION_SERVICE_KEY
+from ..utils.headers import OCSP_ALLOW_CERT_HOLD, SERVICE_KEY_VALUE
 from ..utils.config import get_allow_hold_cert
 logger = get_logger()
 
@@ -38,30 +39,33 @@ def get_evidence(nonce, options):
     return []
 
 
-def attest(nonce: str, gpu_evidence_list, verifier_url, ppcie_mode: bool = True, timeout=30):
+def attest(nonce: str, gpu_evidence_list, attestation_options):
     """Verify GPU evidence with the Remote Verifier
 
     Args:
         nonce (_type_): Nonce represented as hex string
         gpu_evidence_list (_type_): GPU Evidence list
-        verifier_url (str, optional): Verifier URL.
-        ppcie_mode (bool, optional): Flag to indicate ppcie mode for user to run without any other verifier
-        timeout (int, optional): Timeout for the request. Defaults to 30.
+        attestation_options (dict): Arguments with which to perform attestation
 
     Returns:
         _type_: _description_
     """
 
-    if not verifier_url:
-        verifier_url = REMOTE_GPU_VERIFIER_SERVICE_URL
+    verifier_url = attestation_options.get('verifier_url') or REMOTE_GPU_VERIFIER_SERVICE_URL
+    timeout = attestation_options.get('timeout') or 30
+    service_key = attestation_options.get('service_key') or ATTESTATION_SERVICE_KEY
 
     attestation_result = False
     jwt_token = ""
     headers = {"Content-Type": "application/json"}
     if get_allow_hold_cert():
-        headers["X-NVIDIA-OCSP-ALLOW-CERT-HOLD"] = "true"
+        headers[OCSP_ALLOW_CERT_HOLD] = "true"
+    if service_key:
+        headers['Authorization'] = SERVICE_KEY_VALUE.format(service_key)
+
     try:
-        payload = build_payload(nonce, gpu_evidence_list)
+        claims_version = attestation_options.get("claims_version") or "2.0"
+        payload = build_payload(nonce, gpu_evidence_list, claims_version)
         logger.debug("NRAS URL for GPU Attestation: %s", verifier_url)
         logger.debug("Initiating GPU Attestation with NRAS")
         response = requests.request(
@@ -96,9 +100,9 @@ def attest(nonce: str, gpu_evidence_list, verifier_url, ppcie_mode: bool = True,
     return attestation_result, jwt_token
 
 
-def build_payload(nonce, evidences):
+def build_payload(nonce, evidences, claims_version):
     """
     A function that builds a payload with the given nonce and list of evidences.
     """
-    data = {"nonce": nonce, "evidence_list": evidences, "arch": GPU_ARCH}
+    data = {"nonce": nonce, "evidence_list": evidences, "arch": GPU_ARCH, "claims_version": claims_version}
     return json.dumps(data)

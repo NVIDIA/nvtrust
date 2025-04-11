@@ -37,6 +37,7 @@ Before installation, please review the [Compatibility Matrix](#compatibility-mat
 
 ### From Source
 
+Install nv-local-gpu-verifier as a pre-requisite. 
 If you choose to install the Attestation SDK from the source code, use the following commands:
 
     cd attestation_sdk
@@ -75,7 +76,7 @@ Please execute the following commands to clean up packages that were not install
 4. Run the following command and ensure that you have the 'nv-local-gpu-verifier' Python module installed.
     ```
     pip list | grep nv-local-gpu-verifier
-    nv-local-gpu-verifier               1.5.0
+    nv-local-gpu-verifier  <version>
     ```
 
 ### How to do Attestation
@@ -125,40 +126,45 @@ Please note that the Schema/EAT claim information is subject to change in future
 
 ## Compatibility Matrix 
 
-SDK version     | NRAS API Version | Claims Version
---------------- |-----------------|----------------
-v1.1.0          | v1              | N/A
-v1.2.0          | v1              | N/A
-v1.3.0          | v1              | N/A
-v1.4.0          | v1              | N/A
-v1.5.0          | v2              | N/A
-v2.0.0          | v3              | 2.0
-v2.1.0          | v3              | 2.0
-v2.1.1          | v3              | 2.0
-v2.1.2          | v3              | 2.0
-v2.1.3          | v3              | 2.0
-v2.1.4          | v3              | 2.0
-v2.3.0          | v3              | 2.0
+SDK version     | Claims Version
+--------------- |----------------
+v1.1.0          | N/A
+v1.2.0          | N/A
+v1.3.0          | N/A
+v1.4.0          | N/A
+v1.5.0          | N/A
+v2.0.0          | 2.0
+v2.1.0          | 2.0
+v2.1.1          | 2.0
+v2.1.2          | 2.0
+v2.1.3          | 2.0
+v2.1.4          | 2.0
+v2.3.0          | 2.0
+v2.4.0          | 2.0, 3.0
 
 More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 
 ## Attestation SDK APIs
 
 **nv_attestation_sdk import attestation**
-| API                                                                                                                             | Description                                                                                                                           |
-|---------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
-| Attestation(<-name->)                                                                                                           | Create a new Attestation Object used to call other Attestation methods.                                                               |
-| set_name(<-name->)                                                                                                              | Set a name for the Attestation SDK client                                                                                             |
-| set_nonce(<-nonce->)                                                                                                            | Set a nonce for Attestation                                                                                                           |
-| set_ocsp_nonce_disabled(<-bool->)                                                                                               | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default        |
-| add_verifier(<-attestation-device-type->, <-local/remote->, <-remote-attestation-service-url->, <-attestation-results-policy->) | Add a specific type of verifier for the client object. The verifier will be invoked during the attest operation                       |
-| get_verifiers()                                                                                                                 | Retrieves the list of verifiers added to the client object.                                                                              |
-| get_evidence()                                                                                                                  | Retrieves the list of evidence based on the attestation device (e.g., GPU, switch) and the type of attestation (e.g., local, remote). |
-| attest()                                                                                                                        | Trigger the Attestation for the client object, This uses the Attestation type configured in the add_verifier method                           |
-| get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to the Attestation result.                                             |
-| get_ocsp_nonce_disabled()                                                                                                       | Retrieves the flag which indicates whether a nonce is included when calling OCSP.                                                     |
-| validate_token(<-attestation-results-policy->)                                                                                  | Validate the Attestation Claims against a policy                                                                                      |
-| decode_token(<-jwt-token->)                                                                                                     | Decodes the JWT token to claims received by the verifier                                                                              |
+
+| API                                                                                                                             | Description                                                                                                                                                                                                      |
+|---------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Attestation(<-name->)                                                                                                           | Create a new Attestation Object used to call other Attestation methods.                                                                                                                                          |
+| set_name(<-name->)                                                                                                              | Set a name for the Attestation SDK client                                                                                                                                                                        |
+| set_nonce(<-nonce->)                                                                                                            | Set a nonce for Attestation                                                                                                                                                                                      |
+| set_ocsp_nonce_disabled(<-bool->)                                                                                               | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                                                                   |
+| set_service_key(<-key->)                                                                                                        | Service key which is used to auth remote service calls to attestation services. None by default. Note: No valid service keys have been created by admins yet - using any key will result in attestation failure. |                               |
+| set_claims_version(<-version->)                                                                                                 | Set a claims version for Attestation. Please refer to the [Attestation Troubleshooting documentation](../attestation_troubleshooting_guide.md) for the claims. If claims version is not set, it defaults to 2.0. |
+| add_verifier(<-attestation-device-type->, <-local/remote->, <-remote-attestation-service-url->, <-attestation-results-policy->) | Add a specific type of verifier for the client object. The verifier will be invoked during the attest operation                                                                                                  |
+| get_verifiers()                                                                                                                 | Retrieves the list of verifiers added to the client object.                                                                                                                                                      |
+| get_evidence()                                                                                                                  | Retrieves the list of evidence based on the attestation device (e.g., GPU, switch) and the type of attestation (e.g., local, remote).                                                                            |
+| attest()                                                                                                                        | Trigger the Attestation for the client object, This uses the Attestation type configured in the add_verifier method                                                                                              |
+| get_token()                                                                                                                     | Retrieves the Attestation token that contains claims corresponding to the Attestation result.                                                                                                                    |
+| get_ocsp_nonce_disabled()                                                                                                       | Retrieves the flag which indicates whether a nonce is included when calling OCSP.                                                                                                                                |
+| get_claims_version()                                                                                                            | Retrieves the claims version added to the client object.                                                                                                                                                         |
+| validate_token(<-attestation-results-policy->)                                                                                  | Validate the Attestation Claims against a policy                                                                                                                                                                 |
+| decode_token(<-jwt-token->)                                                                                                     | Decodes the JWT token to claims received by the verifier                                                                                                                                                         |
 ## Attestation SDK configuration
 The below configuration can be set using environment variables in the console
 Configuration            | Values           |                                   Explanation                                                                                  |
@@ -170,8 +176,6 @@ Please note that starting from nvTrust v1.5.0, the NRAS v1 API and Relying Party
 
 ## License
 This repository is licensed under Apache License v2.0 except where otherwise noted.
-
-Users who use NVIDIA Attestation Cloud Services or the NVIDIA Trust software components, without an Enterprise Product license may exercise the software and services solely for the purposes of development of a confidential computing service, not a commercial offering/ redistribution. A commercial Enterprise Product license must be obtained before offering the software within a paid commercial service.
 
 ## Support
 For issues or questions, please [file a bug](https://github.com/NVIDIA/nvtrust/issues). For additional support, contact us at [attestation-support@nvidia.com](mailto:attestation-support@nvidia.com)
