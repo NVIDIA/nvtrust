@@ -19,11 +19,6 @@
   - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
   - [License](#license)
   - [Support](#support)
->>>>>>> Stashed changes
-  - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
-  - [License](#license)
-  - [Support](#support)
-
 
 # Verifier
 
