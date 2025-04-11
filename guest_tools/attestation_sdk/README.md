@@ -126,22 +126,21 @@ Please note that the Schema/EAT claim information is subject to change in future
 
 ## Compatibility Matrix 
 
-SDK version     | NRAS API Version | Claims Version
---------------- |------------------|----------------
-v1.1.0          | v1               | N/A
-v1.2.0          | v1               | N/A
-v1.3.0          | v1               | N/A
-v1.4.0          | v1               | N/A
-v1.5.0          | v2               | N/A
-v2.0.0          | v3               | 2.0
-v2.1.0          | v3               | 2.0
-v2.1.1          | v3               | 2.0
-v2.1.2          | v3               | 2.0
-v2.1.3          | v3               | 2.0
-v2.1.4          | v3               | 2.0
-v2.3.0          | v3               | 2.0
-v2.4.0          | v3               | 2.0
-v2.4.0          | v4               | 2.0, 3.0
+SDK version     | Claims Version
+--------------- |----------------
+v1.1.0          | N/A
+v1.2.0          | N/A
+v1.3.0          | N/A
+v1.4.0          | N/A
+v1.5.0          | N/A
+v2.0.0          | 2.0
+v2.1.0          | 2.0
+v2.1.1          | 2.0
+v2.1.2          | 2.0
+v2.1.3          | 2.0
+v2.1.4          | 2.0
+v2.3.0          | 2.0
+v2.4.0          | 2.0, 3.0
 
 More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 

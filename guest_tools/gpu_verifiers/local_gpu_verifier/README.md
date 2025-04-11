@@ -15,7 +15,11 @@
     - [nvmlHandler](#nvmlhandler)
     - [verifier](#verifier-1)
     - [cc\_admin](#cc_admin)
-    - [Compatibility Matrix](#compatibility-matrix)
+  - [Compatibility](#compatibility)
+  - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
+  - [License](#license)
+  - [Support](#support)
+>>>>>>> Stashed changes
   - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
   - [License](#license)
   - [Support](#support)
@@ -146,21 +150,8 @@ The verifier module uses the RIM attestation module for parsing the attestation 
 ### cc_admin
 The cc_admin module retrieves the GPU information, attestation report, and the driver RIM associated with the driver version. It then proceeds with the authentication of the driver RIM and the attestation report. Afterward, it executes the verifier tool to compare the runtime measurements in the attestation report with the golden measurements stored in the driver RIM.
 
-## Compatibility Matrix
-
-Local GPU Verifier Version | Driver version | 
---------------- |---------------------------|
-v1.1.0          | r550TRD1
-v1.2.0          | r550TRD2
-v1.3.0          | r550TRD3
-v1.4.0          | r550TRD4
-v1.5.0          | r550TRD5
-v2.0.0          | r550TRD6
-v2.1.0          | r550TRD7, r550TRD6, r550TRD5
-v2.1.1          | r550TRD7, r550TRD6, r550TRD5
-v2.1.2          | r550TRD7, r550TRD6, r550TRD5
-v2.3.0          | r550TRD7, r550TRD6, r550TRD5
-v2.4.0          | r570TRD2
+## Compatibility
+For the best experience, always use the latest version of the GPU verifier to ensure compatibility with the latest drivers. In general, you can also try using the local GPU verifier with any CC-supported driver versions, such as R550 or R570, though some features may not be fully supported.
 
 ## Claims and Troubleshooting information
 For local and remote verifier claims information for NVIDIA GPUs, switches, and related troubleshooting information, please refer to the [Attestation Troubleshooting documentation](../../attestation_troubleshooting_guide.md).
