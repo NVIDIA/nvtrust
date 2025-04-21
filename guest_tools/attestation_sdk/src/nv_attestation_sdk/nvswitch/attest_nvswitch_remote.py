@@ -40,12 +40,12 @@ def get_evidence(nonce, options):
         logger.error("Error in collecting evidences for Switch: %s", e)
     return []
 
-def attest(nonce: str, gpu_evidence_list, attestation_options):
-    """Verify GPU evidence with the Remote Verifier
+def attest(nonce: str, nvswitch_evidence_list, attestation_options):
+    """Verify NvSwitch evidence with the Remote Verifier
 
     Args:
         nonce (_type_): Nonce represented as hex string
-        gpu_evidence_list (_type_): GPU Evidence list
+        nvswitch_evidence_list (_type_): NvSwitch Evidence list
         attestation_options (dict): Arguments with which to perform attestation
 
     Returns:
@@ -64,7 +64,7 @@ def attest(nonce: str, gpu_evidence_list, attestation_options):
         headers['Authorization'] = SERVICE_KEY_VALUE.format(service_key)
     try:
         claims_version = attestation_options.get("claims_version") or "2.0"
-        payload = build_payload(nonce, gpu_evidence_list, claims_version)
+        payload = build_payload(nonce, nvswitch_evidence_list, claims_version)
         logger.debug("NRAS URL for NvSwitch Attestation: %s", verifier_url)
         logger.debug("Initiating Nvswitch Attestation with NRAS")
         response = requests.request(
