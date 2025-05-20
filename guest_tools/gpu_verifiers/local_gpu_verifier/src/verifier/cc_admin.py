@@ -468,10 +468,13 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                 else:
                     info_log.info("\t\t\tUsing the local driver rim file : " + settings.DRIVER_RIM_PATH)
                     driver_rim = RIM(rim_name='driver', settings=settings, rim_path=settings.DRIVER_RIM_PATH)
-
+                    with open(settings.DRIVER_RIM_PATH, 'rb') as f:
+                        driver_rim_content = f.read()
             else:
                 info_log.info("\t\t\tUsing the local driver rim file : " + settings.DRIVER_RIM_PATH)
                 driver_rim = RIM(rim_name='driver', settings=settings, rim_path=settings.DRIVER_RIM_PATH)
+                with open(settings.DRIVER_RIM_PATH, 'rb') as f:
+                        driver_rim_content = f.read()
             oemid.append(driver_rim.get_manufacturer_id(driver_rim_content))
             driver_rim_verification_status, gpu_driver_attestation_warning = driver_rim.verify(version=driver_version,
                                                                                                settings=settings)
