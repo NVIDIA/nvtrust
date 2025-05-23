@@ -1,7 +1,7 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -134,22 +134,62 @@ class RIM:
         new_swidtag_tree = etree.parse(file_stream, parser) 
         new_root = new_swidtag_tree.getroot()
         return new_root
-    
-    def validate_schema(self, schema_path):
-        """ Performs the schema validation of the base RIM against a given schema.
+
+    def parse_schema(self, settings, schema_file):
+        """ Loads and parses an XML schema from the specified file path and returns an XMLSchema object
 
         Args:
-            schema_path (str): the path to the swidtag schema xsd file.
+            settings (config.HopperSettings): the object containing the various config info
+            schema_file (str): the path to the swidtag schema xsd file
 
         Returns:
-            [bool]: Ture if the schema validation is successful otherwise, returns False.
+            xml_schema: An `XMLSchema` object representing the parsed XML schema
+
+        Raises:
+            AssertionError: If `schema_file` is not of type `str`
+            lxml.etree.XMLSchemaParseError: If there is an error parsing the XML schema
+            lxml.etree.XMLSyntaxError: If the XML schema file contains syntax errors
         """
+        assert type(schema_file) is str
+
         try:
+            schema_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), schema_file)
+
+            if not schema_path or not os.path.isfile(schema_path):
+                info_log.error("There is a problem in the path to the swid schema. Please provide a valid the path to the swid schema.")
+
+                if settings.check_if_test_mode():
+                    return BaseSettings.TEST_RETURN
+
+                raise FileNotFoundError("\t\tSWID schema file not found.")
+
             parser = etree.XMLParser(resolve_entities=False)
             xml_schema_document = etree.parse(schema_path, parser)
 
             xml_schema = etree.XMLSchema(xml_schema_document)
 
+        except etree.XMLSchemaParseError as e:
+            err_msg = f'\t\tRIM Schema validation failed - XMLSchemaParseError: {e}'
+            event_log.error(err_msg)
+
+            raise RIMSchemaValidationError(err_msg)
+
+        except etree.XMLSyntaxError as e:
+            err_msg = f'\t\tRIM Schema validation failed - XMLSyntaxError: {e}'
+            event_log.error(err_msg)
+
+            raise RIMSchemaValidationError(err_msg)
+
+        return xml_schema
+
+    def validate_schema(self):
+        """ Performs the schema validation of the base RIM against a given schema.
+
+        Returns:
+            [bool]: Ture if the schema validation is successful otherwise, returns False.
+        """
+        try:
+            xml_schema = self.xml_schema
             result = xml_schema.validate(self.root)
         except Exception:
             err_msg = "\t\tRIM Schema validation failed."
@@ -236,6 +276,7 @@ class RIM:
                 x509_cert_object = crypto.load_certificate(type=crypto.FILETYPE_PEM, buffer=cert_bytes)
 
                 if not isinstance(x509_cert_object, crypto.X509):
+                    info_log.error("\t\tThere was a problem while extracting the X509 certificate from the RIM.")
                     raise ValueError()
                 result.append(x509_cert_object)
 
@@ -246,14 +287,14 @@ class RIM:
             raise InvalidCertificateError(err_msg)
 
         return result
-    
+
     def verify_signature(self, settings):
         """ Verifies the signature of the base RIM.
-        
+
         Arguments:
         settings (config.HopperSettings): the object containing the various config info.
-        
-        Returns: 
+
+        Returns:
             [bool] : If signature verification is successful, then return the True. Otherwise,
                 raises RIMSignatureVerificationError.
         """
@@ -379,32 +420,22 @@ class RIM:
         return firmware_manufacturer_id
         
 
-    def verify(self, version, settings, schema_path = ''): 
+    def verify(self, version, settings):
         """ Performs the schema validation if it is successful then signature verification is done.
         If both tests passed then returns True, otherwise returns False.
-        
+
         Arguments:
             version (str) : the driver/vbios version of the required RIM.
             settings (config.HopperSettings): the object containing the various config info.
-            base_RIM_path (str) : the path to the base RIM. Default value is None.
-            schema_path (str) : the path to the swidtag schema xsd file. Default value is "swid_schema_2015.xsd".
-        
+
         Returns :
             [bool] : True if schema validation and signature verification passes, otherwise returns False.
         """
         assert type(version) is str
-        assert type(schema_path) is str
 
-        if schema_path == "":
-            schema_path = os.path.join(os.path.dirname(__file__), 'swidSchema2015.xsd')
-
-        if not schema_path or not os.path.isfile(schema_path):
-            info_log.error("There is a problem in the path to the swid schema. Please provide a valid the path to the swid schema.")
-            raise FileNotFoundError("\t\tSWID schema file not found.")
-
-        if self.validate_schema(schema_path = schema_path):
+        if self.validate_schema():
             info_log.info("\t\t\tRIM Schema validation passed.")
-            
+
             if self.rim_name == 'driver':
                 settings.mark_gpu_driver_rim_schema_validated()
             else:
@@ -513,3 +544,4 @@ class RIM:
  
         self.colloquialVersion = self.get_colloquial_version()
         self.parse_measurements(settings)
+        self.xml_schema = self.parse_schema(settings,'swidSchema2015.xsd')

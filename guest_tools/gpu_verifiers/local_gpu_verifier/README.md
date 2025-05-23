@@ -1,6 +1,6 @@
 - [Verifier](#verifier)
-  - [System Requirements:](#system-requirements)
-  - [Pre-requisites:](#pre-requisites)
+  - [System Requirements](#system-requirements)
+  - [Pre-requisites](#pre-requisites)
   - [Install](#install)
     - [Step 1: Elevate to Root User Privileges (Optional)](#step-1-elevate-to-root-user-privileges-optional)
     - [Step 2: Create a new Python Virtual Environment](#step-2-create-a-new-python-virtual-environment)
@@ -9,12 +9,12 @@
       - [Method 2: From PyPI](#method-2-from-pypi)
     - [Troubleshooting Installation Issues](#troubleshooting-installation-issues)
   - [Usage](#usage)
-  - [Module details:](#module-details)
+  - [Module details](#module-details)
     - [rim](#rim)
     - [attestation](#attestation)
     - [nvmlHandler](#nvmlhandler)
     - [verifier](#verifier-1)
-    - [cc\_admin](#cc_admin)
+    - [cc_admin](#cc_admin)
   - [Compatibility](#compatibility)
   - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
   - [License](#license)
@@ -146,7 +146,8 @@ The verifier module uses the RIM attestation module for parsing the attestation 
 The cc_admin module retrieves the GPU information, attestation report, and the driver RIM associated with the driver version. It then proceeds with the authentication of the driver RIM and the attestation report. Afterward, it executes the verifier tool to compare the runtime measurements in the attestation report with the golden measurements stored in the driver RIM.
 
 ## Compatibility
-For the best experience, always use the latest version of the GPU verifier to ensure compatibility with the latest drivers. In general, you can also try using the local GPU verifier with any CC-supported driver versions, such as R550 or R570, though some features may not be fully supported.
+- Use the latest GPU verifier version for optimal compatibility with the most recent drivers.
+- For attestation-specific platforms like Blackwell, ensure device-specific CC-enabled drivers are installed (e.g., R575 for Blackwell).
 
 ## Claims and Troubleshooting information
 For local and remote verifier claims information for NVIDIA GPUs, switches, and related troubleshooting information, please refer to the [Attestation Troubleshooting documentation](../../attestation_troubleshooting_guide.md).

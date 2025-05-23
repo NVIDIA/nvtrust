@@ -111,7 +111,7 @@ class Attestation:
             cls._verifiers = []
             cls._tokens = {}
         return cls._instance
-    
+
     @classmethod
     def set_service_key(cls, service_key: str) -> None:
         """Service key which is used to auth remote service calls to attestation services.
@@ -165,7 +165,7 @@ class Attestation:
             str: URL of the nonce server
         """
         return cls._nonceServer
-    
+
     @classmethod
     def set_ocsp_nonce_disabled(cls, ocsp_nonce_disabled: bool) -> None:
         """Flag which indicates whether to include a nonce when calling OCSP.  False by default
@@ -206,7 +206,8 @@ class Attestation:
 
     @classmethod
     def add_verifier(
-        cls, dev: Devices, env: Environment, url: str, evidence: str, ocsp_url: str=OCSP_SERVICE_URL, rim_url: str=RIM_SERVICE_URL
+            cls, dev: Devices, env: Environment, url: str, evidence: str, ocsp_url: str = OCSP_SERVICE_URL,
+            rim_url: str = RIM_SERVICE_URL
     ) -> None:
         """Add a new verifier for Attestation
 
@@ -258,7 +259,7 @@ class Attestation:
         """
         if options == None:
             options = {}
-        
+
         decorative_logger.info("Attestation SDK: Getting Evidence")
         nonce = cls.get_nonce() or cls._generate_nonce()
         logger.info("Nonce generated: %s", nonce)
@@ -564,7 +565,6 @@ class Attestation:
             None
         """
         cls._staticNonce = nonce
-
 
     @classmethod
     def reset(cls):

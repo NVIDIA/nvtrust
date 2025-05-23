@@ -117,6 +117,7 @@ NVIDIA also offers Trust Outpost, a comprehensive GPU attestation solution for e
 | Best For | Maximum security and simplicity | Balanced approach | Strict control requirements |
 
 ## License
+
 This repository is licensed under Apache License v2.0 except where otherwise noted.
 
 # Support

@@ -17,7 +17,7 @@ The Attestation SDK offers developers easy-to-use APIs for implementing attestat
   - [Claims and Troubleshooting information](#claims-and-troubleshooting-information)
   - [Policy File](#policy-file)
   - [Building Attestation SDK](#building-attestation-sdk)
-  - [Compatibility Matrix](#compatibility-matrix)
+  - [Compatibility](#compatibility)
   - [Attestation SDK APIs](#attestation-sdk-apis)
   - [Attestation SDK configuration](#attestation-sdk-configuration)
   - [Note](#note)
@@ -124,7 +124,13 @@ Please note that the Schema/EAT claim information is subject to change in future
     python3 -m pip install --upgrade build
     python3 -m build
 
-## Compatibility Matrix 
+## Compatibility 
+
+### Driver Version
+- Use the latest GPU verifier version for optimal compatibility with the most recent drivers.
+- For attestation-specific platforms like Blackwell, ensure device-specific CC-enabled drivers are installed (e.g., R575 for Blackwell).
+
+### Claims Version
 
 SDK version     | Claims Version
 --------------- |----------------
@@ -141,6 +147,7 @@ v2.1.3          | 2.0
 v2.1.4          | 2.0
 v2.3.0          | 2.0
 v2.4.0          | 2.0, 3.0
+v2.5.0          | 2.0, 3.0
 
 More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
 

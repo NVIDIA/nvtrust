@@ -214,7 +214,7 @@ class TestVerification(unittest.TestCase):
         attestation.Attestation.return_value = client
         status, attestation_report = perform_gpu_attestation(logger, status, {'gpu_attestation_mode': 'REMOTE', 'ocsp_nonce_disabled': 'True'})
         self.assertTrue(status.gpu_attestation)
-        self.assertIsNotNone(attestation_report)    
+        self.assertIsNotNone(attestation_report)
 
     @patch("nv_attestation_sdk.attestation.Attestation")
     def test_perform_switch_attestation_with_ocsp_nonce_disabled(self, attestation_client):
@@ -233,7 +233,7 @@ class TestVerification(unittest.TestCase):
         attestation.Attestation.return_value = client
         status, attestation_report = perform_switch_attestation(logger, status, {'switch_attestation_mode':'REMOTE', 'ocsp_nonce_disabled': 'True'})
         self.assertTrue(status.switch_attestation)
-        self.assertIsNotNone(attestation_report)    
+        self.assertIsNotNone(attestation_report)
 
     @patch("ppcie.verifier.src.nvml.nvml_client.NvmlSystemConfComputeSettings")
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlSystemGetConfComputeSettings")

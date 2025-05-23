@@ -19,13 +19,14 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
+from parameterized import parameterized
 
 overall_claims_file_path = "tests/pytests/data/gpu/overall_claims_remote.json"
 detached_claims_file_path = "tests/pytests/data/gpu/detached_claims_remote.json"
 overall_granular_claims_file_path = "tests/pytests/data/gpu/overall_granular_claims_remote.json"
 detached_granular_claims_file_path = "tests/pytests/data/gpu/detached_granular_claims_remote.json"
 
-gpu_evidence_list = [{"certificate": "test_cert_chain", "evidence": "test_hex_str"}]
+gpu_evidence_list = [{"certificate": "test_cert_chain", "evidence": "test_hex_str", "arch": "HOPPER"}]
 
 
 class GPUAttestationTestRemote(TestCase):
@@ -86,7 +87,7 @@ class GPUAttestationTestRemote(TestCase):
         jwks_mock_request.return_value = jwks_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000"}
         )
         self.assertTrue(result)
         self.assertEqual(jwt_token[0][0], "JWT")
@@ -123,7 +124,7 @@ class GPUAttestationTestRemote(TestCase):
         jwks_mock_request.return_value = jwks_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000", "claims_version": "3.0" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000", "claims_version": "3.0"}
         )
         self.assertTrue(result)
         self.assertEqual(jwt_token[0][0], "JWT")
@@ -160,7 +161,7 @@ class GPUAttestationTestRemote(TestCase):
         jwks_mock_request.return_value = jwks_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000", "claims_version": "2.0" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000", "claims_version": "2.0"}
         )
         self.assertTrue(result)
         self.assertEqual(jwt_token[0][0], "JWT")
@@ -207,7 +208,7 @@ class GPUAttestationTestRemote(TestCase):
     @mock.patch("requests.get")
     @mock.patch("requests.request")
     def test_gpu_remote_attest_fails_due_to_measurement_mismatch(
-        self, nras_mock_request, jwks_mock_request
+            self, nras_mock_request, jwks_mock_request
     ):
         header = {"kid": "nv-eat-kid-test-1234"}
         with open(overall_claims_file_path, "r") as file:
@@ -238,7 +239,7 @@ class GPUAttestationTestRemote(TestCase):
         jwks_mock_request.return_value = jwks_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000"}
         )
         self.assertFalse(result)
         self.assertEqual(jwt_token[0][0], "JWT")
@@ -247,7 +248,7 @@ class GPUAttestationTestRemote(TestCase):
     @mock.patch("requests.get")
     @mock.patch("requests.request")
     def test_gpu_remote_attest_with_service_key_fails_due_to_measurement_mismatch(
-        self, nras_mock_request, jwks_mock_request
+            self, nras_mock_request, jwks_mock_request
     ):
         header = {"kid": "nv-eat-kid-test-1234"}
         with open(overall_claims_file_path, "r") as file:
@@ -278,7 +279,7 @@ class GPUAttestationTestRemote(TestCase):
         jwks_mock_request.return_value = jwks_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000", "service_key": "someServiceKey" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000", "service_key": "someServiceKey"}
         )
         self.assertFalse(result)
         self.assertEqual(jwt_token[0][0], "JWT")
@@ -287,7 +288,7 @@ class GPUAttestationTestRemote(TestCase):
     @mock.patch("requests.get")
     @mock.patch("requests.request")
     def test_gpu_remote_attest_fails_when_nras_call_fails(
-        self, nras_mock_request, jwks_mock_request
+            self, nras_mock_request, jwks_mock_request
     ):
         header = {"kid": "nv-eat-kid-test-1234"}
         nras_mock_response = mock.Mock()
@@ -298,7 +299,7 @@ class GPUAttestationTestRemote(TestCase):
         nras_mock_request.return_value = nras_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000"}
         )
         self.assertFalse(result)
         self.assertIsNotNone(jwt_token)
@@ -306,7 +307,7 @@ class GPUAttestationTestRemote(TestCase):
     @mock.patch("requests.get")
     @mock.patch("requests.request")
     def test_gpu_remote_attest_fails_when_nras_call_fails(
-        self, nras_mock_request, jwks_mock_request
+            self, nras_mock_request, jwks_mock_request
     ):
         header = {"kid": "nv-eat-kid-test-1234"}
         nras_mock_response = mock.Mock()
@@ -317,15 +318,15 @@ class GPUAttestationTestRemote(TestCase):
         nras_mock_request.return_value = nras_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000" }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000"}
         )
         self.assertFalse(result)
-        self.assertIsNotNone(jwt_token) 
+        self.assertIsNotNone(jwt_token)
 
     @mock.patch("requests.get")
     @mock.patch("requests.request")
     def test_gpu_remote_attest_with_service_key_fails_when_nras_call_fails(
-        self, nras_mock_request, jwks_mock_request
+            self, nras_mock_request, jwks_mock_request
     ):
         header = {"kid": "nv-eat-kid-test-1234"}
         nras_mock_response = mock.Mock()
@@ -336,57 +337,83 @@ class GPUAttestationTestRemote(TestCase):
         nras_mock_request.return_value = nras_mock_response
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
         result, jwt_token = attest_gpu_remote.attest(
-            nonce, gpu_evidence_list, { "verifier_url": "http://localhost:5000", "service_key": "someServiceKey"  }
+            nonce, gpu_evidence_list, {"verifier_url": "http://localhost:5000", "service_key": "someServiceKey"}
         )
         self.assertFalse(result)
-        self.assertIsNotNone(jwt_token)        
+        self.assertIsNotNone(jwt_token)
 
     def test_gpu_remote_attest_fails_when_creating_request_due_to_serialization_error(
-        self
+            self
     ):
         class TestClass:
             pass
+
         result, jwt_token = attest_gpu_remote.attest(
-            None, TestClass(), { "verifier_url": "http://localhost:5000" }
+            None, TestClass(), {"verifier_url": "http://localhost:5000"}
         )
         self.assertFalse(result)
         self.assertIsNotNone(jwt_token)
 
     def test_gpu_remote_attest_with_service_key_fails_when_creating_request_due_to_serialization_error(
-        self
+            self
     ):
         class TestClass:
             pass
+
         result, jwt_token = attest_gpu_remote.attest(
-            None, TestClass(), { "verifier_url": "http://localhost:5000", "service_key": "someServiceKey"  }
+            None, TestClass(), {"verifier_url": "http://localhost:5000", "service_key": "someServiceKey"}
         )
         self.assertFalse(result)
         self.assertIsNotNone(jwt_token)
-
 
     @patch("verifier.cc_admin.collect_gpu_evidence_remote")
     def test_gpu_remote_get_evidence(self, cc_admin):
         cc_admin.return_value = gpu_evidence_list
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_gpu_remote.get_evidence(nonce, { 'ppcie_mode': True })
+        evidence_list = attest_gpu_remote.get_evidence(nonce, {'ppcie_mode': True})
         self.assertEqual(len(evidence_list), 1)
 
     @patch("verifier.cc_admin.collect_gpu_evidence_remote")
     def test_gpu_remote_get_evidence_fails_due_to_driver_issue(self, cc_admin):
         cc_admin.side_effect = Exception("Driver issue encountered")
         nonce = "931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb"
-        evidence_list = attest_gpu_remote.get_evidence(nonce, { 'ppcie_mode': True })
+        evidence_list = attest_gpu_remote.get_evidence(nonce, {'ppcie_mode': True})
         self.assertEqual(len(evidence_list), 0)
 
-    def test_build_payload(self):
-        evidence_list = {
-            "evidence_list": [
-                {"certificate": "test_cert_chain", "evidence": "test_hex_str"}
-            ]
-        }
+    @parameterized.expand([
+        ("BLACKWELL", "BLACKWELL"),
+        ("HOPPER", "HOPPER")
+    ])
+    def test_build_payload(self, evidence_arch, expected_arch):
+        evidence_list = [
+            {"certificate": "test_cert_chain", "evidence": "test_hex_str", "arch": evidence_arch},
+            {"certificate": "test_cert_chain", "evidence": "test_hex_str", "arch": evidence_arch}
+
+        ]
         payload = attest_gpu_remote.build_payload("nonce", evidence_list, "2.0")
-        self.assertEqual(json.loads(payload)["arch"], "HOPPER")
+        self.assertEqual(json.loads(payload)["arch"], expected_arch)
         self.assertEqual(json.loads(payload)["nonce"], "nonce")
+
+    @parameterized.expand([
+        ("BLACKWELL", "HOPPER"),  # Different arch values
+        ("", "HOPPER"),  # Empty arch
+        (None, "HOPPER"),  # None arch
+        ("", ""),  # All empty arch
+        (None, None)  # All None arch
+    ])
+    def test_build_payload_throws_error_when_arch_is_different_in_evidence(self, evidence_arch, first_arch):
+        evidence_list = [
+            {"certificate": "test_cert_chain", "evidence": "test_hex_str", "arch": first_arch},
+            {"certificate": "test_cert_chain", "evidence": "test_hex_str", "arch": evidence_arch}
+        ]
+
+        self.assertRaises(
+            ValueError,
+            attest_gpu_remote.build_payload,
+            "nonce",
+            evidence_list,
+            "2.0"
+        )
 
     @pytest.fixture(autouse=True)
     def reset(self):

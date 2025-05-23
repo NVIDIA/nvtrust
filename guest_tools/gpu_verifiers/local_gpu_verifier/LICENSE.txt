@@ -59,7 +59,7 @@ Hashlib:
 Open Source Software Licensed Under the MIT License:
 ----------------------------------------------------
 
-xmlschema, ecdsa and pyjwt are MIT licensed Python packages used in this project.
+xmlschema, asn1, ecdsa and pyjwt are MIT licensed Python packages used in this project.
 
 xmlschema:
     The MIT License (MIT)

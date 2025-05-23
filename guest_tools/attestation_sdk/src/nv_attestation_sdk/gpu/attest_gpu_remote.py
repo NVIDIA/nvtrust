@@ -104,5 +104,33 @@ def build_payload(nonce, evidences, claims_version):
     """
     A function that builds a payload with the given nonce and list of evidences.
     """
-    data = {"nonce": nonce, "evidence_list": evidences, "arch": GPU_ARCH, "claims_version": claims_version}
+    if not evidences:
+        raise ValueError("No evidences provided")
+
+    first_evidence = evidences[0]
+    if "arch" not in first_evidence or not first_evidence["arch"]:
+        raise ValueError("Arch field is missing or empty in first evidence")
+
+    gpu_arch = first_evidence["arch"]
+    evidence_list = []
+
+    for i, evidence in enumerate(evidences):
+        if "arch" not in evidence or not evidence["arch"]:
+            raise ValueError(f"Arch field is missing or empty in evidence {i}")
+        if evidence["arch"] != gpu_arch:
+            raise ValueError(f"Inconsistent arch values found: {gpu_arch} vs {evidence['arch']} in evidence {i}")
+
+        evidence_list.append({
+            "evidence": evidence.get("evidence"),
+            "certificate": evidence.get("certificate")
+        })
+
+    data = {
+        "nonce": nonce,
+        "evidence_list": evidence_list,
+        "arch": gpu_arch,
+        "claims_version": claims_version
+    }
+
+    logger.debug("NRAS request payload: %s", data)
     return json.dumps(data)
