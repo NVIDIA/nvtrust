@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -35,10 +35,7 @@ from pynvml import (
     NVML_DEVICE_ARCH_HOPPER,
 )
 
-from verifier.utils import (
-    get_gpu_architecture_value,
-    convert_string_to_blob,
-)
+from verifier.utils import convert_string_to_blob
 from verifier.config import (
     BaseSettings,
     HopperSettings,
@@ -123,7 +120,7 @@ class NvmlHandlerTest:
         return self.AttestationReport
     
     def get_gpu_architecture(self):
-        return get_gpu_architecture_value(self.GPUArchitecture)
+        return self.GPUArchitecture
 
     def get_uuid(self):
         return self.UUID
@@ -137,6 +134,8 @@ class NvmlHandlerTest:
         self.DriverVersion = "550.90.07"
         self.AttestationReport = self.fetch_attestation_report()
         settings.mark_attestation_report_as_available()
+        settings.GPU_ARCH = 9
+        settings.GPU_ARCH_NAME = "HOPPER"
         cert_data = self.get_test_attestation_cert_chain()
         handle = TestHandle(cert_data)
         self.CertificateChains = GpuCertificateChains(handle)

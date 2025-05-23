@@ -42,6 +42,7 @@ from verifier.nvml import (
 )
 from verifier.verifier import Verifier
 from verifier.config import (
+    GPU_ARCHITECTURE_MAP,
     BaseSettings,
     HopperSettings,
     event_log,
@@ -178,6 +179,7 @@ def main():
             depth += 1
         sys.exit(1)
 
+
 def collect_gpu_evidence(nonce: str, no_gpu_mode=False, ppcie_mode=True):
     """ Method to Collect GPU Evidence used by Attestation SDK
 
@@ -255,10 +257,17 @@ def collect_gpu_evidence_remote(nonce: str, no_gpu_mode=False, ppcie_mode=True):
         gpu_cert_chain_base64 = GpuCertificateChains.extract_gpu_cert_chain_base64(gpu_cert_chain)
         evidence_bytes = gpu_info_obj.get_attestation_report()
         evidence_base64 = base64.b64encode(evidence_bytes).decode("utf-8")
+        settings = GPU_ARCHITECTURE_MAP[gpu_info_obj.get_gpu_architecture()]
+        if settings is None:
+            err_msg = "Unknown GPU architecture."
+            event_log.error(err_msg)
+            raise UnknownGpuArchitectureError(err_msg)
         gpu_evidence = {
             'certificate': gpu_cert_chain_base64,
             'evidence': evidence_base64,
+            'arch': settings.GPU_ARCH_NAME
         }
+        info_log.debug(f'Architecture information sent to remote verifier : {settings.GPU_ARCH_NAME}')
         remote_evidence_list.append(gpu_evidence)
     return remote_evidence_list
 
@@ -304,7 +313,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
     overall_status = False
     gpu_claims_list = []
     att_report_nonce_hex = CcAdminUtils.validate_and_extract_nonce(nonce)
-    settings = HopperSettings()
+
 
     try:
         BaseSettings.allow_hold_cert = arguments_as_dictionary['allow_hold_cert']
@@ -329,17 +338,8 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
         for i, gpu_info_obj in enumerate(gpu_evidence_list):
             info_log.info("-----------------------------------")
-            if gpu_info_obj.get_gpu_architecture() == 'HOPPER':
-                event_log.debug(f'The architecture of the GPU with index {i} is HOPPER')
-                settings = HopperSettings()
-
-                HopperSettings.set_driver_rim_path(arguments_as_dictionary['driver_rim'])
-                HopperSettings.set_vbios_rim_path(arguments_as_dictionary['vbios_rim'])
-
-                if arguments_as_dictionary['test_no_gpu']:
-                    HopperSettings.set_driver_rim_path(HopperSettings.TEST_NO_GPU_DRIVER_RIM_PATH)
-                    HopperSettings.set_vbios_rim_path(HopperSettings.TEST_NO_GPU_VBIOS_RIM_PATH)
-            else:
+            settings = GPU_ARCHITECTURE_MAP[gpu_info_obj.get_gpu_architecture()]
+            if settings is None:
                 err_msg = "Unknown GPU architecture."
                 event_log.error(err_msg)
                 settings.mark_gpu_arch_is_correct(False)
@@ -349,7 +349,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
             info_log.info("Verifying GPU: %s", str(gpu_info_obj.get_uuid()))
 
-            if gpu_info_obj.get_gpu_architecture() != settings.GpuArch:
+            if gpu_info_obj.get_gpu_architecture() != settings.GPU_ARCH:
                 err_msg = "\tGPU architecture is not supported."
                 event_log.error(err_msg)
                 settings.mark_gpu_arch_is_correct(False)
@@ -453,7 +453,8 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                 if not arguments_as_dictionary['test_no_gpu']:
                     info_log.info("\t\t\tFetching the driver RIM from the RIM service.")
                     try:
-                        driver_rim_file_id = CcAdminUtils.get_driver_rim_file_id(driver_version)
+                        driver_rim_file_id = CcAdminUtils.get_driver_rim_file_id(driver_version, settings)
+
 
                         driver_rim_content = function_wrapper_with_timeout([CcAdminUtils.fetch_rim_file,
                                                                             driver_rim_file_id,
@@ -464,17 +465,21 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                     except Exception as error:
                         info_log.error("Error occurred while fetching the driver RIM from the "
                                        "RIM service due to %s", error)
-                        raise RIMFetchError(f'Unable to fetch driver RIM from RIM service: {driver_rim_file_id}') from error
+                        raise RIMFetchError(f'Unable to fetch driver RIM from RIM service: {driver_rim_file_id}')
                 else:
                     info_log.info("\t\t\tUsing the local driver rim file : " + settings.DRIVER_RIM_PATH)
                     driver_rim = RIM(rim_name='driver', settings=settings, rim_path=settings.DRIVER_RIM_PATH)
+                    with open(settings.DRIVER_RIM_PATH, 'r', encoding='utf-8') as f:
+                        driver_rim_content = f.read()
 
             else:
                 info_log.info("\t\t\tUsing the local driver rim file : " + settings.DRIVER_RIM_PATH)
                 driver_rim = RIM(rim_name='driver', settings=settings, rim_path=settings.DRIVER_RIM_PATH)
+                with open(settings.DRIVER_RIM_PATH, 'r', encoding='utf-8') as f:
+                    driver_rim_content = f.read()
+
             oemid.append(driver_rim.get_manufacturer_id(driver_rim_content))
-            driver_rim_verification_status, gpu_driver_attestation_warning = driver_rim.verify(version=driver_version,
-                                                                                               settings=settings)
+            driver_rim_verification_status, gpu_driver_attestation_warning = driver_rim.verify(version=driver_version, settings=settings)
             gpu_driver_attestation_warning_list.append(gpu_driver_attestation_warning)
             if driver_rim_verification_status:
                 info_log.info("\t\t\tDriver RIM verification successful")
@@ -484,6 +489,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
             # performing the schema validation and signature verification of the vbios RIM.
             info_log.info("\t\tAuthenticating VBIOS RIM.")
+            vbios_rim_path = settings.VBIOS_RIM_PATH
 
             if arguments_as_dictionary['vbios_rim'] is None:
 
@@ -561,6 +567,10 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
     except Exception as error:
         info_log.error(error)
+
+        if arguments_as_dictionary['test_no_gpu']:
+            return
+
         # Retry will be re-implemented / enabled for HGX PPCIE GA
         # if is_non_fatal_issue(error):
         #   retry(nonce)

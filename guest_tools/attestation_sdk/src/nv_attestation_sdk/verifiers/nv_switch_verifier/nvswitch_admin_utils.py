@@ -67,6 +67,7 @@ from nv_attestation_sdk.verifiers.nv_switch_verifier.exceptions import (
     InvalidNonceError
 )
 from nv_attestation_sdk.utils.logging_config import get_logger
+
 logger = get_logger()
 
 
@@ -113,7 +114,8 @@ class NVSwitchAdminUtils:
         # Skipping the comparision of FWID in the attestation certificate if the Attestation report does not contains the FWID.
         if attestation_report_fwid != '':
             if attestation_report_fwid != NVSwitchAdminUtils.extract_fwid(cert_chain[0]):
-                logger.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
+                logger.error(
+                    "\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
                 logger.debug(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
                 settings.mark_switch_attestation_report_cert_chain_fwid_matched(False)
                 return False
@@ -167,7 +169,8 @@ class NVSwitchAdminUtils:
         expired = False
         index = number_of_certificates - 1
         while index > -1:
-            expiration_iso8601 = datetime.strptime(cert_chain[index].get_notAfter().decode('ascii'), '%Y%m%d%H%M%SZ').isoformat()
+            expiration_iso8601 = datetime.strptime(cert_chain[index].get_notAfter().decode('ascii'),
+                                                   '%Y%m%d%H%M%SZ').isoformat()
             if earliest_expiration_iso8601 is None or expiration_iso8601 < earliest_expiration_iso8601:
                 earliest_expiration_iso8601 = expiration_iso8601
 
@@ -245,7 +248,7 @@ class NVSwitchAdminUtils:
                 nonce = NVSwitchAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES)
                 request_builder = request_builder.add_extension(extval=OCSPNonce(nonce),
                                                                 critical=True)
-            
+
             request = request_builder.build()
             # Making the network call in a separate thread.
             ocsp_response = function_wrapper_with_timeout([NVSwitchAdminUtils.send_ocsp_request,
@@ -264,9 +267,10 @@ class NVSwitchAdminUtils:
             for j in range(i, len(cert_chain)):
                 ocsp_cert_chain.append(NVSwitchAdminUtils.convert_cert_from_cryptography_to_pyopenssl(cert_chain[j]))
 
-            ocsp_cert_chain_verification_status, ocsp_cert_expired, ocsp_cert_expiration_date = NVSwitchAdminUtils.verify_certificate_chain(ocsp_cert_chain,
-                                                                                              settings,
-                                                                                              BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
+            ocsp_cert_chain_verification_status, ocsp_cert_expired, ocsp_cert_expiration_date = NVSwitchAdminUtils.verify_certificate_chain(
+                ocsp_cert_chain,
+                settings,
+                BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
 
             if not ocsp_cert_chain_verification_status:
                 logger.error(
@@ -291,14 +295,15 @@ class NVSwitchAdminUtils:
                     elif i == end_index - 1:
                         logger.debug("\t\tSwitch Certificate OCSP Nonce is matching")
             except ExtensionNotFound:
-                    info_log.error("\t\tOCSP response does not contain a nonce extension. If OCSP nonce validation is not required in your environment, consider disabling the nonce check.")
-                    return False, switch_attestation_warning, ocsp_status, revocation_reason
+                info_log.error(
+                    "\t\tOCSP response does not contain a nonce extension. If OCSP nonce validation is not required in your environment, consider disabling the nonce check.")
+                return False, switch_attestation_warning, ocsp_status, revocation_reason
 
             if ocsp_response.response_status != ocsp.OCSPResponseStatus.SUCCESSFUL:
                 logger.error("\t\tCouldn't receive a proper response from the OCSP server.")
                 return False, switch_attestation_warning, ocsp_status, revocation_reason
 
-            #OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
+            # OCSP response can have 3 status - Good, Revoked (with a reason) or Unknown
             if ocsp_response.certificate_status != ocsp.OCSPCertStatus.GOOD:
 
                 if x509.ReasonFlags.certificate_hold == ocsp_response.revocation_reason and \
@@ -353,7 +358,7 @@ class NVSwitchAdminUtils:
             https_request.add_header("Authorization", SERVICE_KEY_VALUE.format(BaseSettings.service_key))
 
         with request.urlopen(
-                https_request) as https_response:  #nosec taken care of the security issue by checking for the url to start with "http"
+                https_request) as https_response:  # nosec taken care of the security issue by checking for the url to start with "http"
             ocsp_response = ocsp.load_der_ocsp_response(https_response.read())
 
         return ocsp_response
@@ -408,7 +413,6 @@ class NVSwitchAdminUtils:
         except HTTPError:
             logger.error("Could not fetch rim file from RIM service with id : " + file_id)
             raise RIMFetchError(f'Unable to fetch RIM file from RIM service: {file_id}')
-
 
     @staticmethod
     def get_vbios_rim_file_id(project, project_sku, chip_sku, vbios_version):

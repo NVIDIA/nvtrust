@@ -1,7 +1,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -66,19 +66,18 @@ class Verifier:
         if len(self.golden_measurements) > len(self.runtime_measurements):
             info_log.info("\t\t\tWarning : Golden measurement are more than measurements in Attestation report.")
             return False
-            
-        
+
         list_of_mismatched_indexes = list()
 
         for i in self.golden_measurements:
-            
+
             if i == 35 and not self.is_msr_35_valid:
                 continue
 
             is_matching = False
 
             for j in range(self.golden_measurements[i].get_number_of_alternatives()):
-                
+
                 if self.golden_measurements[i].get_value_at_index(j) == self.runtime_measurements[i] and \
                    self.golden_measurements[i].get_size() == len(self.runtime_measurements[i]) // 2:
 

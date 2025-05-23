@@ -32,6 +32,7 @@ import os
 from enum import Enum
 import logging
 import sys
+from collections import defaultdict
 from verifier.__about__ import __author__, __copyright__, __version__
 
 info_log = logging.getLogger('gpu-verifier-info')
@@ -220,7 +221,8 @@ class BaseSettings:
         self.gpu_vbios_rim_cert_status = cert_status
 
     def check_gpu_attestation_report_cert_revocation_reason(self):
-        event_log.debug(f"check_gpu_attestation_report_cert_revocation_reason called.{self.gpu_attestation_report_cert_revocation_reason}")
+        event_log.debug(
+            f"check_gpu_attestation_report_cert_revocation_reason called.{self.gpu_attestation_report_cert_revocation_reason}")
         return self.gpu_attestation_report_cert_revocation_reason
 
     def mark_gpu_attestation_report_cert_revocation_reason(self, revocation_reason):
@@ -228,7 +230,8 @@ class BaseSettings:
         self.gpu_attestation_report_cert_revocation_reason = revocation_reason
 
     def check_gpu_driver_rim_cert_revocation_reason(self):
-        event_log.debug(f"check_gpu_driver_rim_cert_revocation_reason called.{self.gpu_driver_rim_cert_revocation_reason}")
+        event_log.debug(
+            f"check_gpu_driver_rim_cert_revocation_reason called.{self.gpu_driver_rim_cert_revocation_reason}")
         return self.gpu_driver_rim_cert_revocation_reason
 
     def mark_gpu_driver_rim_cert_revocation_reason(self, revocation_reason):
@@ -236,7 +239,8 @@ class BaseSettings:
         self.gpu_driver_rim_cert_revocation_reason = revocation_reason
 
     def check_gpu_vbios_rim_cert_revocation_reason(self):
-        event_log.debug(f"check_gpu_vbios_rim_cert_revocation_reason called.{self.gpu_vbios_rim_cert_revocation_reason}")
+        event_log.debug(
+            f"check_gpu_vbios_rim_cert_revocation_reason called.{self.gpu_vbios_rim_cert_revocation_reason}")
         return self.gpu_vbios_rim_cert_revocation_reason
 
     def mark_gpu_vbios_rim_cert_revocation_reason(self, revocation_reason):
@@ -244,7 +248,8 @@ class BaseSettings:
         self.gpu_vbios_rim_cert_revocation_reason = revocation_reason
 
     def check_gpu_attestation_report_cert_ocsp_status(self):
-        event_log.debug(f"check_gpu_attestation_report_cert_ocsp_status: {self.gpu_attestation_report_cert_ocsp_status}")
+        event_log.debug(
+            f"check_gpu_attestation_report_cert_ocsp_status: {self.gpu_attestation_report_cert_ocsp_status}")
         return self.gpu_attestation_report_cert_ocsp_status
 
     def mark_gpu_attestation_report_cert_ocsp_status(self, ocsp_status):
@@ -284,7 +289,8 @@ class BaseSettings:
         self.gpu_vbios_rim_cert_chain_validated = flag
 
     def check_gpu_attestation_report_cert_expiration_date(self):
-        event_log.debug(f"check_gpu_attestation_report_cert_expiration_date called.{self.gpu_attestation_report_cert_expiration_date}")
+        event_log.debug(
+            f"check_gpu_attestation_report_cert_expiration_date called.{self.gpu_attestation_report_cert_expiration_date}")
         return self.gpu_attestation_report_cert_expiration_date
 
     def mark_gpu_attestation_report_cert_expiration_date(self, expiration_date):
@@ -317,7 +323,8 @@ class BaseSettings:
         self.gpu_attestation_report_cert_chain_fwid_matched = flag
 
     def check_if_attestation_report_signature_verified(self):
-        event_log.debug(f"check_if_attestation_report_signature_verified: {self.attestation_report_signature_verification}")
+        event_log.debug(
+            f"check_if_attestation_report_signature_verified: {self.attestation_report_signature_verification}")
         return self.attestation_report_signature_verification
 
     def mark_attestation_report_signature_verified(self, flag=True):
@@ -476,7 +483,8 @@ class BaseSettings:
         self.attestation_report_vbios_version_match = flag
 
     def check_if_no_driver_vbios_measurement_index_conflict(self):
-        event_log.debug(f"check_if_no_driver_vbios_measurement_index_conflict: {self.no_driver_vbios_measurement_index_conflict}")
+        event_log.debug(
+            f"check_if_no_driver_vbios_measurement_index_conflict: {self.no_driver_vbios_measurement_index_conflict}")
         return self.no_driver_vbios_measurement_index_conflict
 
     def mark_no_driver_vbios_measurement_index_conflict(self, flag=True):
@@ -489,9 +497,11 @@ class BaseSettings:
                 self.check_if_attestation_report_parsed_successfully() and \
                 self.check_if_nonce_are_matching() and \
                 ((self.check_gpu_attestation_report_cert_status() == 'valid') or
-                 (BaseSettings.allow_hold_cert and self.check_gpu_attestation_report_cert_status() == 'revoked' and self.check_gpu_attestation_report_cert_revocation_reason() == 'certificate_hold')) and \
+                 (
+                         BaseSettings.allow_hold_cert and self.check_gpu_attestation_report_cert_status() == 'revoked' and self.check_gpu_attestation_report_cert_revocation_reason() == 'certificate_hold')) and \
                 ((self.check_gpu_attestation_report_cert_ocsp_status() == 'good') or
-                 (BaseSettings.allow_hold_cert and self.check_gpu_attestation_report_cert_ocsp_status() == 'revoked' and self.check_gpu_attestation_report_cert_revocation_reason() == 'certificate_hold')) and \
+                 (
+                         BaseSettings.allow_hold_cert and self.check_gpu_attestation_report_cert_ocsp_status() == 'revoked' and self.check_gpu_attestation_report_cert_revocation_reason() == 'certificate_hold')) and \
                 self.check_if_attestation_report_driver_version_matches() and \
                 self.check_if_attestation_report_vbios_version_matches() and \
                 self.check_if_attestation_report_signature_verified() and \
@@ -500,9 +510,11 @@ class BaseSettings:
                 self.check_if_gpu_driver_rim_schema_validated() and \
                 self.check_if_gpu_driver_rim_cert_chain_validated() and \
                 ((self.check_gpu_driver_rim_cert_status() == 'valid') or
-                 (BaseSettings.allow_hold_cert and self.check_gpu_driver_rim_cert_status() == 'revoked' and self.check_gpu_driver_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                 (
+                         BaseSettings.allow_hold_cert and self.check_gpu_driver_rim_cert_status() == 'revoked' and self.check_gpu_driver_rim_cert_revocation_reason() == 'certificate_hold')) and \
                 ((self.check_gpu_driver_rim_cert_ocsp_status() == 'good') or
-                 (BaseSettings.allow_hold_cert and self.check_gpu_driver_rim_cert_ocsp_status() == 'revoked' and self.check_gpu_driver_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                 (
+                         BaseSettings.allow_hold_cert and self.check_gpu_driver_rim_cert_ocsp_status() == 'revoked' and self.check_gpu_driver_rim_cert_revocation_reason() == 'certificate_hold')) and \
                 self.check_if_gpu_driver_rim_signature_verified() and \
                 self.check_if_gpu_driver_rim_version_matched() and \
                 self.check_rim_driver_measurements_availability() and \
@@ -512,9 +524,11 @@ class BaseSettings:
                 self.check_if_gpu_vbios_rim_version_matched() and \
                 self.check_if_gpu_vbios_rim_cert_chain_validated() and \
                 ((self.check_gpu_vbios_rim_cert_status() == 'valid') or
-                 (BaseSettings.allow_hold_cert and self.check_gpu_vbios_rim_cert_status() == 'revoked' and self.check_gpu_vbios_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                 (
+                         BaseSettings.allow_hold_cert and self.check_gpu_vbios_rim_cert_status() == 'revoked' and self.check_gpu_vbios_rim_cert_revocation_reason() == 'certificate_hold')) and \
                 ((self.check_gpu_vbios_rim_cert_ocsp_status() == 'good') or
-                 (BaseSettings.allow_hold_cert and self.check_gpu_vbios_rim_cert_ocsp_status() == 'revoked' and self.check_gpu_vbios_rim_cert_revocation_reason() == 'certificate_hold')) and \
+                 (
+                         BaseSettings.allow_hold_cert and self.check_gpu_vbios_rim_cert_ocsp_status() == 'revoked' and self.check_gpu_vbios_rim_cert_revocation_reason() == 'certificate_hold')) and \
                 self.check_rim_vbios_measurements_availability() and \
                 self.check_if_no_driver_vbios_measurement_index_conflict() and \
                 self.check_if_measurements_are_matching() == "success":
@@ -530,7 +544,8 @@ class HopperSettings(BaseSettings):
     HashFunction = sha384
     MAX_CERT_CHAIN_LENGTH = 5
     HashFunctionNamespace = "{http://www.w3.org/2001/04/xmlenc#sha384}"
-    GpuArch = "HOPPER"
+    GPU_ARCH_NAME = "HOPPER"
+    GPU_ARCH = 9
     RIM_DIRECTORY_PATH = os.path.join(parent_dir, "samples")
     TEST_NO_GPU_DRIVER_RIM_PATH = os.path.join(RIM_DIRECTORY_PATH, "Driver_RIM_test_no_gpu.swidtag")
     DRIVER_RIM_PATH = ""
@@ -554,3 +569,44 @@ class HopperSettings(BaseSettings):
     @classmethod
     def set_gpu_attestation_certificates_path(cls, path):
         cls.GPU_ATTESTATION_CERTIFICATES_PATH = path
+
+
+class BlackwellSettings(BaseSettings):
+    signature_length = 96
+    HashFunction = sha384
+    MAX_CERT_CHAIN_LENGTH = 5
+    HashFunctionNamespace = "{http://www.w3.org/2001/04/xmlenc#sha384}"
+    GPU_ARCH_NAME = "BLACKWELL"
+    GPU_ARCH = 10
+    RIM_DIRECTORY_PATH = os.path.join(parent_dir, "samples")
+    TEST_NO_GPU_DRIVER_RIM_PATH = ""
+    DRIVER_RIM_PATH = ""
+    TEST_NO_GPU_VBIOS_RIM_PATH = ""
+    VBIOS_RIM_PATH = ""
+    ATTESTATION_REPORT_PATH = ""
+    GPU_ATTESTATION_CERTIFICATES_PATH = ""
+
+    @classmethod
+    def set_driver_rim_path(cls, path):
+        cls.DRIVER_RIM_PATH = path
+
+    @classmethod
+    def set_vbios_rim_path(cls, path):
+        cls.VBIOS_RIM_PATH = path
+
+    @classmethod
+    def set_attestation_report_path(cls, path):
+        cls.ATTESTATION_REPORT_PATH = path
+
+    @classmethod
+    def set_gpu_attestation_certificates_path(cls, path):
+        cls.GPU_ATTESTATION_CERTIFICATES_PATH = path
+
+
+def dictionary_init():
+    return None
+
+
+GPU_ARCHITECTURE_MAP = defaultdict(dictionary_init)
+GPU_ARCHITECTURE_MAP[9] = HopperSettings()
+GPU_ARCHITECTURE_MAP[10] = BlackwellSettings()

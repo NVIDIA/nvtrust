@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 # 
 # Redistribution and use in source and binary forms, with or without
@@ -288,6 +288,7 @@ class OpaqueData:
         32  : 'OPAQUE_FIELD_ID_GPU_LINK_CONN',
         33  : 'OPAQUE_FIELD_ID_SYS_ENABLE_STATUS',
         34  : 'OPAQUE_FIELD_ID_OPAQUE_DATA_VERSION',
+        35  : 'OPAQUE_FIELD_ID_CHIP_INFO',
         255 : 'OPAQUE_FIELD_ID_INVALID',
     }
 
