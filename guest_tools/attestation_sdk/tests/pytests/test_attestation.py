@@ -40,7 +40,7 @@ local_switch_overall_claims_file_path = "tests/pytests/data/switch/overall_claim
 local_switch_detached_claims_file_path = "tests/pytests/data/switch/detached_claims_local.json"
 remote_switch_overall_claims_file_path = "tests/pytests/data/switch/overall_claims_remote.json"
 remote_switch_detached_claims_file_path = "tests/pytests/data/switch/detached_claims_remote.json"
-evidence_list = [{"certificate": "test_cert_chain", "evidence": "test_hex_str"}]
+evidence_list = [{"certificate": "test_cert_chain", "evidence": "test_hex_str", "arch": "HOPPER"}]
 
 
 class AttestationTest(TestCase):

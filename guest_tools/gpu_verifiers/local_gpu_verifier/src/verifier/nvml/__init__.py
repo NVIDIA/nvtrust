@@ -1,7 +1,7 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-# 
+#
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
 #
@@ -53,7 +53,6 @@ from pynvml import (
 )
 
 from verifier.utils import (
-    get_gpu_architecture_value,
     function_wrapper_with_timeout,
 )
 from verifier.config import (
@@ -267,7 +266,7 @@ class NvmlHandler:
         Returns:
             [str]: the GPU architecture.
         """
-        return get_gpu_architecture_value(self.GPUArchitecture)
+        return self.GPUArchitecture
 
     def init_handle(self):
         """ Fetches the GPU handle for the current GPU index value.

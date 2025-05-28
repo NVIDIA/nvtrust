@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -68,6 +68,8 @@ from verifier.exceptions import (
     RIMFetchError,
     InvalidNonceError
 )
+from verifier.certs import TcbInfoExtension
+
 
 from nv_attestation_sdk.utils.headers import SERVICE_KEY_VALUE
 
@@ -76,11 +78,12 @@ class CcAdminUtils:
     """
 
     @staticmethod
-    def extract_fwid(cert):
+    def extract_fwid(cert, settings):
         """ A static function to extract the FWID data from the given certificate.
 
         Args:
             cert (OpenSSL.crypto.X509): The certificate whose FWID data is needed to be fetched.
+            settings (config.HopperSettings): the object containing the various config info.
 
         Returns:
             [str]: the FWID as a hex string extracted from the certificate if
@@ -88,15 +91,25 @@ class CcAdminUtils:
         """
         result = ''
         # The OID for the FWID extension.
-        TCG_DICE_FWID_OID = '2.23.133.5.4.1'
+        TCG_DICE_FWID_OID = ['2.23.133.5.4.1.1', '2.23.133.5.4.1']
         cryptography_cert = cert.to_cryptography()
 
         for i in range(len(cryptography_cert.extensions)):
             oid_obj = (vars(cryptography_cert.extensions)['_extensions'][i]).oid
-            if getattr(oid_obj, 'dotted_string') == TCG_DICE_FWID_OID:
-                # The FWID data is the last 48 bytes.
-                result = vars((vars(cryptography_cert.extensions)['_extensions'][i]).value)['_value'][-48:].hex()
-
+            if getattr(oid_obj, 'dotted_string') in TCG_DICE_FWID_OID:
+                try:
+                    if settings.GPU_ARCH_NAME == "HOPPER":
+                        # The FWID data is the last 48 bytes.
+                        result = vars((vars(cryptography_cert.extensions)['_extensions'][i]).value)['_value'][-48:].hex()
+                    elif settings.GPU_ARCH_NAME == "BLACKWELL":
+                        fwid_extension_data = vars((vars(cryptography_cert.extensions)['_extensions'][i]).value)['_value']
+                        diceTcbInfoExtension = TcbInfoExtension(fwid_extension_data)
+                        result = diceTcbInfoExtension.result['fwids'].get_fwid(0).hex()
+                    else:
+                        raise ValueError("Invalid GPU architecture")
+                except ValueError as e:
+                    info_log.error("There was an issue in extracting the FWID value from the AK cert.")
+                    info_log.error(e)
         return result
 
     @staticmethod
@@ -114,7 +127,8 @@ class CcAdminUtils:
         # Skipping the comparision of FWID in the attestation certificate if the Attestation report does not contains the FWID.
         if attestation_report_fwid != '':
 
-            if attestation_report_fwid != CcAdminUtils.extract_fwid(cert_chain[0]):
+            cert_fwid = CcAdminUtils.extract_fwid(cert_chain[0], settings)
+            if cert_fwid != attestation_report_fwid :
                 info_log.error("\t\tThe firmware ID in the device certificate chain is not matching with the one in the attestation report.")
                 event_log.info(f"\t\tThe FWID read from the attestation report is : {attestation_report_fwid}")
                 settings.mark_gpu_attestation_report_cert_chain_fwid_matched(False)
@@ -245,7 +259,7 @@ class CcAdminUtils:
                 nonce = CcAdminUtils.generate_nonce(BaseSettings.SIZE_OF_NONCE_IN_BYTES)
                 request_builder = request_builder.add_extension(extval = OCSPNonce(nonce),
                                                             critical = True)
-                
+
             request = request_builder.build()
             # Making the network call in a separate thread.
             ocsp_response = function_wrapper_with_timeout([CcAdminUtils.send_ocsp_request,
@@ -417,7 +431,7 @@ class CcAdminUtils:
         return base_str + project + "_" + project_sku + "_" + chip_sku + "_" + vbios_version
 
     @staticmethod
-    def get_driver_rim_file_id(driver_version):
+    def get_driver_rim_file_id(driver_version, settings):
         """ A static method to generate the driver RIM file id to be fetched from the RIM service corresponding to
             the driver installed onto the system.
 
@@ -427,7 +441,15 @@ class CcAdminUtils:
         Returns:
             [str]: the driver RIM file id.
         """
-        base_str = 'NV_GPU_DRIVER_GH100_'
+        if settings.GPU_ARCH_NAME == "HOPPER":
+            base_str = 'NV_GPU_DRIVER_GH100_'
+
+        elif settings.GPU_ARCH_NAME == "BLACKWELL":
+            base_str = 'NV_GPU_CC_DRIVER_GB100_'
+
+        settings.mark_driver_rim_fetched()
+        event_log.debug(f'RIM for the driver version {driver_version} fetched.')
+
         return base_str + driver_version
 
 

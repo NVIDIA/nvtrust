@@ -1,5 +1,5 @@
 #
-# SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-FileCopyrightText: Copyright (c) 2021-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
 #
 # Redistribution and use in source and binary forms, with or without
@@ -81,6 +81,8 @@ def get_gpu_architecture_value(nvml_arch_value):
         return "AMPERE"
     elif nvml_arch_value == 9:
         return "HOPPER"
+    elif nvml_arch_value == 10:
+        return "BLACKWELL"
     else:
         event_log.error("Unknown GPU architecture.")
         raise UnknownGpuArchitectureError("Unknown GPU architecture.")

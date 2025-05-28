@@ -1,6 +1,6 @@
 [project]
 name = "nv-local-gpu-verifier"
-version = "2.4.0"
+version = "2.5.0"
 description = "A Python-based tool that validates GPU measurements by comparing GPU runtime measurements with authenticated golden measurements"
 authors = [
     {name = "NVIDIA"}
@@ -28,7 +28,8 @@ dependencies = [
     'xmlschema == 2.2.3',
     'pyOpenSSL == 24.2.1',
     'PyJWT == 2.7.0',
-    'nvidia-ml-py == 12.550.52'
+    'nvidia-ml-py == 12.550.52',
+    'asn1 == 2.7.0'
 ]
 
 [tool.setuptools.package-data]
