@@ -7,6 +7,8 @@ from nv_attestation_sdk import attestation
 import os
 import json
 
+OCSP_URL = "https://ocsp.ndis.nvidia.com/"
+RIM_URL = "https://rim.attestation.nvidia.com/v1/rim/"
 
 client = attestation.Attestation()
 client.set_name("thisNode1")
@@ -16,7 +18,7 @@ client.set_claims_version("3.0")
 print ("[LocalGPUTest] node name :", client.get_name())
 file = "../../policies/local/NVGPULocalv4PolicyExample.json"
 
-client.add_verifier(attestation.Devices.GPU, attestation.Environment.LOCAL, "", "")
+client.add_verifier(attestation.Devices.GPU, attestation.Environment.LOCAL, "", "", OCSP_URL, RIM_URL)
 
 print(client.get_verifiers())
 
