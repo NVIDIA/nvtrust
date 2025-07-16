@@ -333,6 +333,7 @@ def attest(args, nonce, evidence_list):
             claims_list.append(claims)
     except Exception as error:
         logger.error(error)
+        logger.debug("Nvswitch Attestation failed", exc_info=1)
 
         # set error claims
         claims_list.append(ClaimsUtils.get_current_switch_claims(settings, switch_uuid))

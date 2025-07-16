@@ -56,7 +56,7 @@ Following the attestation process, the tool conducts a final topology check to v
 ## Getting started
 ### Prerequisites
     HGX system with 8 GPUs and 4 switches assigned to the single tenant
-    python >= 3.8
+    python >= 3.9
     git installed
     Nvidia GPU driver installed
     Nvidia Switch driver installed

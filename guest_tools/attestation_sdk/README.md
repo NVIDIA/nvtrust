@@ -83,11 +83,11 @@ Please execute the following commands to clean up packages that were not install
 
 - Local GPU Attestation
 
-  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/LocalGPUTest.py)
+  Refer to the [sample implementation](tests/end_to_end/hardware/LocalGPUTest.py)
 
 - Remote GPU Attestation
 
-  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/RemoteGPUTest.py)
+  Refer to the [sample implementation](tests/end_to_end/hardware/RemoteGPUTest.py)
 
 ## Switch Attestation
 
@@ -102,13 +102,9 @@ Please execute the following commands to clean up packages that were not install
 
 ### How to do Attestation
 
-- Local nvSwitch Attestation
+- Local and Remote nvSwitch Attestation 
 
-  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/LocalSwitchTest.py)
-
-- Remote nvSwitch Attestation
-
-  Refer to the [sample implementation](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_sdk/tests/end_to_end/hardware/RemoteSwitchTest.py)
+  Refer to the ppcie-verifier [README.md](../ppcie-verifier/README.md)
 
 ## Claims and Troubleshooting information
 
@@ -148,8 +144,9 @@ v2.1.4          | 2.0
 v2.3.0          | 2.0
 v2.4.0          | 2.0, 3.0
 v2.5.0          | 2.0, 3.0
+v2.6.0          | 2.0, 3.0
 
-More information on claims can be found [here](https://github.com/NVIDIA/nvtrust/blob/main/guest_tools/attestation_troubleshooting_guide.md)
+More information on claims can be found [here](../attestation_troubleshooting_guide.md)
 
 ## Attestation SDK APIs
 
@@ -161,7 +158,7 @@ More information on claims can be found [here](https://github.com/NVIDIA/nvtrust
 | set_name(<-name->)                                                                                                              | Set a name for the Attestation SDK client                                                                                                                                                                        |
 | set_nonce(<-nonce->)                                                                                                            | Set a nonce for Attestation                                                                                                                                                                                      |
 | set_ocsp_nonce_disabled(<-bool->)                                                                                               | Flag which indicates whether to include a nonce when calling OCSP. Only applicable for local GPU attestation. False by default                                                                                   |
-| set_service_key(<-key->)                                                                                                        | Service key which is used to auth remote service calls to attestation services. None by default. |                               |
+| set_service_key(<-key->)                                                                                                        | Service key which is used to auth remote service calls to attestation services. None by default. Note: No valid service keys have been created by admins yet - using any key will result in attestation failure. |                               |
 | set_claims_version(<-version->)                                                                                                 | Set a claims version for Attestation. Please refer to the [Attestation Troubleshooting documentation](../attestation_troubleshooting_guide.md) for the claims. If claims version is not set, it defaults to 2.0. |
 | add_verifier(<-attestation-device-type->, <-local/remote->, <-remote-attestation-service-url->, <-attestation-results-policy->) | Add a specific type of verifier for the client object. The verifier will be invoked during the attest operation                                                                                                  |
 | get_verifiers()                                                                                                                 | Retrieves the list of verifiers added to the client object.                                                                                                                                                      |

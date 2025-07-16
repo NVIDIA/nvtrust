@@ -35,6 +35,7 @@ from threading import (
     Event,
 )
 
+import pynvml
 from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 
@@ -207,9 +208,19 @@ def function_caller(inp):
         result = function(*arguments)
         q.put((result, None))
         event_log.info(f"{function_name} completed successfully")
+    except pynvml.NVMLError as ex:
+        if ex.__str__() == "Invalid Argument":
+            info_log.error(
+                "Failed to set GPU ready state since terminal state has been reached. Please reboot the "
+                "system"
+            )
+        elif ex.__str__() == "Insufficient Permissions":
+            info_log.error("Failed to set GPU ready state since you need to be a root user")
+        else:
+            info_log.error("Failed to set GPU ready state due to", ex.__str__())
     except BaseException as e:
         q.put((None, e))
-        event_log.info(f"{function_name} raised an exception")
+        event_log.info(f"{function_name} raised an exception from {e}")
 
 
 def function_wrapper_with_timeout(args, max_time_delay):

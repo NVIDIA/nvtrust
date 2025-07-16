@@ -348,19 +348,18 @@ class CcAdminUtils:
         Returns:
             [cryptography.hazmat.backends.openssl.ocsp._OCSPResponse]: the ocsp response message object.
         """
-        if not BaseSettings.OCSP_URL.lower().startswith('https'):
-            # Raising exception in case of url not starting with http, and not FTP, etc.
-            raise ValueError from None
+        try:
+            https_request = request.Request(BaseSettings.OCSP_URL, data)
+            https_request.add_header("Content-Type", "application/ocsp-request")
+            if BaseSettings.service_key:
+                https_request.add_header("Authorization", SERVICE_KEY_VALUE.format(BaseSettings.service_key))
 
-        https_request = request.Request(BaseSettings.OCSP_URL, data)
-        https_request.add_header("Content-Type", "application/ocsp-request")
-        if BaseSettings.service_key:
-            https_request.add_header("Authorization", SERVICE_KEY_VALUE.format(BaseSettings.service_key))
+            with request.urlopen(https_request) as https_response:      #nosec taken care of the security issue by checking for the url to start with "http"
+                ocsp_response = ocsp.load_der_ocsp_response(https_response.read())
 
-        with request.urlopen(https_request) as https_response:      #nosec taken care of the security issue by checking for the url to start with "http"
-            ocsp_response = ocsp.load_der_ocsp_response(https_response.read())
-
-        return ocsp_response
+            return ocsp_response
+        except Exception as e:
+            raise Exception("OCSP request failed") from e
 
     @staticmethod
     def verify_ocsp_signature(ocsp_response):
@@ -431,7 +430,7 @@ class CcAdminUtils:
         return base_str + project + "_" + project_sku + "_" + chip_sku + "_" + vbios_version
 
     @staticmethod
-    def get_driver_rim_file_id(driver_version, settings):
+    def get_driver_rim_file_id(driver_version, settings, chip):
         """ A static method to generate the driver RIM file id to be fetched from the RIM service corresponding to
             the driver installed onto the system.
 
@@ -445,7 +444,7 @@ class CcAdminUtils:
             base_str = 'NV_GPU_DRIVER_GH100_'
 
         elif settings.GPU_ARCH_NAME == "BLACKWELL":
-            base_str = 'NV_GPU_CC_DRIVER_GB100_'
+            base_str = f'NV_GPU_CC_DRIVER_{chip}_'
 
         settings.mark_driver_rim_fetched()
         event_log.debug(f'RIM for the driver version {driver_version} fetched.')
