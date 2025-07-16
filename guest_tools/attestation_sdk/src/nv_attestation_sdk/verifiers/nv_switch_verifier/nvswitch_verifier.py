@@ -71,29 +71,28 @@ class SwitchVerifier:
         for i in self.golden_measurements:
 
             is_matching = False
+            golden_measurement = self.golden_measurements[i]["measurement"]
+            measurement_source = self.golden_measurements[i]["source"]
 
-            for j in range(self.golden_measurements[i].get_number_of_alternatives()):
+            for j in range(golden_measurement.get_number_of_alternatives()):
 
-                if self.golden_measurements[i].get_value_at_index(j) == self.runtime_measurements[i] and \
-                        self.golden_measurements[i].get_size() == len(self.runtime_measurements[i]) // 2:
+                if golden_measurement.get_value_at_index(j) == self.runtime_measurements[i] and \
+                        golden_measurement.get_size() == len(self.runtime_measurements[i]) // 2:
                     is_matching = True
 
             if not is_matching:
                 # Measurements are not matching.
-                list_of_mismatched_indexes.append(i)
+                list_of_mismatched_indexes.append((i, measurement_source))
 
         if len(list_of_mismatched_indexes) > 0:
 
             logger.info("""\t\t\tThe runtime measurements are not matching with the
                         golden measurements at the following indexes(starting from 0) :\n\t\t\t[""")
 
-            list_of_mismatched_indexes.sort()
+            list_of_mismatched_indexes.sort(key=lambda x: x[0]) # Sort by index
 
-            for i, index in enumerate(list_of_mismatched_indexes):
-                if i != len(list_of_mismatched_indexes) - 1:
-                    logger.info(f'\t\t\t{index}, ')
-                else:
-                    logger.info("\t\t\t" + str(index))
+            for (idx, source) in list_of_mismatched_indexes:
+                logger.info(f'\t\t\t{idx} [{source}]')
             logger.info("\t\t\t]")
             settings.mark_measurements_as_matching(False)
             return False
@@ -127,7 +126,10 @@ class SwitchVerifier:
                     f"The driver and vbios RIM have measurement at the same index : {gld_msr_idx}")
 
             elif vbios_golden_measurements[gld_msr_idx].is_active():
-                self.golden_measurements[gld_msr_idx] = vbios_golden_measurements[gld_msr_idx]
+                self.golden_measurements[gld_msr_idx] = {
+                    "measurement": vbios_golden_measurements[gld_msr_idx],
+                    "source": "Firmware"
+                }
 
         settings.mark_no_driver_vbios_measurement_index_conflict()
 

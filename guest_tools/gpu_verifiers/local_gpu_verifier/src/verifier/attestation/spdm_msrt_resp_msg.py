@@ -289,6 +289,7 @@ class OpaqueData:
         33  : 'OPAQUE_FIELD_ID_SYS_ENABLE_STATUS',
         34  : 'OPAQUE_FIELD_ID_OPAQUE_DATA_VERSION',
         35  : 'OPAQUE_FIELD_ID_CHIP_INFO',
+        36  : 'OPAQUE_FIELD_ID_FEATURE_FLAG',
         255 : 'OPAQUE_FIELD_ID_INVALID',
     }
 
@@ -314,7 +315,7 @@ class OpaqueData:
         if field_name == 'OPAQUE_FIELD_ID_FWID' and 'OPAQUE_FIELD_ID_FWID' not in self.OpaqueDataField:
             return b''
 
-        return self.OpaqueDataField[field_name]
+        return self.OpaqueDataField.get(field_name, b'')
 
     def parse_measurement_count(self, data):
         """ Parses and creates a list of measurement count values from the OpaqueData field.
@@ -360,6 +361,16 @@ class OpaqueData:
             self.OpaqueDataField["OPAQUE_FIELD_ID_SWITCH_PDI"].append(pdi)
             byte_index = byte_index + self.FieldSize['PdiDataSize']
 
+    def parse_chip_info(self, binary_data):
+        """ Parses the raw chip info data and extract the underlying chip name
+
+        Args:
+            binary_data (bytes): the raw feature flag data
+        """
+        chip_info = binary_data.decode('utf-8').split('\x00')[0]
+        self.OpaqueDataField["OPAQUE_FIELD_ID_CHIP_INFO"] = chip_info
+
+
     def parse(self, binary_data):
         """ Parses the raw OpaqueData field of the SPDM GET_MEASUREMENT response message.
 
@@ -367,6 +378,12 @@ class OpaqueData:
             binary_data (bytes): the data content of the Opaque Data field.
         """
         byte_index = 0
+
+        opaque_field_to_function_map = {
+            "OPAQUE_FIELD_ID_MSRSCNT": self.parse_measurement_count,
+            "OPAQUE_FIELD_ID_SWITCH_PDI": self.parse_switch_pdis,
+            "OPAQUE_FIELD_ID_CHIP_INFO": self.parse_chip_info
+        }
 
         while byte_index < len(binary_data):
 
@@ -381,10 +398,8 @@ class OpaqueData:
 
             value = binary_data[byte_index: byte_index + data_size]
 
-            if data_type == 'OPAQUE_FIELD_ID_MSRSCNT':
-                self.parse_measurement_count(value)
-            elif data_type == 'OPAQUE_FIELD_ID_SWITCH_PDI':
-                self.parse_switch_pdis(value)
+            if data_type in opaque_field_to_function_map:
+                opaque_field_to_function_map[data_type](value)
             else:
                 self.OpaqueDataField[data_type] = value
 

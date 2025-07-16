@@ -75,30 +75,29 @@ class Verifier:
                 continue
 
             is_matching = False
+            golden_measurement = self.golden_measurements[i]["measurement"]
+            measurement_source = self.golden_measurements[i]["source"]
 
-            for j in range(self.golden_measurements[i].get_number_of_alternatives()):
+            for j in range(golden_measurement.get_number_of_alternatives()):
 
-                if self.golden_measurements[i].get_value_at_index(j) == self.runtime_measurements[i] and \
-                   self.golden_measurements[i].get_size() == len(self.runtime_measurements[i]) // 2:
+                if golden_measurement.get_value_at_index(j) == self.runtime_measurements[i] and \
+                   golden_measurement.get_size() == len(self.runtime_measurements[i]) // 2:
 
                     is_matching = True
 
             if not is_matching:
                 # Measurements are not matching.
-                list_of_mismatched_indexes.append(i)
+                list_of_mismatched_indexes.append((i, measurement_source))
 
         if len(list_of_mismatched_indexes) > 0:
             
             info_log.info("""\t\t\tThe runtime measurements are not matching with the
                         golden measurements at the following indexes(starting from 0) :\n\t\t\t[""")
             
-            list_of_mismatched_indexes.sort()
+            list_of_mismatched_indexes.sort(key=lambda x: x[0]) # Sort by index
             
-            for i, index in enumerate(list_of_mismatched_indexes):
-                if i != len(list_of_mismatched_indexes) - 1:
-                    info_log.info(f'\t\t\t{index}, ')
-                else:
-                    info_log.info("\t\t\t"+str(index))
+            for (idx, source) in list_of_mismatched_indexes:
+                info_log.info(f'\t\t\t{idx} [{source}]')
             info_log.info("\t\t\t]")
             settings.mark_measurements_as_matching(False)
             return False
@@ -127,7 +126,10 @@ class Verifier:
         for gld_msr_idx in driver_golden_measurements:
             
             if driver_golden_measurements[gld_msr_idx].is_active():
-                self.golden_measurements[gld_msr_idx] = driver_golden_measurements[gld_msr_idx]
+                self.golden_measurements[gld_msr_idx] = {
+                    "measurement": driver_golden_measurements[gld_msr_idx],
+                    "source": "Driver"
+                }
 
         for gld_msr_idx in vbios_golden_measurements:
 
@@ -137,7 +139,10 @@ class Verifier:
                raise InvalidMeasurementIndexError(f"The driver and vbios RIM have measurement at the same index : {gld_msr_idx}")
             
             elif vbios_golden_measurements[gld_msr_idx].is_active():
-                self.golden_measurements[gld_msr_idx] = vbios_golden_measurements[gld_msr_idx]
+                self.golden_measurements[gld_msr_idx] = {
+                    "measurement": vbios_golden_measurements[gld_msr_idx],
+                    "source": "Firmware"
+                }
         
         settings.mark_no_driver_vbios_measurement_index_conflict()
 

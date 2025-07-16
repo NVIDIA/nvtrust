@@ -148,6 +148,13 @@ def verification():
         nvml_client.__destroy__()
     except Exception as e:
         logger.error("An error occurred while using the PPCIE Verification Tool %s", e)
+        depth = 0
+        while e:
+            indent = "  " * depth
+            cause = f"Caused by:" if e.__cause__ else ""
+            logger.error(f"{indent}{type(e).__name__}: {str(e)}. {cause}")
+            e = e.__cause__
+            depth += 1
     finally:
         status.status(logger)
         logger.info("PPCIE: End of PPCIE Verification Tool")

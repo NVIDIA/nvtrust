@@ -203,13 +203,11 @@ def collect_gpu_evidence(nonce: str, no_gpu_mode=False, ppcie_mode=True):
         else:
             init_nvml(ppcie_mode=ppcie_mode)
             evidence_nonce = CcAdminUtils.validate_and_extract_nonce(nonce)
-
             number_of_available_gpus = NvmlHandler.get_number_of_gpus()
             if number_of_available_gpus == 0:
                 err_msg = "No GPU found"
                 info_log.critical(err_msg)
                 raise NoGpuFoundError(err_msg)
-
             info_log.info(f'Number of GPUs available : {number_of_available_gpus}')
 
         for i in range(number_of_available_gpus):
@@ -221,7 +219,7 @@ def collect_gpu_evidence(nonce: str, no_gpu_mode=False, ppcie_mode=True):
             evidence_list.append(gpu_info_obj)
         info_log.info("All GPU Evidences fetched successfully")
     except Exception as error:
-        info_log.debug(error)
+        info_log.error(error)
         raise Exception("Error occurred while collecting GPU evidence") from error
     return evidence_list
 
@@ -296,7 +294,7 @@ def init_nvml(ppcie_mode: bool):
             info_log.info("The system is running in CC DevTools mode")
     except Exception as error:
         info_log.debug("Error occurred while initializing the NVML library. Error: %s", error)
-        raise Exception("Error occurred while initializing the NVML library") from error
+        raise Exception(f"Error occurred while initializing the NVML library due to {error}")
 
 def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
     """ Method to perform GPU Attestation and return an Attestation Response.
@@ -453,8 +451,9 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
                 if not arguments_as_dictionary['test_no_gpu']:
                     info_log.info("\t\t\tFetching the driver RIM from the RIM service.")
                     try:
-                        driver_rim_file_id = CcAdminUtils.get_driver_rim_file_id(driver_version, settings)
-
+                        chip = attestation_report_obj.get_response_message().get_opaque_data().get_data(
+                            "OPAQUE_FIELD_ID_CHIP_INFO")
+                        driver_rim_file_id = CcAdminUtils.get_driver_rim_file_id(driver_version, settings, chip)
 
                         driver_rim_content = function_wrapper_with_timeout([CcAdminUtils.fetch_rim_file,
                                                                             driver_rim_file_id,
@@ -567,6 +566,7 @@ def attest(arguments_as_dictionary, nonce, gpu_evidence_list):
 
     except Exception as error:
         info_log.error(error)
+        event_log.exception("GPU Attestation failed")
 
         if arguments_as_dictionary['test_no_gpu']:
             return

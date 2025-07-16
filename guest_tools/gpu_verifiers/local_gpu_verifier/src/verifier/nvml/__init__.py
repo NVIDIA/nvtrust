@@ -31,7 +31,6 @@
 """A module to handle all the nvml api calls for the verifier.
 """
 import ctypes
-import sys
 
 from pynvml import (
     nvmlInit,
@@ -69,7 +68,6 @@ from verifier.exceptions import (
     AttestationReportFetchError,
     TimeoutError,
 )
-
 NVML_SYSTEM_CONF_COMPUTE_VERSION = 0x1000014
 
 
