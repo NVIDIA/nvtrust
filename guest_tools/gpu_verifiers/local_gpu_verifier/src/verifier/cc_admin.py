@@ -155,8 +155,11 @@ def main():
         args = parser.parse_args()
         arguments_as_dictionary = vars(args)
 
+        # if nonce is provided, use it
+        if arguments_as_dictionary["nonce"]:
+            nonce = arguments_as_dictionary["nonce"]
         # nonce is generated / set if cc_admin is run as a standalone-tool
-        if arguments_as_dictionary["test_no_gpu"]:
+        elif arguments_as_dictionary["test_no_gpu"]:
             nonce = BaseSettings.NONCE
         else:
             info_log.info("Generating nonce in the local GPU Verifier ..")
