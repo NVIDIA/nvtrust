@@ -18,18 +18,18 @@ def attestation_policy():
         return json.dumps(json_data)
 
 @pytest.mark.switch_hardware
-@pytest.mark.skip(reason="Disabled until https://jirasw.nvidia.com/browse/ATTEST-2371 is implemented")
+@pytest.mark.skip(reason="Disabled until switch tests are available")
 def test_successful_switch_attestation_without_service_key(attestation_policy, ocsp_url, rim_url):
     invoke_attestation(attestation_policy, None, ocsp_url, rim_url)
 
 @pytest.mark.switch_hardware
-@pytest.mark.skip(reason="Disabled until https://jirasw.nvidia.com/browse/ATTEST-2371 is implemented")
+@pytest.mark.skip(reason="Disabled until switch tests are available")
 def test_successful_switch_attestation_with_valid_service_key(attestation_policy, service_key, ocsp_url, rim_url):
     assert service_key is not None, "Obtain a valid service key which has NVIDIA Attestation Service access from https://org.ngc.nvidia.com/service-keys"
     invoke_attestation(attestation_policy, service_key, ocsp_url, rim_url)
 
 @pytest.mark.switch_hardware
-@pytest.mark.skip(reason="Disabled until https://jirasw.nvidia.com/browse/ATTEST-2371 is implemented")
+@pytest.mark.skip(reason="Disabled until switch tests are available")
 def test_fail_switch_attestation_with_invalid_service_key(attestation_policy, ocsp_url, rim_url):
     invoke_attestation(attestation_policy, "SOME_INVALID_SERVICE_KEY", ocsp_url, rim_url, is_attestation_successful=False)
 
