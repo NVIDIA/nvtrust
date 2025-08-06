@@ -83,11 +83,11 @@ Please execute the following commands to clean up packages that were not install
 
 - Local GPU Attestation
 
-  Refer to the [sample implementation](tests/end_to_end/hardware/LocalGPUTest.py)
+  Refer to the [sample implementation](tests/end_to_end/hardware/sample/LocalGPUTest.py)
 
 - Remote GPU Attestation
 
-  Refer to the [sample implementation](tests/end_to_end/hardware/RemoteGPUTest.py)
+  Refer to the [sample implementation](tests/end_to_end/hardware/sample/RemoteGPUTest.py)
 
 ## Switch Attestation
 
@@ -124,7 +124,7 @@ Please note that the Schema/EAT claim information is subject to change in future
 
 ### Driver Version
 - Use the latest GPU verifier version for optimal compatibility with the most recent drivers.
-- For attestation-specific platforms like Blackwell, ensure device-specific CC-enabled drivers are installed (e.g., R575 for Blackwell).
+- For attestation-specific platforms like Blackwell, ensure device-specific CC-enabled drivers are installed (e.g., R575 or above for Blackwell).
 - For RTX PRO 6000 Blackwell platforms, ensure that compatible drivers R580 or later are installed 
 
 ### Claims Version
@@ -147,6 +147,7 @@ v2.4.0          | 2.0, 3.0
 v2.5.0          | 2.0, 3.0
 v2.6.0          | 2.0, 3.0
 v2.6.1          | 2.0, 3.0
+v2.6.2          | 2.0, 3.0
 
 More information on claims can be found [here](../attestation_troubleshooting_guide.md)
 

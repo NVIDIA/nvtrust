@@ -2,4 +2,4 @@
 
 """Maintains the set of request headers for service calls to dependent URL's"""
 OCSP_ALLOW_CERT_HOLD = "X-NVIDIA-OCSP-ALLOW-CERT-HOLD"
-SERVICE_KEY_VALUE = "nv-sak {}"
+SERVICE_KEY_VALUE = "Bearer {}"
