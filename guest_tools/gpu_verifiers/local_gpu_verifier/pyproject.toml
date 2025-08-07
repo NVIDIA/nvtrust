@@ -1,6 +1,6 @@
 [project]
 name = "nv-local-gpu-verifier"
-version = "2.6.1"
+version = "2.6.2"
 description = "A Python-based tool that validates GPU measurements by comparing GPU runtime measurements with authenticated golden measurements"
 authors = [
     {name = "NVIDIA"}
@@ -34,4 +34,3 @@ dependencies = [
 
 [tool.setuptools.package-data]
 verifier = ["samples/*.swidtag", "rim/*.xsd", "samples/*.txt","certs/*.pem", "Tests/*/*.txt"]
-

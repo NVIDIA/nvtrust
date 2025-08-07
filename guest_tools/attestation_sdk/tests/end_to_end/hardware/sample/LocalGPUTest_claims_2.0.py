@@ -13,7 +13,7 @@ client.set_name("thisNode1")
 client.set_nonce("931d8dd0add203ac3d8b4fbde75e115278eefcdceac5b87671a748f32364dfcb")
 
 print ("[LocalGPUTest] node name :", client.get_name())
-file = "../../policies/local/NVGPULocalPolicyExample.json"
+file = "../../../policies/local/NVGPULocalPolicyExample.json"
 
 client.add_verifier(attestation.Devices.GPU, attestation.Environment.LOCAL, "", "")
 

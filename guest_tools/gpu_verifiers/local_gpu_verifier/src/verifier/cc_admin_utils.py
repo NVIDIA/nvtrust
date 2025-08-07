@@ -71,7 +71,7 @@ from verifier.exceptions import (
 from verifier.certs import TcbInfoExtension
 
 
-from nv_attestation_sdk.utils.headers import SERVICE_KEY_VALUE
+SERVICE_KEY_VALUE = "Bearer {}"
 
 class CcAdminUtils:
     """ A class to provide the required functionalities for the CC ADMIN to perform the GPU attestation.
