@@ -281,7 +281,10 @@ class CcAdminUtils:
                                                                                         BaseSettings.Certificate_Chain_Verification_Mode.OCSP_RESPONSE)
 
             if not ocsp_cert_chain_verification_status:
-                info_log.error(f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value}.")
+                info_log.error(f"\t\tThe ocsp response certificate chain verification failed for {cert_chain[i].subject.get_attributes_for_oid(x509.oid.NameOID.COMMON_NAME)[0].value} serial {cert_chain[i].serial_number}.")
+                if ocsp_cert_expired:
+                    info_log.info(f"\t\tOCSP certificate expired on {ocsp_cert_expiration_date}.")
+
                 return False, gpu_attestation_warning, ocsp_status, revocation_reason
             elif i == end_index - 1:
                 info_log.debug("\t\tGPU Certificate OCSP Cert chain is verified")
