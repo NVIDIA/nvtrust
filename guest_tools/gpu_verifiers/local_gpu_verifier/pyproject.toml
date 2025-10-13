@@ -21,7 +21,7 @@ keywords = [
     "verifier"
 ]
 dependencies = [
-    'cryptography == 43.0.1',
+    'cryptography == 44.0.1',
     'ecdsa == 0.18.0',
     'lxml >= 4.9.1',
     'signxml == 3.2.0',
