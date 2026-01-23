@@ -70,7 +70,10 @@ def attest(nonce: str, nvswitch_evidence_list, attestation_options):
         response = requests.request(
             "POST", verifier_url, headers=headers, data=payload, timeout=timeout
         )
-        response_json = response.json()
+        try:
+            response_json = response.json()
+        except ValueError:
+            response_json = response.text
         logger.debug(
             "Response received from NRAS for Nvswitch Attestation: %s", response_json
         )

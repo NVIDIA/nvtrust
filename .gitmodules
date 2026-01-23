@@ -1,3 +1,6 @@
 [submodule "host_tools/python"]
 	path = host_tools/python
 	url = https://github.com/nvidia/gpu-admin-tools
+[submodule "guest_tools/attestation_sdk_cpp"]
+	path = guest_tools/attestation_sdk_cpp
+	url = https://github.com/NVIDIA/attestation-sdk.git

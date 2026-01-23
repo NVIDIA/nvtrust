@@ -1,4 +1,6 @@
-# Protected PCIE Verifier 
+# Protected PCIE Verifier (Version 1.x)
+
+**Note**: PPCIE Verifier version 1.x is deprecated and only supports the Python SDK. For the latest version 2.x with enhanced features, see [PPCIE Verifier SDK CPP](../ppcie-verifier-sdk-cpp/README.md).
 
 ## Introduction 
 
@@ -6,7 +8,9 @@ In a multi-GPU confidential computing (CC) setup, NVLink interconnects and NVSwi
 
 Bouncing through a CE adds constraints and latency to the data path which may result in performance drops for some workloads. To minimize performance impact, NVIDIA's 'PPCIE' mode adjusts the security model to trust NVLink data, enabling plain-text traffic without CEs while preserving a Confidential Virtual Machine.
 
-**Note**: There are only two supported GPU usage configurations: ALL GPUs are in CC mode. Each GPU can be assigned to one Confidential VM. In this scenario, use the CC verifier. ALL GPUs are in PPCIe mode. All GPUs must be assigned one Confidential VM. In this scenario, use the PPCIE verifier
+**Note**: There are only two supported GPU usage configurations: 
+- ALL GPUs are in CC mode. Each GPU can be assigned to one Confidential VM. In this scenario, use the CC verifier. 
+- ALL GPUs are in PPCIe mode. All GPUs must be assigned one Confidential VM. In this scenario, use the PPCIE verifier
 
 # Quick Start Guide
 
@@ -32,7 +36,8 @@ Bouncing through a CE adds constraints and latency to the data path which may re
     
     source venv/bin/activate
     
-    pip3 install nv-ppcie-verifier 
+    # This installs version 1.x 
+    pip3 install "nv-ppcie-verifier>=1.0,<2.0"
     ```
 ## Usage and Examples
 
