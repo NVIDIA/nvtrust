@@ -25,6 +25,14 @@ def attestation_policy_3_0():
         json_data = json.load(json_file)
         return json.dumps(json_data)
 
+@pytest.fixture
+def attestation_policy_4_0():
+    """Fixture to load the policy file"""
+    file = "../../policies/local/NVGPULocalv4PolicyExample.json"
+    with open(os.path.join(os.path.dirname(__file__), file)) as json_file:
+        json_data = json.load(json_file)
+        return json.dumps(json_data)
+
 @pytest.mark.gpu_hardware
 def test_successful_gpu_attestation_without_a_service_key(attestation_policy, ocsp_url, rim_url):
     invoke_attestation(attestation_policy, None, ocsp_url, rim_url)
@@ -35,9 +43,9 @@ def test_successful_gpu_attestation_with_a_service_key(attestation_policy, servi
     invoke_attestation(attestation_policy, service_key, ocsp_url, rim_url)
 
 @pytest.mark.gpu_hardware
-def test_successful_gpu_attestation_with_claims_version_3_0(attestation_policy_3_0, service_key, rim_url, ocsp_url):
+def test_successful_gpu_attestation_with_claims_version_3_0(attestation_policy_4_0, service_key, rim_url, ocsp_url):
     assert service_key is not None, "Obtain a valid service key which has NVIDIA Attestation Service access from https://org.ngc.nvidia.com/service-keys"
-    invoke_attestation(attestation_policy, service_key, ocsp_url, rim_url, claims_version="3.0")
+    invoke_attestation(attestation_policy_4_0, service_key, ocsp_url, rim_url, claims_version="3.0")
 
 @pytest.mark.gpu_hardware
 def test_fail_gpu_attestation_with_invalid_service_key(attestation_policy, ocsp_url, rim_url):

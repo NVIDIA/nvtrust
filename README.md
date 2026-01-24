@@ -1,5 +1,15 @@
 # nvTrust: Ancillary Software for NVIDIA Trusted Computing Solutions
 
+[![License](https://img.shields.io/badge/License-Apache_2.0-brightgreen.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-latest-blue)](https://docs.nvidia.com/attestation/attestation-client-tools-sdk/latest/sdk_introduction.html)
+[![Release](https://img.shields.io/github/v/release/NVIDIA/nvtrust)](https://github.com/NVIDIA/nvtrust/releases)
+[![PyPI](https://img.shields.io/pypi/v/nv-attestation-sdk.svg)](https://pypi.org/project/nv-attestation-sdk/)
+[![Python](https://img.shields.io/badge/python-3.7%20and%20above-orange)](https://pypi.org/project/nv-attestation-sdk/)
+[![Issues](https://img.shields.io/github/issues/NVIDIA/nvtrust)](https://github.com/NVIDIA/nvtrust/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/NVIDIA/nvtrust)](https://github.com/NVIDIA/nvtrust/pulls)
+[![Stars](https://img.shields.io/github/stars/NVIDIA/nvtrust?style=social)](https://github.com/NVIDIA/nvtrust/stargazers)
+[![Forks](https://img.shields.io/github/forks/NVIDIA/nvtrust?style=social)](https://github.com/NVIDIA/nvtrust/network/members)
+
 This repository provides essential resources for implementing and validating Trusted Computing Solutions on NVIDIA hardware. It focuses on attestation, a crucial aspect of ensuring the integrity and security of confidential computing environments.
 
 ## Tools and Components
@@ -11,6 +21,8 @@ This repository includes the following attestation tools and utilities:
 - **[Attestation SDK (Python)](guest_tools/attestation_sdk/README.md)** - A comprehensive Python SDK providing easy-to-use APIs for implementing GPU and NVSwitch attestation capabilities into your applications. Supports both local and remote attestation workflows.
 
 - **[Local GPU Verifier](guest_tools/gpu_verifiers/local_gpu_verifier/README.md)** - A standalone tool for local GPU attestation verification. *Note: This tool is now integrated into the Attestation SDK. Please use the Attestation SDK for GPU attestation workflows.*
+
+> **Deprecation Notice:** The Python SDK and the Local GPU Verifier is deprecated. Users are encouraged to use the new [C++ SDK](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-c/introduction.html) and the [CLI](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-cli/introduction.html).
 
 - **[PPCIE Verifier](guest_tools/ppcie-verifier/README.md)** - Protected PCIe verifier for multi-GPU confidential computing setups where all GPUs are in PPCIE mode, enabling plain-text NVLink traffic while preserving confidential VM security.
 
@@ -30,8 +42,7 @@ To get started and learn more about NVIDIA Attestation, refer to the [NVIDIA Att
 ### SDK and CLI Documentation
 
 - **[Attestation SDK (Python) Documentation](https://docs.nvidia.com/attestation/attestation-client-tools-sdk/latest/sdk_introduction.html)** - Complete documentation for the Python SDK
-- **[Attestation SDK (C++) Documentation](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-c/introduction.html)** - Complete documentation for the C++ SDK
-- **[Attestation CLI Documentation](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-cli/introduction.html)** - Command-line interface documentation
+
 - **[PPCIE Verifier Documentation](https://docs.nvidia.com/attestation/attestation-client-tools-ppcie/latest/ppcie_introduction.html)** - Documentation for Protected PCIe attestation
 
 ## Contributing
