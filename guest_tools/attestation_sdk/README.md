@@ -11,7 +11,7 @@ The SDK supports:
 ## Prerequisites
 
 - GPU SKU that supports Confidential Computing
-- Python >= 3.8
+- Python >= 3.9
 
 **For GPU Attestation:**
 - NVIDIA Hopper H100 (or later) GPU that supports CC
