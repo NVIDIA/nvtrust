@@ -20,6 +20,7 @@ import os
 import secrets
 import sys
 import argparse
+import warnings
 
 from nv_attestation_sdk import attestation
 
@@ -45,6 +46,17 @@ parser = argparse.ArgumentParser()
 logger = setup_logging()
 
 
+def _print_deprecation_warning():
+    """Print a deprecation warning for nv-ppcie-verifier v1.x."""
+    warnings.warn(
+        "nv-ppcie-verifier v1.x is deprecated and will reach end of support on September 15, 2026. "
+        "Please migrate to nv-ppcie-verifier v2.x (ppcie-verifier-sdk-cpp) which uses the C++ SDK.\n"
+        "Migration guide: https://docs.nvidia.com/attestation/attestation-client-tools-sdk/latest/migration_guide.html",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+
 def verification():
     """
     This function is the start of PPCIE verification tool.
@@ -53,6 +65,7 @@ def verification():
     present in a correct state.
 
     """
+    _print_deprecation_warning()
     global logger
     status = Status()
     try:
