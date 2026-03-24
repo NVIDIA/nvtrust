@@ -27,7 +27,7 @@ dependencies = [
     'signxml == 3.2.0',
     'xmlschema == 2.2.3',
     'pyOpenSSL == 24.2.1',
-    'PyJWT == 2.7.0',
+    'PyJWT == 2.12.0',
     'nvidia-ml-py == 12.550.52',
     'asn1 == 2.7.0',
 	'urllib3 == 2.6.3'
