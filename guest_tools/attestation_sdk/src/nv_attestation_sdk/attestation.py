@@ -9,6 +9,7 @@ from enum import IntEnum, IntFlag
 import json
 import logging
 import secrets
+import warnings
 import uuid
 
 import jwt
@@ -110,6 +111,17 @@ class Attestation:
             cls._staticNonce = ""
             cls._verifiers = []
             cls._tokens = {}
+            warnings.warn(
+                "nv-attestation-sdk is deprecated and will reach "
+                "end of support on September 15, 2026. "
+                "Please migrate to the C++ SDK: "
+                "https://github.com/NVIDIA/attestation-sdk. "
+                "Migration guide: https://docs.nvidia.com/attestation/"
+                "attestation-client-tools-sdk/latest/"
+                "migration_guide.html",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         return cls._instance
 
     @classmethod

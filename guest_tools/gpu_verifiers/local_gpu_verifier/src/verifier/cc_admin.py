@@ -33,6 +33,7 @@ import time
 import logging
 import sys
 import base64
+import warnings
 
 from verifier.attestation import AttestationReport
 from verifier.rim import RIM
@@ -80,9 +81,21 @@ gpu_driver_attestation_warning_list = []
 gpu_vbios_attestation_warning_list = []
 
 
+def _print_deprecation_warning():
+    """Print a deprecation warning for nv-local-gpu-verifier."""
+    warnings.warn(
+        "nv-local-gpu-verifier is deprecated and will reach end of support on September 15, 2026. "
+        "Please migrate to the C++ SDK: https://github.com/NVIDIA/attestation-sdk\n"
+        "Migration guide: https://docs.nvidia.com/attestation/attestation-client-tools-sdk/latest/migration_guide.html",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
+
 def main():
     """ The main function for the CC admin tool.
     """
+    _print_deprecation_warning()
     try:
         global arguments_as_dictionary
         parser = argparse.ArgumentParser()

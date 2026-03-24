@@ -22,7 +22,9 @@ This repository includes the following attestation tools and utilities:
 
 - **[Local GPU Verifier](guest_tools/gpu_verifiers/local_gpu_verifier/README.md)** - A standalone tool for local GPU attestation verification. *Note: This tool is now integrated into the Attestation SDK. Please use the Attestation SDK for GPU attestation workflows.*
 
-> **Deprecation Notice:** The Python SDK and the Local GPU Verifier is deprecated. Users are encouraged to use the new [C++ SDK](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-c/introduction.html) and the [CLI](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-cli/introduction.html).
+> **Deprecation Notice:** 
+> The Python SDK and the Local GPU Verifier are deprecated. Users are encouraged to use the new [C++ SDK](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-c/introduction.html) and the [CLI](https://docs.nvidia.com/attestation/nv-attestation-sdk-cpp/latest/sdk-cli/introduction.html).
+> For help with migration to the C++ SDK, see the [Migration Guide](https://docs.nvidia.com/attestation/attestation-client-tools-sdk/latest/migration_guide.html).
 
 - **[PPCIE Verifier](guest_tools/ppcie-verifier/README.md)** - Protected PCIe verifier for multi-GPU confidential computing setups where all GPUs are in PPCIE mode, enabling plain-text NVLink traffic while preserving confidential VM security.
 
