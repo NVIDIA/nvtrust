@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+
+contact_links:
+  - name: Ask a Question / General Discussion
+    url: https://github.com/NVIDIA/nvtrust/discussions
+    about: Please use GitHub Discussions for questions and general discussion.
+  - name: Report a Security Vulnerability
+    url: https://www.nvidia.com/object/submit-security-vulnerability.html
+    about: Please do not report security vulnerabilities through GitHub issues. Use the NVIDIA Security Vulnerability Submission Form instead.
