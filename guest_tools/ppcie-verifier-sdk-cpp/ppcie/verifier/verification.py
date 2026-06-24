@@ -29,6 +29,13 @@ from .src.topology.validate_topology import TopologyValidation
 from .src.nvml.nvml_client import NvmlClient
 from .src.utils.logging import setup_logging, get_logger
 from .src.nscq import NSCQHandler
+from .src.exceptions.exception import (
+    PpcieVerifierException,
+    GpuPreChecksException,
+    SwitchPreChecksException,
+    GpuAttestationException,
+    SwitchAttestationException,
+)
 
 parser = argparse.ArgumentParser()
 logger = setup_logging()
@@ -125,7 +132,10 @@ def verification():
         if number_of_gpus != 8 and number_of_switches != 4:
             logger.error("PPCIE: Number of GPUs present are : %d and Switches are %d which do not meet the required "
                          "configuration. Exiting..", number_of_gpus, number_of_switches)
-            sys.exit()
+            raise PpcieVerifierException(
+                f"PPCIE: Number of GPUs present are : {number_of_gpus} and Switches are {number_of_switches} "
+                "which do not meet the required configuration"
+            )
 
         status = validate_gpu_pre_checks(nvml_client, logger, status)
         if status.gpu_pre_checks is True:
@@ -159,6 +169,16 @@ def verification():
         else:
             logger.debug("PPCIE: All stages have passed")
         nvml_client.__destroy__()
+    except PpcieVerifierException as e:
+        logger.error("An error occurred while using the PPCIE Verification Tool %s", e)
+        depth = 0
+        while e:
+            indent = "  " * depth
+            cause = f"Caused by:" if e.__cause__ else ""
+            logger.error(f"{indent}{type(e).__name__}: {str(e)}. {cause}")
+            e = e.__cause__
+            depth += 1
+        sys.exit(1)
     except Exception as e:
         logger.error("An error occurred while using the PPCIE Verification Tool %s", e)
         depth = 0
@@ -168,6 +188,7 @@ def verification():
             logger.error(f"{indent}{type(e).__name__}: {str(e)}. {cause}")
             e = e.__cause__
             depth += 1
+        sys.exit(1)
     finally:
         status.status(logger)
         logger.info("PPCIE: End of PPCIE Verification Tool")
@@ -217,7 +238,7 @@ def get_number_of_switches(logger, nscq_client):
     logger.info("PPCIE: Number of NVSwitches are: %d", len(switch_list_uuids))
     if switch_list_uuids is not None and len(switch_list_uuids) == 0:
         logger.error("PPCIE: There are no switches available in the system. Exiting..")
-        sys.exit()
+        raise PpcieVerifierException("PPCIE: There are no switches available in the system")
     return switch_list_uuids
 
 
@@ -233,7 +254,7 @@ def get_number_of_gpus(logger, nvml_client):
     logger.info("PPCIE: Number of GPUs are: %d", number_of_gpus)
     if number_of_gpus == 0 or number_of_gpus is None or number_of_gpus < 0:
         logger.error("PPCIE: There are no GPUs available in the system. Exiting..")
-        sys.exit()
+        raise PpcieVerifierException("PPCIE: There are no GPUs available in the system")
     return number_of_gpus
 
 def generate_nonce():
@@ -328,7 +349,7 @@ def perform_gpu_attestation(logger, status, args):
             if not isinstance(evidence_items, list):
                 logger.error("PPCIE: GPU evidence file format invalid; expected list")
                 status.gpu_attestation = False
-                sys.exit()
+                raise GpuAttestationException("PPCIE: GPU evidence file format invalid; expected list")
         else:
             logger.debug("PPCIE: Collecting GPU evidence from NVML")
             nvattest_collect_evidence_cmd = ["nvattest"]
@@ -347,7 +368,9 @@ def perform_gpu_attestation(logger, status, args):
             if collect_exit_code != 0:
                 logger.error("PPCIE: collect-evidence failed with non-zero exit code %d", collect_exit_code)
                 status.gpu_attestation = False      
-                sys.exit()
+                raise GpuAttestationException(
+                    f"PPCIE: collect-evidence failed with non-zero exit code {collect_exit_code}"
+                )
 
             try:
                 collect_json = extract_last_json_object(collect_output)
@@ -363,7 +386,7 @@ def perform_gpu_attestation(logger, status, args):
             except json.JSONDecodeError as jde:
                 logger.error("PPCIE: Failed to parse collect-evidence JSON: %s", jde)
                 status.gpu_attestation = False
-                sys.exit()
+                raise GpuAttestationException("PPCIE: Failed to parse collect-evidence JSON") from jde
 
         # Decode all items into gpu_attestation_report
         for item in evidence_items:
@@ -373,7 +396,7 @@ def perform_gpu_attestation(logger, status, args):
             except Exception as decode_err:
                 logger.error("PPCIE: Failed to decode GPU evidence: %s", decode_err)
                 status.gpu_attestation = False
-                sys.exit()
+                raise GpuAttestationException("PPCIE: Failed to decode GPU evidence") from decode_err
             gpu_attestation_report.append(decoded_evidence)
 
         # ---- Step 2: attest ----
@@ -408,7 +431,7 @@ def perform_gpu_attestation(logger, status, args):
     except Exception as e:
         status.gpu_attestation = False
         logger.error("PPCIE: An error occurred while attesting the GPUs %s", e)
-        sys.exit()
+        raise GpuAttestationException("PPCIE: An error occurred while attesting the GPUs") from e
     finally:
         # Clean up temporary evidence file if created
         if temp_gpu_evidence_file and os.path.exists(temp_gpu_evidence_file):
@@ -440,11 +463,13 @@ def validate_gpu_pre_checks(nvml_client, logger, status):
         else:
             logger.error("PPCIE: Terminating the process as TNVL is not enabled for all the GPUs")
             status.gpu_pre_checks = False
-            sys.exit()
+            raise GpuPreChecksException(
+                "PPCIE: Terminating the process as TNVL is not enabled for all the GPUs"
+            )
     except Exception as e:
         status.gpu_pre_checks = False
         logger.error("PPCIE: An error occurred while checking GPU pre checks %s", e)
-        sys.exit()
+        raise GpuPreChecksException("PPCIE: An error occurred while checking GPU pre checks") from e
     return status
 
 
@@ -482,7 +507,7 @@ def perform_switch_attestation(logger, status, args):
             if not isinstance(evidence_items, list):
                 logger.error("PPCIE: Switch evidence file format invalid; expected list")
                 status.switch_attestation = False
-                sys.exit()
+                raise SwitchAttestationException("PPCIE: Switch evidence file format invalid; expected list")
         else:
             logger.debug("PPCIE: Collecting switch evidence from NSCQ")
             nvattest_collect_evidence_cmd = ["nvattest"]
@@ -501,7 +526,9 @@ def perform_switch_attestation(logger, status, args):
             if collect_exit_code != 0:
                 logger.error("PPCIE: collect-evidence failed with non-zero exit code %d", collect_exit_code)
                 status.switch_attestation = False      
-                sys.exit()
+                raise SwitchAttestationException(
+                    f"PPCIE: collect-evidence failed with non-zero exit code {collect_exit_code}"
+                )
 
             try:
                 collect_json = extract_last_json_object(collect_output)
@@ -517,7 +544,7 @@ def perform_switch_attestation(logger, status, args):
             except json.JSONDecodeError as jde:
                 logger.error("PPCIE: Failed to parse collect-evidence JSON: %s", jde)
                 status.switch_attestation = False
-                sys.exit()
+                raise SwitchAttestationException("PPCIE: Failed to parse collect-evidence JSON") from jde
 
         # Decode all items into switch_attestation_report
         for item in evidence_items:
@@ -527,7 +554,7 @@ def perform_switch_attestation(logger, status, args):
             except Exception as decode_err:
                 logger.error("PPCIE: Failed to decode Switch evidence: %s", decode_err)
                 status.switch_attestation = False
-                sys.exit()
+                raise SwitchAttestationException("PPCIE: Failed to decode Switch evidence") from decode_err
             switch_attestation_report.append(decoded_evidence)
 
         # ---- Step 2: attest ----
@@ -562,7 +589,7 @@ def perform_switch_attestation(logger, status, args):
     except Exception as e:
         status.switch_attestation = False
         logger.error("PPCIE: An error occurred while attesting the NVSwitches %s", e)
-        sys.exit()
+        raise SwitchAttestationException("PPCIE: An error occurred while attesting the NVSwitches") from e
     finally:
         # Clean up temporary evidence file if created
         if temp_switch_evidence_file and os.path.exists(temp_switch_evidence_file):
@@ -600,7 +627,9 @@ def validate_switch_pre_checks(nscq_client, logger, status, switch_uuid_list):
                     uuid,
                 )
                 status.switch_pre_checks = False
-                sys.exit()
+                raise SwitchPreChecksException(
+                    f"PPCIE: TNVL mode for the switch with id {uuid} is not enabled"
+                )
             lock_status, rc = nscq_client.is_switch_lock_mode(uuid)
             logger.debug(
                 "PPCIE: Lock Mode of the switch is: %s with return "
@@ -614,7 +643,9 @@ def validate_switch_pre_checks(nscq_client, logger, status, switch_uuid_list):
                     uuid,
                 )
                 status.switch_pre_checks = False
-                sys.exit()
+                raise SwitchPreChecksException(
+                    f"PPCIE: Lock mode for the switch with id {uuid} is not enabled"
+                )
         status.switch_pre_checks = True
     except Exception as e:
         status.switch_pre_checks = False
@@ -622,7 +653,7 @@ def validate_switch_pre_checks(nscq_client, logger, status, switch_uuid_list):
             "PPCIE: An exception has occurred while attempting to check switch pre checks %s",
             e,
         )
-        sys.exit()
+        raise SwitchPreChecksException("PPCIE: An exception has occurred while attempting to check switch pre checks") from e
     return status
 
 
