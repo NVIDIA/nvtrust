@@ -12,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import argparse
+import base64
 import logging
 import unittest
 
@@ -27,11 +29,12 @@ from ppcie.verifier.src.nvml.nvml_client import NvmlClient, NvmlSystemConfComput
     NVML_SYSTEM_CONF_COMPUTE_VERSION
 from ppcie.verifier.src.utils.status import Status
 from ppcie.verifier.verification import verification
+import ppcie.verifier.verification as verification_module
 import sys
 import os
 from nv_attestation_sdk import attestation
 
-PPCIE_EVIDENCE = os.environ.get("PPCIE_EVIDENCE")
+PPCIE_EVIDENCE = os.environ.get("PPCIE_EVIDENCE") or base64.b64encode(b"evidence").decode("ascii")
 
 
 class TestVerification(unittest.TestCase):
@@ -46,9 +49,11 @@ class TestVerification(unittest.TestCase):
     @patch("ppcie.verifier.verification.NSCQHandler")
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlDeviceGetCount")
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlInit")
-    def test_verification(self, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, attestation_client, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlShutdown")
+    def test_verification(self, nvml_shutdown, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, attestation_client, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
         status = Status()
         nvml_init.return_value = None
+        nvml_shutdown.return_value = None
         gpu_device_count.return_value = 8
         nscq_handler.return_value = nscq_handler
         nscq_handler.get_all_switch_uuid.return_value = [{'switchid-1', 'switchid-2', 'switchid-3', 'switchid-4'}]
@@ -83,9 +88,26 @@ class TestVerification(unittest.TestCase):
         switch_topology_check.return_value = status
         get_ready_state.return_value = 1
         set_ready_state.return_value = pynvml.NVML_SUCCESS
+        verification_module.parser = argparse.ArgumentParser()
         testargs = ["prog", "--gpu-attestation-mode", "LOCAL", "--switch-attestation-mode", "LOCAL", "--log", "DEBUG", "--claims-version", "3.0"]
         with patch.object(sys, 'argv', testargs):
             verification()
+
+    @patch("ppcie.verifier.verification.NSCQHandler")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlDeviceGetCount")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlInit")
+    def test_verification_should_exit_non_zero_if_no_gpus_are_present(self, nvml_init, gpu_device_count, nscq_handler):
+        nvml_init.return_value = None
+        gpu_device_count.return_value = 0
+        nscq_handler.return_value = nscq_handler
+        verification_module.parser = argparse.ArgumentParser()
+        testargs = ["prog", "--gpu-attestation-mode", "LOCAL", "--switch-attestation-mode", "LOCAL"]
+
+        with patch.object(sys, 'argv', testargs):
+            with self.assertRaises(SystemExit) as error:
+                verification()
+
+        self.assertEqual(error.exception.code, 1)
 
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlSystemSetConfComputeGpusReadyState")
     @patch("pynvml.nvmlSystemGetConfComputeGpusReadyState")

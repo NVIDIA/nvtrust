@@ -42,9 +42,11 @@ class TestVerification(unittest.TestCase):
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlDeviceGetCount")
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlInit")
     @patch("ppcie.verifier.verification.run_nvattest_command")
-    def test_verification(self, run_nvattest, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlShutdown")
+    def test_verification(self, nvml_shutdown, run_nvattest, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
         status = Status()
         nvml_init.return_value = None
+        nvml_shutdown.return_value = None
         gpu_device_count.return_value = 8
         nscq_handler.return_value = nscq_handler
         nscq_handler.get_all_switch_uuid.return_value = [{'switchid-1', 'switchid-2', 'switchid-3', 'switchid-4'}]
@@ -91,9 +93,11 @@ class TestVerification(unittest.TestCase):
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlDeviceGetCount")
     @patch("ppcie.verifier.src.nvml.nvml_client.nvmlInit")
     @patch("ppcie.verifier.verification.run_nvattest_command")
-    def test_verification_with_file_evidence(self, run_nvattest, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlShutdown")
+    def test_verification_with_file_evidence(self, nvml_shutdown, run_nvattest, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
         status = Status()
         nvml_init.return_value = None
+        nvml_shutdown.return_value = None
         gpu_device_count.return_value = 8
         nscq_handler.return_value = nscq_handler
         nscq_handler.get_all_switch_uuid.return_value = [{'switchid-1', 'switchid-2', 'switchid-3', 'switchid-4'}]
@@ -128,6 +132,68 @@ class TestVerification(unittest.TestCase):
         testargs = ["prog", "--verifier", "remote", "--log-level", "debug", "--nonce", "1234", "--gpu-evidence", "tests/data/gpu_evidence.json", "--switch-evidence", "tests/data/switch_evidence.json", "--relying-party-policy", "/tests/data/relying_party_policy.rego", "--rim-url", "https://rim.attestation.nvidia.com", "--ocsp-url", "https://ocsp.ndis.nvidia.com", "--nras-url", "https://nras.attestation.nvidia.com"]
         with patch.object(sys, 'argv', testargs):
             verification()
+
+    @patch("ppcie.verifier.verification.NSCQHandler")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlDeviceGetCount")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlInit")
+    def test_verification_should_exit_non_zero_if_no_gpus_are_present(self, nvml_init, gpu_device_count, nscq_handler):
+        nvml_init.return_value = None
+        gpu_device_count.return_value = 0
+        nscq_handler.return_value = nscq_handler
+        verification_module.parser = argparse.ArgumentParser()
+        testargs = ["prog", "--verifier", "local", "--nonce", "1234"]
+
+        with patch.object(sys, 'argv', testargs):
+            with self.assertRaises(SystemExit) as error:
+                verification()
+
+        self.assertEqual(error.exception.code, 1)
+
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlSystemSetConfComputeGpusReadyState")
+    @patch("pynvml.nvmlSystemGetConfComputeGpusReadyState")
+    @patch("ppcie.verifier.src.topology.validate_topology.TopologyValidation.switch_topology_check")
+    @patch("ppcie.verifier.src.topology.validate_topology.TopologyValidation.gpu_topology_check")
+    @patch("ppcie.verifier.src.nvml.nvml_client.NvmlSystemConfComputeSettings")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlSystemGetConfComputeSettings")
+    @patch("ppcie.verifier.verification.NSCQHandler")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlDeviceGetCount")
+    @patch("ppcie.verifier.src.nvml.nvml_client.nvmlInit")
+    @patch("ppcie.verifier.verification.run_nvattest_command")
+    def test_verification_should_exit_non_zero_if_collect_evidence_fails(self, run_nvattest, nvml_init, gpu_device_count, nscq_handler, mock_system_configuration_compute_settings, mock_settings, gpu_topology_check, switch_topology_check, get_ready_state, set_ready_state):
+        status = Status()
+        nvml_init.return_value = None
+        gpu_device_count.return_value = 8
+        nscq_handler.return_value = nscq_handler
+        nscq_handler.get_all_switch_uuid.return_value = [{'switchid-1', 'switchid-2', 'switchid-3', 'switchid-4'}]
+        result = pynvml.NVML_SUCCESS
+        settings = NvmlSystemConfComputeSettings()
+        settings.version = NVML_SYSTEM_CONF_COMPUTE_VERSION
+        settings.environment = 1
+        settings.ccFeature = 1
+        settings.devToolsMode = 3
+        settings.multiGpuMode = 1
+        mock_settings.return_value = settings
+        mock_system_configuration_compute_settings.return_value = result
+        nscq_handler.is_switch_tnvl_mode.return_value = 1, 0
+        nscq_handler.is_switch_lock_mode.return_value = 1, 0
+        run_nvattest.return_value = ("collect failed", 2)
+        status.topology_checks = True
+        status.gpu_pre_checks = True
+        status.switch_pre_checks = True
+        status.gpu_attestation = True
+        status.switch_attestation = True
+        gpu_topology_check.return_value = status
+        switch_topology_check.return_value = status
+        get_ready_state.return_value = 1
+        set_ready_state.return_value = pynvml.NVML_SUCCESS
+        verification_module.parser = argparse.ArgumentParser()
+        testargs = ["prog", "--verifier", "local", "--log-level", "debug", "--nonce", "1234", "--relying-party-policy", "/tests/data/relying_party_policy.rego", "--rim-url", "https://rim.attestation.nvidia.com", "--ocsp-url", "https://ocsp.ndis.nvidia.com", "--nras-url", "https://nras.attestation.nvidia.com"]
+
+        with patch.object(sys, 'argv', testargs):
+            with self.assertRaises(SystemExit) as error:
+                verification()
+
+        self.assertEqual(error.exception.code, 1)
 
     @patch("ppcie.verifier.verification.run_nvattest_command")
     def test_perform_gpu_attestation(self, run_nvattest):
