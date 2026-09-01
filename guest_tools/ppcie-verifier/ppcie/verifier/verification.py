@@ -133,12 +133,17 @@ def verification():
         if number_of_gpus != 8 and number_of_switches != 4:
             logger.error("PPCIE: Number of GPUs present are : %d and Switches are %d which do not meet the required "
                          "configuration. Exiting..", number_of_gpus, number_of_switches)
-            sys.exit()
+            raise PpcieVerifierException(
+                f"PPCIE: Number of GPUs present are : {number_of_gpus} and Switches are {number_of_switches} "
+                "which do not meet the required configuration"
+            )
         set_allow_hold_cert(args["allow_hold_cert"])
         if args["gpu_attestation_mode"] != args["switch_attestation_mode"]:
             logger.error(
                 "PPCIE: GPU attestation mode and Switch attestation mode should be same. Exiting..")
-            sys.exit()
+            raise PpcieVerifierException(
+                "PPCIE: GPU attestation mode and Switch attestation mode should be same"
+            )
 
         status = validate_gpu_pre_checks(nvml_client, logger, status)
         if status.gpu_pre_checks is True:
@@ -172,6 +177,16 @@ def verification():
         else:
             logger.debug("PPCIE: All stages have passed")
         nvml_client.__destroy__()
+    except PpcieVerifierException as e:
+        logger.error("An error occurred while using the PPCIE Verification Tool %s", e)
+        depth = 0
+        while e:
+            indent = "  " * depth
+            cause = f"Caused by:" if e.__cause__ else ""
+            logger.error(f"{indent}{type(e).__name__}: {str(e)}. {cause}")
+            e = e.__cause__
+            depth += 1
+        sys.exit(1)
     except Exception as e:
         logger.error("An error occurred while using the PPCIE Verification Tool %s", e)
         depth = 0
@@ -181,6 +196,7 @@ def verification():
             logger.error(f"{indent}{type(e).__name__}: {str(e)}. {cause}")
             e = e.__cause__
             depth += 1
+        sys.exit(1)
     finally:
         status.status(logger)
         logger.info("PPCIE: End of PPCIE Verification Tool")
@@ -230,7 +246,7 @@ def get_number_of_switches(logger, nscq_client):
     logger.info("PPCIE: Number of NVSwitches are: %d", len(switch_list_uuids))
     if switch_list_uuids is not None and len(switch_list_uuids) == 0:
         logger.error("PPCIE: There are no switches available in the system. Exiting..")
-        sys.exit()
+        raise PpcieVerifierException("PPCIE: There are no switches available in the system")
     return switch_list_uuids
 
 
@@ -246,7 +262,7 @@ def get_number_of_gpus(logger, nvml_client):
     logger.info("PPCIE: Number of GPUs are: %d", number_of_gpus)
     if number_of_gpus == 0 or number_of_gpus is None or number_of_gpus < 0:
         logger.error("PPCIE: There are no GPUs available in the system. Exiting..")
-        sys.exit()
+        raise PpcieVerifierException("PPCIE: There are no GPUs available in the system")
     return number_of_gpus
 
 
@@ -304,7 +320,9 @@ def perform_gpu_attestation(logger, status, args):
                     type(evidence),
                 )
                 status.gpu_attestation = False
-                sys.exit()
+                raise GpuAttestationException(
+                    f"PPCIE: Invalid/Unknown evidence type found for GPU {type(evidence)}"
+                )
 
         logger.info("PPCIE: Attesting the GPUs")
         gpu_attestation_result = client.attest(evidence_list)
@@ -327,7 +345,7 @@ def perform_gpu_attestation(logger, status, args):
     except Exception as e:
         status.gpu_attestation = False
         logger.error("PPCIE: An error occurred while attesting the GPUs %s", e)
-        sys.exit()
+        raise GpuAttestationException("PPCIE: An error occurred while attesting the GPUs") from e
     logger.info("PPCIE: GPU Attestation Completed")
     return status, gpu_attestation_report
 
@@ -352,11 +370,13 @@ def validate_gpu_pre_checks(nvml_client, logger, status):
                 "PPCIE: Terminating the process as TNVL is not enabled for all the GPUs"
             )
             status.gpu_pre_checks = False
-            sys.exit()
+            raise GpuPreChecksException(
+                "PPCIE: Terminating the process as TNVL is not enabled for all the GPUs"
+            )
     except Exception as e:
         status.gpu_pre_checks = False
         logger.error("PPCIE: An error occurred while checking GPU pre checks %s", e)
-        sys.exit()
+        raise GpuPreChecksException("PPCIE: An error occurred while checking GPU pre checks") from e
     return status
 
 
@@ -403,7 +423,9 @@ def perform_switch_attestation(logger, status, args):
                     type(evidence),
                 )
                 status.switch_attestation = False
-                sys.exit()
+                raise SwitchAttestationException(
+                    f"PPCIE: Invalid/Unknown evidence type found for switch {type(evidence)}"
+                )
 
         logger.info("PPCIE: Attesting the switches")
         attestation_result = switch_attester.attest(evidence_list)
@@ -427,7 +449,7 @@ def perform_switch_attestation(logger, status, args):
     except Exception as e:
         logger.error("PPCIE: An error occurred while attesting the switches %s", e)
         status.switch_attestation = False
-        sys.exit()
+        raise SwitchAttestationException("PPCIE: An error occurred while attesting the switches") from e
     return status, switch_attestation_report
 
 
@@ -455,7 +477,9 @@ def validate_switch_pre_checks(nscq_client, logger, status, switch_uuid_list):
                     uuid,
                 )
                 status.switch_pre_checks = False
-                sys.exit()
+                raise SwitchPreChecksException(
+                    f"PPCIE: TNVL mode for the switch with id {uuid} is not enabled"
+                )
             lock_status, rc = nscq_client.is_switch_lock_mode(uuid)
             logger.debug(
                 "PPCIE: Lock Mode of the switch is: %s with return "
@@ -469,7 +493,9 @@ def validate_switch_pre_checks(nscq_client, logger, status, switch_uuid_list):
                     uuid,
                 )
                 status.switch_pre_checks = False
-                sys.exit()
+                raise SwitchPreChecksException(
+                    f"PPCIE: Lock mode for the switch with id {uuid} is not enabled"
+                )
         status.switch_pre_checks = True
     except Exception as e:
         status.switch_pre_checks = False
@@ -477,7 +503,7 @@ def validate_switch_pre_checks(nscq_client, logger, status, switch_uuid_list):
             "PPCIE: An exception has occurred while attempting to check switch pre checks %s",
             e,
         )
-        sys.exit()
+        raise SwitchPreChecksException("PPCIE: An exception has occurred while attempting to check switch pre checks") from e
     return status
 
 

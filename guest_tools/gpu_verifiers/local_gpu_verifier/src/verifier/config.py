@@ -544,7 +544,7 @@ class BaseSettings:
                 self.check_if_attestation_report_driver_version_matches() and \
                 self.check_if_attestation_report_vbios_version_matches() and \
                 self.check_if_attestation_report_signature_verified() and \
-                self.check_if_gpu_attestation_report_cert_chain_fwid_matched and \
+                self.check_if_gpu_attestation_report_cert_chain_fwid_matched() and \
                 self.check_if_driver_rim_fetched() and \
                 self.check_if_gpu_driver_rim_schema_validated() and \
                 self.check_if_gpu_driver_rim_cert_chain_validated() and \
