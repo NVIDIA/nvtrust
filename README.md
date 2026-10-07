@@ -4,7 +4,7 @@
 [![Docs](https://img.shields.io/badge/docs-latest-blue)](https://docs.nvidia.com/attestation/attestation-client-tools-sdk/latest/sdk_introduction.html)
 [![Release](https://img.shields.io/github/v/release/NVIDIA/nvtrust)](https://github.com/NVIDIA/nvtrust/releases)
 [![PyPI](https://img.shields.io/pypi/v/nv-attestation-sdk.svg)](https://pypi.org/project/nv-attestation-sdk/)
-[![Python](https://img.shields.io/badge/python-3.7%20and%20above-orange)](https://pypi.org/project/nv-attestation-sdk/)
+[![Python](https://img.shields.io/badge/python-3.9%20and%20above-orange)](https://pypi.org/project/nv-attestation-sdk/)
 [![Issues](https://img.shields.io/github/issues/NVIDIA/nvtrust)](https://github.com/NVIDIA/nvtrust/issues)
 [![Pull Requests](https://img.shields.io/github/issues-pr/NVIDIA/nvtrust)](https://github.com/NVIDIA/nvtrust/pulls)
 [![Stars](https://img.shields.io/github/stars/NVIDIA/nvtrust?style=social)](https://github.com/NVIDIA/nvtrust/stargazers)

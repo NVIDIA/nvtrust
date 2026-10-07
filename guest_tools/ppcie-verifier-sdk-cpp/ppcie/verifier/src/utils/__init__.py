@@ -14,8 +14,6 @@
 # limitations under the License.
 
 import logging
-from cryptography import x509
-from cryptography.hazmat.primitives import serialization
 
 class SimpleMessageHandler(logging.StreamHandler):
     def emit(self, record):
@@ -59,36 +57,3 @@ class SimpleMessageHandler(logging.StreamHandler):
         box_top_bottom = "*" * total_width
         return f"{box_top_bottom}\n{centered_msg}\n{box_top_bottom}"
 
-def read_field_as_little_endian(binary_data):
-    """ Reads a multi-byte field in little endian form and return the read
-    field as a hexadecimal string.
-
-    Args:
-        binary_data (bytes): the data to be read in little endian format.
-
-    Returns:
-        [str]: the value of the field as hexadecimal string.
-    """
-    assert type(binary_data) is bytes
-    x = str()
-    for i in range(len(binary_data)):
-        temp = binary_data[i: i + 1]
-        x = temp.hex() + x
-    return x
-
-
-def extract_public_key(certificate):
-    """ Reads the leaf certificate of GPU and then extract the public key.
-
-    Args:
-        certificate (cryptography.hazmat.backends.openssl.x509._Certificate):
-                       the gpu leaf certificate as an cryptography x509 object.
-
-    Returns:
-        [bytes]: the public key extracted from the certificate in PEM format.
-    """
-    assert isinstance(certificate, x509.Certificate)
-    public_key = certificate.public_key()
-    public_key_in_pem_format = public_key.public_bytes(encoding=serialization.Encoding.PEM,
-                                                       format=serialization.PublicFormat.SubjectPublicKeyInfo)
-    return public_key_in_pem_format

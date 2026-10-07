@@ -11,7 +11,7 @@ labels: ["bug", "needs-triage"]
 > If your issue relates to deprecated components, we may not be able to address it.
 
 **Component**
-Which component does this affect? [e.g. PPCIE Verifier 2.x, Host Tools, PPCIE Verifier 1.x (deprecated), Python SDK (deprecated), Local GPU Verifier (deprecated)]
+Which component does this affect? [e.g. PPCIE Verifier 3.x, Host Tools, PPCIE Verifier 1.x (deprecated), Python SDK (deprecated), Local GPU Verifier (deprecated)]
 
 **Describe the bug**
 A clear and concise description of what the bug is.
