@@ -61,7 +61,7 @@ class TopologyValidation:
     def _fail(status, message, *args):
         logger.error(message, *args)
         status.topology_checks = False
-        sys.exit()
+        sys.exit(1)
 
     def switch_topology_check(self, switch_claims_list, number_of_gpus, status):
         """Validate the GPU topology reported by every NVSwitch."""

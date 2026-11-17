@@ -108,7 +108,7 @@ class NvmlClient:
                 "PPCIE: An error occurred while getting the ready state of GPU from NVML library: %s",
                 e,
             )
-            sys.exit()
+            sys.exit(1)
         return state
 
     @timeout_decorator.timeout(10, timeout_exception=TimeoutError)
@@ -148,7 +148,7 @@ class NvmlClient:
                 e,
             )
             status.gpu_pre_checks = False
-            sys.exit()
+            sys.exit(1)
         return settings, status
 
     @timeout_decorator.timeout(10, timeout_exception=TimeoutError)
